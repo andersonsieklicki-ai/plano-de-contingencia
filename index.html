@@ -1558,7 +1558,7 @@
         carregarPainelDespacho();
     }
 
-    function filtrarTabelaAuditoria() {
+        function filtrarTabelaAuditoria() {
         let acCb = Array.from(document.querySelectorAll('.fLogAcaoCb:checked')).map(cb => cb.value); let ag = document.getElementById('fLogAge') ? document.getElementById('fLogAge').value.toUpperCase() : ''; 
         if(typeof auditLogs === 'undefined') return;
         let f = auditLogs.filter(l => acCb.includes(l.acao) || (l.acao === "EXCLUSÃO EM LOTE" && acCb.includes("EXCLUSÃO")) || (l.acao === "EXCLUSÃO SPAM (NUKE)" && acCb.includes("EXCLUSÃO")) || (l.acao === "TENTATIVA DE FRAUDE" && acCb.includes("ALERTA VIGIA")) || (l.acao === "RETOMADA LOGÍSTICA" && acCb.includes("ALERTA LOGÍSTICA")) || l.acao === "LIMPEZA"); 
@@ -1576,6 +1576,31 @@
             h += `<tr><td><small>${l.dataHora}</small></td><td><small>${l.agente.split('@')[0]}</small></td><td style="${cr}"><strong>${l.acao}</strong><br><small style="color:#555; font-weight:normal;">${l.detalhes}</small></td></tr>`; 
         }); 
         document.getElementById('logTableContainer').innerHTML = h + `</tbody></table>`;
+    }
+
+    async function apagarCadastrosPorEmail() {
+        const emailSpam = document.getElementById('emailSpamDelete').value.trim().toLowerCase();
+        if(!emailSpam) { alert("Digite o e-mail do usuário spammer."); return; }
+        if(currentUserNivel !== 'admin') return;
+
+        let cadastrosAlvo = records.filter(r => (r.emailCriador || "").toLowerCase() === emailSpam);
+        if(cadastrosAlvo.length === 0) { alert(`Nenhum cadastro encontrado para o e-mail:\n${emailSpam}`); return; }
+        if(!confirm(`🚨 ATENÇÃO EXTREMA!\n\nForam encontrados ${cadastrosAlvo.length} cadastros de "${emailSpam}".\nDeseja excluir TODOS ELES permanentemente?`)) return;
+
+        document.getElementById('emailSpamDelete').value = 'Apagando...';
+        let idsAlvo = cadastrosAlvo.map(r => r.id);
+        records = records.filter(r => !idsAlvo.includes(r.id));
+        localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
+
+        if (navigator.onLine && db) { 
+            let batch = db.batch(); let c = 0; 
+            for (let id of idsAlvo) { let ref = db.collection("doacoes_capanema").doc(id.toString()); batch.delete(ref); c++; if(c === 490) { await batch.commit(); batch = db.batch(); c = 0; } } 
+            if(c > 0) await batch.commit(); 
+        }
+        await registrarLog("EXCLUSÃO SPAM (NUKE)", `Apagou ${idsAlvo.length} cadastros de: ${emailSpam}`); 
+        alert(`SUCESSO!\n${idsAlvo.length} cadastros apagados.`);
+        document.getElementById('emailSpamDelete').value = '';
+        generateReport(); carregarPainelDespacho();
     }
 
     async function limparBancoDeDados() {
