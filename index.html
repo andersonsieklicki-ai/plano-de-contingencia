@@ -650,10 +650,21 @@
         try { const response = await fetch('https://api.ipify.org?format=json'); const data = await response.json(); return data.ip; } catch (error) { return "IP Indisponível"; }
     }
 
-    function gerarCodigoRegistro() { 
-        const now = new Date(); const yy = String(now.getFullYear()).slice(-2); const mm = String(now.getMonth() + 1).padStart(2, '0'); const dd = String(now.getDate()).padStart(2, '0');
-        const h = String(now.getHours()).padStart(2, '0'); const m = String(now.getMinutes()).padStart(2, '0'); const s = String(now.getSeconds()).padStart(2, '0');
-        return `DC-${dd}${mm}${yy}-${h}${m}${s}`;
+    function gerarCodigoRegistro(nomeAgente) { 
+        const now = new Date(); 
+        const yy = String(now.getFullYear()).slice(-2); 
+        const mm = String(now.getMonth() + 1).padStart(2, '0'); 
+        const dd = String(now.getDate()).padStart(2, '0');
+        const h = String(now.getHours()).padStart(2, '0'); 
+        const m = String(now.getMinutes()).padStart(2, '0'); 
+        
+        let prefixo = "DC";
+        if (nomeAgente && nomeAgente !== "Offline") {
+            // Pega o primeiro nome do e-mail ou do usuário, deixa maiúsculo e tira caracteres especiais
+            prefixo = nomeAgente.split('@')[0].split(' ')[0].toUpperCase().replace(/[^A-Z0-9]/g, '');
+        }
+        return ${prefixo}-${dd}${mm}${yy}-${h}${m};
+    
     }
 
     function formatarDataHora(timestamp) {
@@ -994,24 +1005,25 @@
             const qL = cL?parseFloat(document.getElementById('qtdLona').value)||0:0; const qT = cT?parseInt(document.getElementById('qtdTelha').value)||0:0; 
             const qC = cC?parseInt(document.getElementById('qtdCesta').value)||0:0; const qA = cA?parseFloat(document.getElementById('qtdAgua').value)||0:0; 
             const qAe = document.getElementById('qtdAguaEntregue') ? (parseFloat(document.getElementById('qtdAguaEntregue').value)||0) : 0;
-            let sig = (cT || cC) ? canvas.toDataURL() : null; let nAg = (auth && auth.currentUser) ? (auth.currentUser.email || auth.currentUser.displayName) : "Offline";
+            let sig = (cT || cC) ? canvas.toDataURL() : null; 
+            let nAg = (auth && auth.currentUser) ? (auth.currentUser.email || auth.currentUser.displayName) : "Offline";
             
             if (editandoId) {
                 const idx = records.findIndex(x => x.id === editandoId);
                 if (idx !== -1) {
                     records[idx] = { ...records[idx], nome:nm, rg, telefone:tel, bairro:bai, rua:ru, numero:nu, localizacaoAgua:lAg, referenciaAgua:rAg, observacao:ob, qtdLona:qL, qtdTelha:qT, telhaRequerEntrega:rEnt, qtdCesta:qC, qtdAgua:qA, qtdAguaEntregue:qAe, signatureData:sig, fotoRg:fo, synced:false, agente:nAg };
-                    await registrarLog("EDIÇÃO", `Alterou Cód: [${records[idx].codigo}]`); alert('Atualizado!');
+                    await registrarLog("EDIÇÃO", Alterou Cód: [${records[idx].codigo}] - RG: ${rg || 'S/I'}); 
+                    alert('Atualizado!');
                 }
             } else {
-                const cd = gerarCodigoRegistro();
+                const cd = gerarCodigoRegistro(nAg);
                 records.push({ id: Date.now(), codigo: cd, dataISO: new Date().toISOString(), dataHoraFormatada: new Date().toLocaleString('pt-BR'), nome:nm, rg, telefone:tel, bairro:bai, rua:ru, numero:nu, localizacaoAgua:lAg, referenciaAgua:rAg, observacao:ob, qtdLona:qL, qtdTelha:qT, telhaRequerEntrega:rEnt, telhaEntregue:false, qtdCesta:qC, qtdAgua:qA, qtdAguaEntregue:qAe, entregasAgua:[], signatureData:sig, fotoRg:fo, synced:false, agente:nAg, emailCriador: currentUserEmail, logisticaPausada: false, logisticaMotivo: "" });
-                await registrarLog("NOVO CADASTRO", `Cód: [${cd}]`, cd); 
+                await registrarLog("NOVO CADASTRO", Cód: [${cd}] - RG: ${rg || 'S/I'}, cd); 
                 
                 if (cA || rEnt) { reenviarZapMotorista(nm, bai, lAg, ru, nu, rAg, ob, tel, cA?qA:qT, cA?'agua':'telha', qC>0); } 
                 else { alert('Salvo com sucesso!'); }
             }
             localStorage.setItem('defesaCivilRecords', JSON.stringify(records)); clearFormFields(); sincronizarFirebaseAutomatica(); carregarPainelDespacho();
-        } catch (e) { alert("⚠️ Erro:\n" + e.message); bs.disabled = false; bs.innerText = "Salvar Lançamento"; }
     }
 
     async function deleteRecord(id) {
@@ -1040,37 +1052,37 @@
     function showForm() { document.getElementById('reportSection').classList.add('hidden'); document.getElementById('formSection').classList.remove('hidden'); }
     function updateReportToggle() { document.querySelectorAll('.report-toggle').forEach(l => { if(l.querySelector('input').checked) l.classList.add('active'); else l.classList.remove('active'); }); }
 
-    function buildResumoBairrosHTML(arr) {
+function buildResumoBairrosHTML(arr) {
         let res = {}; let tF=0, tL=0, tT=0, tC=0, tA=0, tAe=0;
         arr.forEach(r => { 
             let b = (r.bairro||'N/I').toUpperCase(); 
             if(!res[b]) res[b]={f:0,l:0,t:0,c:0,a:0, ae:0}; 
             res[b].f++; tF++; res[b].l+=r.qtdLona||0; tL+=r.qtdLona||0; res[b].t+=r.qtdTelha||0; tT+=r.qtdTelha||0; res[b].c+=r.qtdCesta||0; tC+=r.qtdCesta||0; res[b].a+=r.qtdAgua||0; tA+=r.qtdAgua||0; res[b].ae+=r.qtdAguaEntregue||0; tAe+=r.qtdAguaEntregue||0;
         });
-        let h = `<div class="report-summary"><strong>Resumo por Bairros 📊</strong></div><table class="report-table"><thead><tr><th>Bairro</th><th>Famílias</th><th>Água (Sol/Emp)</th><th>Lona</th><th>Telha</th><th>Cesta</th></tr></thead><tbody>`;
-        Object.keys(res).sort().forEach(b => { h+=`<tr><td>${b}</td><td>${res[b].f}</td><td>${Number(res[b].a.toFixed(2))} / <span style="color:green;font-weight:bold">${Number(res[b].ae.toFixed(2))}</span></td><td>${Number(res[b].l.toFixed(2))}</td><td>${res[b].t}</td><td>${res[b].c}</td></tr>`; }); 
-        h += `<tr style="background-color: var(--primary-color); color: white; font-weight: bold;"><td style="text-align: right;">TOTAL GERAL:</td><td>${tF}</td><td>${Number(tA.toFixed(2))} / <span style="color:#a5d6a7;">${Number(tAe.toFixed(2))}</span></td><td>${Number(tL.toFixed(2))}</td><td>${tT}</td><td>${tC}</td></tr></tbody></table>`;
+        let h = <div class="report-summary"><strong>Resumo por Bairros 📊</strong></div><table class="report-table"><thead><tr><th>Bairro</th><th>Famílias</th><th>Água (Sol/Ent)</th><th>Lona</th><th>Telha</th><th>Cesta</th></tr></thead><tbody>;
+        Object.keys(res).sort().forEach(b => { h+=<tr><td>${b}</td><td>${res[b].f}</td><td>${Number(res[b].a.toFixed(2))} / <span style="color:green;font-weight:bold">${Number(res[b].ae.toFixed(2))}</span></td><td>${Number(res[b].l.toFixed(2))}</td><td>${res[b].t}</td><td>${res[b].c}</td></tr>; }); 
+        h += <tr style="background-color: var(--primary-color); color: white; font-weight: bold;"><td style="text-align: right;">TOTAL GERAL:</td><td>${tF}</td><td>${Number(tA.toFixed(2))} / <span style="color:white;">${Number(tAe.toFixed(2))}</span></td><td>${Number(tL.toFixed(2))}</td><td>${tT}</td><td>${tC}</td></tr></tbody></table>;
         return h;
     }
 
-    function buildIndividualHTML(arr, tipo) {
+     function buildIndividualHTML(arr, tipo) {
         let isA = tipo === 'quantAgua'; let isL = tipo === 'quantLona'; let isT = tipo === 'quantTelha'; let isC = tipo === 'quantCesta'; 
         let u = isA ? 'm³' : (isL ? 'm²' : ' un'); let iconeMat = isA ? '💧' : (isT ? '🏠' : (isC ? '📦' : '⛺'));
         let filt = arr.filter(r => isA ? r.qtdAgua>0 : (isL ? r.qtdLona>0 : (isT ? r.qtdTelha>0 : r.qtdCesta>0))); 
         let p = {}; let grandTotalSol = 0; let grandTotalEmp = 0;
 
         filt.forEach(r => { 
-            let k = `${r.nome.toUpperCase()}_${r.rg}`; 
+            let k = ${r.nome.toUpperCase()}_${r.rg}; 
             let priv = (currentUserNivel==='admin' || currentUserNivel==='supervisor' || r.emailCriador === currentUserEmail);
             if(!p[k]) p[k] = {n:r.nome, rg:r.rg, locais: {}, t:0, em:r.emailCriador, tel:r.telefone, ae:0, entregasBrutas: [], isPriv: priv}; 
             if(priv) p[k].isPriv = true; 
             
-            let ruaM = priv ? r.rua : (r.rua ? r.rua.substring(0,3) + '***' : '');
-            let numM = priv ? r.numero : (r.numero ? '***' : '');
-            let locM = priv ? r.localizacaoAgua : (r.localizacaoAgua ? '***' : '');
+            let ruaM = priv ? r.rua : (r.rua ? r.rua.substring(0,3) + '*' : '');
+            let numM = priv ? r.numero : (r.numero ? '*' : '');
+            let locM = priv ? r.localizacaoAgua : (r.localizacaoAgua ? '*' : '');
             let endArr = [];
             if(r.bairro) endArr.push(r.bairro);
-            if(r.rua) endArr.push(`${ruaM}, ${numM||'S/N'}`);
+            if(r.rua) endArr.push(${ruaM}, ${numM||'S/N'});
             if(r.localizacaoAgua) endArr.push(locM);
             let nomeLocal = endArr.length > 0 ? endArr.join(' - ') : 'Local Não Informado';
 
@@ -1089,85 +1101,85 @@
             }
         });
         
-        let h = `<div class="report-summary"><strong>Relatório Individual: ${iconeMat}</strong></div><table class="report-table"><tbody>`;
+        let h = <div class="report-summary"><strong>Relatório Individual: ${iconeMat}</strong></div><table class="report-table"><tbody>;
         Object.values(p).sort((a, b) => b.t - a.t).forEach(i => { 
-            let rgD = i.isPriv ? i.rg||'N/I' : '***'; 
+            let rgD = i.isPriv ? i.rg||'N/I' : '*'; 
             let locaisHtml = '';
             Object.keys(i.locais).forEach(loc => {
                 let locSol = i.locais[loc].t; let locEmp = i.locais[loc].ae;
-                if(isA) locaisHtml += `<div style="margin-bottom:4px; font-size:0.85rem; color:#333;">📍 ${loc}:<br><strong>${Number(locSol.toFixed(2))}${u}</strong> <span style="color:green;">(Entregue: ${Number(locEmp.toFixed(2))}${u})</span></div>`;
-                else locaisHtml += `<div style="margin-bottom:4px; font-size:0.85rem; color:#333;">📍 ${loc}: <strong>${Number(locSol.toFixed(2))}${u}</strong></div>`;
+                if(isA) locaisHtml += <div style="margin-bottom:4px; font-size:0.85rem; color:#333;">📍 ${loc}:<br><strong>${Number(locSol.toFixed(2))}${u}</strong> <span style="color:green;">(Entregue: ${Number(locEmp.toFixed(2))}${u})</span></div>;
+                else locaisHtml += <div style="margin-bottom:4px; font-size:0.85rem; color:#333;">📍 ${loc}: <strong>${Number(locSol.toFixed(2))}${u}</strong></div>;
             });
 
-            let statusTotal = isA ? `Solicitado: <strong>${Number(i.t.toFixed(2))}${u}</strong> &nbsp;|&nbsp; Entregue: <strong style="color:green;">${Number(i.ae.toFixed(2))}${u}</strong>` : `Total Solicitado: <strong>${Number(i.t.toFixed(2))}${u}</strong>`;
-            if (isA && i.t > i.ae) statusTotal += ` &nbsp;|&nbsp; Falta: <strong style="color:var(--danger-color);">${Number((i.t - i.ae).toFixed(2))}${u}</strong>`;
+            let statusTotal = isA ? Solicitado: <strong>${Number(i.t.toFixed(2))}${u}</strong>  |  Entregue: <strong style="color:green;">${Number(i.ae.toFixed(2))}${u}</strong> : Total Solicitado: <strong>${Number(i.t.toFixed(2))}${u}</strong>;
+            if (isA && i.t > i.ae) statusTotal += `  |  Falta: <strong style="color:var(--danger-color);">${Number((i.t - i.ae).toFixed(2))}${u}</strong>`;
             
             let ih = ''; 
             if (i.entregasBrutas.length > 0) { 
                 let g = {};
                 i.entregasBrutas.forEach(e => {
-                    let dAp = e.data ? e.data.substring(0, 10) : "S/D"; let hM = e.data ? e.data.match(/\d{2}:\d{2}/) : null; let hAp = hM ? hM[0] : ""; let agL = e.agente ? e.agente.split('@')[0] : "Agente"; let cG = `${dAp}_${agL}`;
+                    let dAp = e.data ? e.data.substring(0, 10) : "S/D"; let hM = e.data ? e.data.match(/\d{2}:\d{2}/) : null; let hAp = hM ? hM[0] : ""; let agL = e.agente ? e.agente.split('@')[0] : "Agente"; let cG = ${dAp}_${agL};
                     if(!g[cG]) g[cG] = { data: dAp, agente: agL, totalQtd: 0, viagens: 0, hI: hAp, hF: hAp };
                     g[cG].totalQtd += parseFloat(e.qtd); g[cG].viagens++;
                     if (hAp) { if (!g[cG].hI || hAp < g[cG].hI) g[cG].hI = hAp; if (!g[cG].hF || hAp > g[cG].hF) g[cG].hF = hAp; }
                 });
                 Object.values(g).forEach(x => { 
-                    let infoH = (x.hI && x.hF && x.hI !== x.hF) ? `(das ${x.hI} às ${x.hF})` : (x.hI ? `(às ${x.hI})` : ""); let infoV = x.viagens > 1 ? `[${x.viagens} viagens]` : `[1 lançamento]`;
-                    ih += `<div style="margin-bottom: 4px; font-size:0.8rem; color:#444; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">• ${x.data}: <strong style="color:var(--primary-color);">${Number(x.totalQtd.toFixed(2))}${u}</strong> por <strong>${x.agente}</strong> <br><span style="color:#777; font-size:0.75rem;">${infoV} ${infoH}</span></div>`; 
+                    let infoH = (x.hI && x.hF && x.hI !== x.hF) ? (das ${x.hI} às ${x.hF}) : (x.hI ? (às ${x.hI}) : ""); let infoV = x.viagens > 1 ? [${x.viagens} viagens] : [1 lançamento];
+                    ih += <div style="margin-bottom: 4px; font-size:0.8rem; color:#444; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">• ${x.data}: <strong style="color:var(--primary-color);">${Number(x.totalQtd.toFixed(2))}${u}</strong> por <strong>${x.agente}</strong> <br><span style="color:#777; font-size:0.75rem;">${infoV} ${infoH}</span></div>; 
                 }); 
-            } else { ih = `<div style="font-size:0.8rem; color:#777;">Nenhuma entrega registrada.</div>`; }
+            } else { ih = <div style="font-size:0.8rem; color:#777;">Nenhuma entrega registrada.</div>; }
 
-            h += `<tr style="background-color: #e2e8f0; border-top: 2px solid #aaa;"><td colspan="2" style="padding: 6px 10px;"><div style="display:flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px;"><span style="font-size: 1.05rem; color: var(--primary-color);">👤 <strong>${i.n}</strong> <small style="color:#555;">(RG: ${rgD})</small></span><span style="font-size: 0.95rem; background: #fff; padding: 3px 8px; border-radius: 4px; border: 1px solid #cbd5e1;">${statusTotal}</span></div></td></tr><tr><td style="width: 50%; vertical-align: top; padding: 8px;"><div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">📍 Endereços de Destino</div>${locaisHtml}</td><td style="width: 50%; vertical-align: top; padding: 8px; background: #fafafa;"><div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">🚛 Histórico de Entregas</div>${ih}</td></tr>`; 
+            h += <tr style="background-color: #e2e8f0; border-top: 2px solid #aaa;"><td colspan="2" style="padding: 6px 10px;"><div style="display:flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px;"><span style="font-size: 1.05rem; color: var(--primary-color);">👤 <strong>${i.n}</strong> <small style="color:#555;">(RG: ${rgD})</small></span><span style="font-size: 0.95rem; background: #fff; padding: 3px 8px; border-radius: 4px; border: 1px solid #cbd5e1;">${statusTotal}</span></div></td></tr><tr><td style="width: 50%; vertical-align: top; padding: 8px;"><div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">📍 Endereços de Destino</div>${locaisHtml}</td><td style="width: 50%; vertical-align: top; padding: 8px; background: #fafafa;"><div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">🚛 Histórico de Entregas</div>${ih}</td></tr>; 
         }); 
-        let vdTotal = isA ? `Solicitado: ${Number(grandTotalSol.toFixed(2))}${u} &nbsp;&nbsp;|&nbsp;&nbsp; Empenhado: <span style="color:green">${Number(grandTotalEmp.toFixed(2))}${u}</span>` : `${Number(grandTotalSol.toFixed(2))}${u}`;
-        h += `<tr style="background-color: var(--primary-color); color: white;"><td colspan="2" style="text-align:center; font-weight:bold; font-size:1.1rem; padding: 12px;">📊 TOTAL GERAL DO RELATÓRIO ➔ ${vdTotal}</td></tr></tbody></table>`;
+        let vdTotal = isA ? Solicitado: ${Number(grandTotalSol.toFixed(2))}${u}   |   Entregue: <span style="color:white">${Number(grandTotalEmp.toFixed(2))}${u}</span> : ${Number(grandTotalSol.toFixed(2))}${u};
+        h += <tr style="background-color: var(--primary-color); color: white;"><td colspan="2" style="text-align:center; font-weight:bold; font-size:1.1rem; padding: 12px;">📊 TOTAL GERAL DO RELATÓRIO ➔ ${vdTotal}</td></tr></tbody></table>;
         return h;
     }
 
-    function buildGroupedHTML(arr, tit, sel) {
+     function buildGroupedHTML(arr, tit, sel) {
         let isA = sel.includes('quantAgua'); let isL = sel.includes('quantLona'); let isT = sel.includes('quantTelha'); let isC = sel.includes('quantCesta'); let mt = (!isA && !isL && !isT && !isC); 
         let fF = arr; if (!mt) { fF = arr.filter(r => (isA && r.qtdAgua>0) || (isL && r.qtdLona>0) || (isT && r.qtdTelha>0) || (isC && r.qtdCesta>0)); }
         let bMap = {}; fF.forEach(r => { let b = (r.bairro||'N/I').toUpperCase(); if(!bMap[b]) bMap[b]=[]; bMap[b].push(r); }); 
         
-        let h = `<div class="report-summary"><strong>Lista Detalhada 📋</strong></div>`;
+        let h = <div class="report-summary"><strong>Lista Detalhada 📋</strong></div>;
         Object.keys(bMap).sort().forEach(b => {
-            h += `<div class="bairro-section"><div class="bairro-header">📍 ${b}</div><table class="report-table"><thead><tr><th width="5%"></th><th width="15%">Data</th><th>Beneficiário / Contato / Endereço</th><th width="35%">Materiais (Solicitado / Status)</th></tr></thead><tbody>`;
+            h += <div class="bairro-section"><div class="bairro-header">📍 ${b}</div><table class="report-table"><thead><tr><th width="5%"></th><th width="15%">Data</th><th>Beneficiário / Contato / Endereço</th><th width="35%">Materiais (Solicitado / Status)</th></tr></thead><tbody>;
             bMap[b].reverse().forEach(r => {
                 let pv = (currentUserNivel==='admin' || r.emailCriador === currentUserEmail); let ps = (currentUserNivel==='supervisor' || pv); 
-                let cbh = currentUserNivel === 'admin' ? `<input type="checkbox" class="bulk-checkbox no-print" value="${r.id}" onchange="checkBulkDelete()">` : ``;
+                let cbh = currentUserNivel === 'admin' ? <input type="checkbox" class="bulk-checkbox no-print" value="${r.id}" onchange="checkBulkDelete()"> : ``;
                 
-                let rRua = ps ? r.rua : (r.rua ? r.rua.substring(0,3) + '***' : '');
-                let rNum = ps ? r.numero : (r.numero ? '***' : '');
-                let rLoc = ps ? r.localizacaoAgua : (r.localizacaoAgua ? '***' : '');
-                let rTel = ps ? r.telefone : (r.telefone ? r.telefone.slice(0, -4) + '****' : '');
+                let rRua = ps ? r.rua : (r.rua ? r.rua.substring(0,3) + '*' : '');
+                let rNum = ps ? r.numero : (r.numero ? '*' : '');
+                let rLoc = ps ? r.localizacaoAgua : (r.localizacaoAgua ? '*' : '');
+                let rTel = ps ? r.telefone : (r.telefone ? r.telefone.slice(0, -4) + '**' : '');
 
                 let detEnd = ''; let eArr = [];
-                if(r.rua) eArr.push(`Rua: ${rRua}, Nº ${rNum||'S/N'}`);
-                if(r.localizacaoAgua) eArr.push(`Loc: ${rLoc}`);
-                if(eArr.length > 0) detEnd += eArr.join(' | ') + `<br>`;
-                if(r.telefone) detEnd += `📞 ${rTel}<br>`;
-                if(r.observacao) detEnd += `<span style="color:var(--danger-color); font-weight:bold;">Obs: ${r.observacao}</span><br>`;
+                if(r.rua) eArr.push(Rua: ${rRua}, Nº ${rNum||'S/N'});
+                if(r.localizacaoAgua) eArr.push(Loc: ${rLoc});
+                if(eArr.length > 0) detEnd += eArr.join(' | ') + <br>;
+                if(r.telefone) detEnd += 📞 ${rTel}<br>;
+                if(r.observacao) detEnd += <span style="color:var(--danger-color); font-weight:bold;">Obs: ${r.observacao}</span><br>;
 
                 let mArr = [];
-                if(r.qtdLona > 0 && (mt || isL)) mArr.push(`⛺ Lona: ${Number(r.qtdLona.toFixed(2))}m²`); 
+                if(r.qtdLona > 0 && (mt || isL)) mArr.push(⛺ Lona: ${Number(r.qtdLona.toFixed(2))}m²); 
                 if(r.qtdTelha > 0 && (mt || isT)) { 
-                    let tStat = r.telhaRequerEntrega ? (r.telhaEntregue ? `<span style="color:green;">(Entregue)</span>` : `<span style="color:var(--danger-color);">(Pendente)</span>`) : `(Retirou)`;
-                    mArr.push(`🏠 Telha: ${r.qtdTelha} un ${tStat}`); 
+                    let tStat = r.telhaRequerEntrega ? (r.telhaEntregue ? <span style="color:green;">(Entregue)</span> : <span style="color:var(--danger-color);">(Pendente)</span>) : (Retirou);
+                    mArr.push(🏠 Telha: ${r.qtdTelha} un ${tStat}); 
                 } 
-                if(r.qtdCesta > 0 && (mt || isC)) mArr.push(`📦 Cesta: ${r.qtdCesta} un`);
+                if(r.qtdCesta > 0 && (mt || isC)) mArr.push(📦 Cesta: ${r.qtdCesta} un);
                 if(r.qtdAgua > 0 && (mt || isA)) { 
-                    let aStat = `💧 Água: ${Number(r.qtdAgua.toFixed(2))}m³`;
-                    aStat += ` <span style="color:green;">(Emp: ${Number((r.qtdAguaEntregue||0).toFixed(2))}m³)</span>`;
+                    let aStat = 💧 Água: ${Number(r.qtdAgua.toFixed(2))}m³;
+                    aStat += ` <span style="color:green;">(Ent: ${Number((r.qtdAguaEntregue||0).toFixed(2))}m³)</span>`;
                     if(r.qtdAgua > (r.qtdAguaEntregue||0)) aStat += ` <span style="color:var(--danger-color);">(Falta: ${Number((r.qtdAgua - (r.qtdAguaEntregue||0)).toFixed(2))}m³)</span>`;
                     mArr.push(aStat);
                 }
-                let mats = mArr.join(' &nbsp;|&nbsp; ');
+                let mats = mArr.join('  |  ');
 
-                let act = ps ? `<button class="btn-edit no-print" onclick="editRecord(${r.id})" style="display:inline-block; width:auto; margin-right:4px;">✏️ Editar</button>` : ''; 
-                if (currentUserNivel === 'admin') { act += `<button class="btn-small no-print" style="background-color: var(--danger-color); padding: 3px 6px; font-size: 0.7rem; display:inline-block; width:auto;" onclick="deleteRecord(${r.id})">🗑️ Excluir</button>`; }
+                let act = ps ? <button class="btn-edit no-print" onclick="editRecord(${r.id})" style="display:inline-block; width:auto; margin-right:4px;">✏️ Editar</button> : ''; 
+                if (currentUserNivel === 'admin') { act += <button class="btn-small no-print" style="background-color: var(--danger-color); padding: 3px 6px; font-size: 0.7rem; display:inline-block; width:auto;" onclick="deleteRecord(${r.id})">🗑️ Excluir</button>; }
                 
-                h+=`<tr><td style="text-align:center;">${cbh}</td><td><small>${r.dataHoraFormatada.split(' ')[0]}<br>${r.dataHoraFormatada.split(' ')[1]}</small></td><td><strong>${r.nome}</strong> <small style="color:#666;">(RG: ${ps?r.rg||'N/I':'***'})</small><br><div style="font-size:0.8rem; color:#444; margin:4px 0; line-height:1.4;">${detEnd}</div><div class="no-print" style="margin-top:4px;">${act}</div></td><td style="vertical-align:middle; line-height:1.5;">${mats}</td></tr>`;
-            }); h += `</tbody></table></div>`;
+                h+=<tr><td style="text-align:center;">${cbh}</td><td><small>${r.dataHoraFormatada.split(' ')[0]}<br>${r.dataHoraFormatada.split(' ')[1]}</small></td><td><strong>${r.nome}</strong> <small style="color:#666;">(RG: ${ps?r.rg||'N/I':'***'})</small><br><div style="font-size:0.8rem; color:#444; margin:4px 0; line-height:1.4;">${detEnd}</div><div class="no-print" style="margin-top:4px;">${act}</div></td><td style="vertical-align:middle; line-height:1.5;">${mats}</td></tr>;
+            }); h += </tbody></table></div>;
         }); return h;
     }
 
@@ -1194,12 +1206,12 @@
     // ==========================================
     // AUDITORIA E LIMPEZA ANTI-SPAM
     // ==========================================
-    function renderPainelAuditoria() {
+   function renderPainelAuditoria() {
         let h = '';
         if(currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
-            h += `<div class="admin-card" style="background:#e8f5e9; border:1px solid #81c784; padding:10px; border-radius:5px; margin-bottom:15px;"><p style="margin-top:0; color:#2e7d32; font-weight:bold; font-size:1.1rem; border-bottom:1px solid #c8e6c9; padding-bottom:5px;">📱 Automação WhatsApp</p><div class="form-row"><div class="form-col" style="flex:1"><label>E-mail SOLICITANTES (Separe por vírgula):</label><input type="text" id="configZapEmail" value="${typeof configZap !== 'undefined' ? (configZap.emailSolicitante || '') : ''}" placeholder="email1@..., email2@..."></div></div><div class="form-row"><div class="form-col" style="flex:1"><label>Zap Motorista ÁGUA:</label><input type="tel" id="configZapTelPipa" value="${typeof configZap !== 'undefined' ? (configZap.telefonePipa || '') : ''}" placeholder="55469..."></div><div class="form-col" style="flex:1"><label>Zap Social TELHAS:</label><input type="tel" id="configZapTelSocial" value="${typeof configZap !== 'undefined' ? (configZap.telefoneSocial || '') : ''}" placeholder="55469..."></div></div><div class="form-row" style="justify-content:flex-end; margin-top:10px;"><button class="btn-small" style="background:var(--success-color); height:36px; padding: 0 20px;" onclick="if(typeof salvarConfigZap === 'function') salvarConfigZap()">💾 Salvar</button></div></div>`;
+            h += <div class="admin-card" style="background:#e8f5e9; border:1px solid #81c784; padding:10px; border-radius:5px; margin-bottom:15px;"><p style="margin-top:0; color:#2e7d32; font-weight:bold; font-size:1.1rem; border-bottom:1px solid #c8e6c9; padding-bottom:5px;">📱 Automação WhatsApp</p><div class="form-row"><div class="form-col" style="flex:1"><label>E-mail SOLICITANTES (Separe por vírgula):</label><input type="text" id="configZapEmail" value="${typeof configZap !== 'undefined' ? (configZap.emailSolicitante || '') : ''}" placeholder="email1@..., email2@..."></div></div><div class="form-row"><div class="form-col" style="flex:1"><label>Zap Motorista ÁGUA:</label><input type="tel" id="configZapTelPipa" value="${typeof configZap !== 'undefined' ? (configZap.telefonePipa || '') : ''}" placeholder="55469..."></div><div class="form-col" style="flex:1"><label>Zap Social TELHAS:</label><input type="tel" id="configZapTelSocial" value="${typeof configZap !== 'undefined' ? (configZap.telefoneSocial || '') : ''}" placeholder="55469..."></div></div><div class="form-row" style="justify-content:flex-end; margin-top:10px;"><button class="btn-small" style="background:var(--success-color); height:36px; padding: 0 20px;" onclick="if(typeof salvarConfigZap === 'function') salvarConfigZap()">💾 Salvar</button></div></div>;
         }
-        h += `<div class="admin-card" style="background:#fff; border:1px solid #ccc; padding:10px; border-radius:5px; margin-bottom:15px;"><p style="margin-top:0; color:var(--primary-color); font-weight:bold; font-size:1.1rem; border-bottom:1px solid #ccc; padding-bottom:5px;">🔍 Auditoria Ao Vivo</p><div class="filter-group" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"><label><input type="checkbox" class="fLogAcaoCb" value="NOVO CADASTRO" checked onchange="filtrarTabelaAuditoria()"> Novo</label><label><input type="checkbox" class="fLogAcaoCb" value="EDIÇÃO" checked onchange="filtrarTabelaAuditoria()"> Edição</label><label><input type="checkbox" class="fLogAcaoCb" value="ENTREGA ÁGUA" checked onchange="filtrarTabelaAuditoria()"> Água</label><label><input type="checkbox" class="fLogAcaoCb" value="ENTREGA TELHA" checked onchange="filtrarTabelaAuditoria()"> Telha</label><label><input type="checkbox" class="fLogAcaoCb" value="EXCLUSÃO" checked onchange="filtrarTabelaAuditoria()"> Exclusão</label></div><input type="text" id="fLogAge" placeholder="Filtrar Agente..." onkeyup="filtrarTabelaAuditoria()" style="width:100%; margin-bottom:10px;"><div id="logTableContainer"></div></div>`;
+        h += <div class="admin-card" style="background:#fff; border:1px solid #ccc; padding:10px; border-radius:5px; margin-bottom:15px;"><p style="margin-top:0; color:var(--primary-color); font-weight:bold; font-size:1.1rem; border-bottom:1px solid #ccc; padding-bottom:5px;">🔍 Auditoria Ao Vivo</p><div class="filter-group" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"><label><input type="checkbox" class="fLogAcaoCb" value="NOVO CADASTRO" checked onchange="filtrarTabelaAuditoria()"> Novo</label><label><input type="checkbox" class="fLogAcaoCb" value="EDIÇÃO" checked onchange="filtrarTabelaAuditoria()"> Edição</label><label><input type="checkbox" class="fLogAcaoCb" value="ENTREGA ÁGUA" checked onchange="filtrarTabelaAuditoria()"> Água</label><label><input type="checkbox" class="fLogAcaoCb" value="ENTREGA TELHA" checked onchange="filtrarTabelaAuditoria()"> Telha</label><label><input type="checkbox" class="fLogAcaoCb" value="ENTREGA LONA" checked onchange="filtrarTabelaAuditoria()"> Lona</label><label><input type="checkbox" class="fLogAcaoCb" value="ENTREGA CESTA" checked onchange="filtrarTabelaAuditoria()"> Cesta</label><label><input type="checkbox" class="fLogAcaoCb" value="EXCLUSÃO" checked onchange="filtrarTabelaAuditoria()"> Exclusão</label></div><input type="text" id="fLogAge" placeholder="Filtrar Agente..." onkeyup="filtrarTabelaAuditoria()" style="width:100%; margin-bottom:10px;"><div id="logTableContainer"></div></div>;
         
         if(currentUserNivel === 'admin') { 
             h += `<div class="admin-card danger-zone" style="background:#ffebee; border:1px solid var(--danger-color); padding:10px; border-radius:5px; margin-bottom:15px;">
@@ -1244,24 +1256,30 @@
         if(typeof carregarPainelDespacho === 'function') carregarPainelDespacho();
     }
 
-    function filtrarTabelaAuditoria() {
+      function filtrarTabelaAuditoria() {
         let acCb = Array.from(document.querySelectorAll('.fLogAcaoCb:checked')).map(cb => cb.value); let ag = document.getElementById('fLogAge') ? document.getElementById('fLogAge').value.toUpperCase() : ''; 
         if(typeof auditLogs === 'undefined') return;
         let f = auditLogs.filter(l => acCb.includes(l.acao) || (l.acao === "EXCLUSÃO EM LOTE" && acCb.includes("EXCLUSÃO")) || (l.acao === "EXCLUSÃO SPAM (NUKE)" && acCb.includes("EXCLUSÃO")) || (l.acao === "TENTATIVA DE FRAUDE" && acCb.includes("ALERTA VIGIA")) || (l.acao === "RETOMADA LOGÍSTICA" && acCb.includes("ALERTA LOGÍSTICA")) || l.acao === "LIMPEZA"); 
         if(ag) f = f.filter(l => l.agente.toUpperCase().includes(ag));
         let gLogs = []; let aMap = new Map();
-        f.forEach(l => { if (l.acao === "ENTREGA ÁGUA") { let c = l.codigoDC || (l.detalhes.match(/\[(DC-[0-9-]+)\]/) ? l.detalhes.match(/\[(DC-[0-9-]+)\]/)[1] : null); if (c) { if (!aMap.has(c)) { aMap.set(c, { ...l }); } } else { gLogs.push(l); } } else { gLogs.push(l); } });
+        f.forEach(l => { 
+            if (l.acao === "ENTREGA ÁGUA") { 
+                let c = l.codigoDC || (l.detalhes.match(/\[([^\]]+)\]/) ? l.detalhes.match(/\[([^\]]+)\]/)[1] : null); 
+                if (c) { if (!aMap.has(c)) { aMap.set(c, { ...l }); } } else { gLogs.push(l); } 
+            } else { gLogs.push(l); } 
+        });
         aMap.forEach(v => gLogs.push(v)); gLogs.sort((a,b) => b.id - a.id);
-        let h = `<table class="report-table"><thead><tr><th>Hora</th><th>Agente</th><th>Ação / Detalhes</th></tr></thead><tbody>`; 
-        if(gLogs.length === 0) { h += `<tr><td colspan="3" style="text-align:center;">Nenhum log.</td></tr>`; }
+        let h = <table class="report-table"><thead><tr><th>Hora</th><th>Agente</th><th>Ação / Detalhes</th></tr></thead><tbody>; 
+        if(gLogs.length === 0) { h += <tr><td colspan="3" style="text-align:center;">Nenhum log.</td></tr>; }
         gLogs.slice(0,100).forEach(l => { 
             let cr = ''; 
             if(l.acao.includes('ENTREGA')) cr = 'color:#0275d8;'; 
             if(l.acao.includes('EXCLUSÃO') || l.acao.includes('LIMPEZA') || l.acao.includes('NUKE')) cr = 'color:red; font-weight:bold;'; 
             if(l.acao.includes('LOGÍSTICA')) cr = 'color:#e67e22; font-weight:bold;'; 
-            h += `<tr><td><small>${l.dataHora}</small></td><td><small>${l.agente.split('@')[0]}</small></td><td style="${cr}"><strong>${l.acao}</strong><br><small style="color:#555; font-weight:normal;">${l.detalhes}</small></td></tr>`; 
+            h += <tr><td><small>${l.dataHora}</small></td><td><small>${l.agente.split('@')[0]}</small></td><td style="${cr}"><strong>${l.acao}</strong><br><small style="color:#555; font-weight:normal;">${l.detalhes}</small></td></tr>; 
         }); 
-        document.getElementById('logTableContainer').innerHTML = h + `</tbody></table>`;
+        document.getElementById('logTableContainer').innerHTML = h + </tbody></table>;
+    
     }
 
     async function limparBancoDeDados() {
