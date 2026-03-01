@@ -309,6 +309,7 @@
     
     <button class="btn-report" style="width: 100%; padding: 10px; font-size: 1rem; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; color: #333; margin-top: 8px;" onclick="showReport()" tabindex="-1">Ver Relatórios e Gestão</button>
 </div>
+
 <div class="container hidden" id="reportSection">
     <header class="form-header">
         <img src="1001145756.png" alt="Logo Defesa Civil" class="logo">
@@ -393,17 +394,22 @@
 </div>
 
 <div class="app-footer no-print" style="text-align: center; margin-top: 10px; padding-bottom: 10px; color: #bbb; font-size: 0.7rem;">@Sieklicki</div>
-
 <script>
+    // ==========================================
+    // ESC - ATALHO PARA LIMPAR FORMULÁRIO
+    // ==========================================
     document.addEventListener('keydown', function(event) {
         if (event.key === "Escape") {
             const formSection = document.getElementById('formSection');
             if (formSection && !formSection.classList.contains('hidden')) {
-                clearFormFields();
+                if(typeof clearFormFields === 'function') clearFormFields();
             }
         }
     });
 
+    // ==========================================
+    // CONFIGURAÇÃO FIREBASE E ACESSOS
+    // ==========================================
     const firebaseConfig = {
         apiKey: "AIzaSyDq-OnjiyJht5JLJnidp098TSCWgspuHr4",
         authDomain: "plano-de-contingencia-92f13.firebaseapp.com",
@@ -437,15 +443,23 @@
     let currentUserNivel = 'agente'; 
     let onlineUsersMap = {}; 
 
+    // Lida com redirecionamento de login no mobile
     auth.getRedirectResult().then((result) => {
-        if (result && result.user) console.log("Login recuperado."); 
+        if (result && result.user) { 
+            console.log("Login recuperado pelo redirecionamento."); 
+        }
     }).catch((error) => {
-        if (error.code === 'auth/unauthorized-domain') alert("⚠️ ALERTA DE SEGURANÇA:\nEste site não foi autorizado."); 
+        if (error.code === 'auth/unauthorized-domain') { 
+            alert("⚠️ ALERTA DE SEGURANÇA:\nEste site não foi autorizado no Firebase."); 
+        } 
         if(btnLogin) btnLogin.innerText = "Logar Google";
     });
 
     function loginGoogle() {
-        if (!navigator.onLine) { alert("Sem internet. Conecte-se para fazer login."); return; }
+        if (!navigator.onLine) { 
+            alert("Sem internet. Conecte-se para fazer login."); 
+            return; 
+        }
         if(btnLogin) btnLogin.innerText = "Carregando..."; 
         const provider = new firebase.auth.GoogleAuthProvider();
         auth.signInWithPopup(provider).catch(error => {
@@ -463,6 +477,7 @@
         });
     }
 
+    // NOVA FUNÇÃO SAIR DEFINITIVA E SEGURA
     function logoutGoogle() { 
         if(confirm("Deseja realmente sair da sua conta?")) {
             auth.signOut().then(() => { 
@@ -473,21 +488,41 @@
 
     async function processarAcessoUsuario(user) {
         currentUserEmail = user.email ? user.email.toLowerCase() : "sem-email@google.com";
-        if (ADMIN_EMAILS.includes(currentUserEmail)) { currentUserNivel = 'admin'; return 'aprovado'; }
-        if (!navigator.onLine) { currentUserNivel = localStorage.getItem('nivel_' + currentUserEmail) || 'agente'; return localStorage.getItem('permissao_' + currentUserEmail) || 'aprovado'; }
+        if (ADMIN_EMAILS.includes(currentUserEmail)) { 
+            currentUserNivel = 'admin'; 
+            return 'aprovado'; 
+        }
+        if (!navigator.onLine) { 
+            currentUserNivel = localStorage.getItem('nivel_' + currentUserEmail) || 'agente'; 
+            return localStorage.getItem('permissao_' + currentUserEmail) || 'aprovado'; 
+        }
         
         try {
             const docRef = db.collection('usuarios_capanema').doc(currentUserEmail); 
             const doc = await docRef.get();
+            
             if (!doc.exists) {
-                await docRef.set({ email: currentUserEmail, nome: user.displayName || 'Sem Nome', status: 'aprovado', nivel: 'agente', dataRegistro: new Date().toLocaleString('pt-BR') });
-                localStorage.setItem('permissao_' + currentUserEmail, 'aprovado'); localStorage.setItem('nivel_' + currentUserEmail, 'agente'); currentUserNivel = 'agente'; return 'aprovado';
+                await docRef.set({ 
+                    email: currentUserEmail, 
+                    nome: user.displayName || 'Sem Nome', 
+                    status: 'aprovado', 
+                    nivel: 'agente', 
+                    dataRegistro: new Date().toLocaleString('pt-BR') 
+                });
+                localStorage.setItem('permissao_' + currentUserEmail, 'aprovado'); 
+                localStorage.setItem('nivel_' + currentUserEmail, 'agente'); 
+                currentUserNivel = 'agente'; 
+                return 'aprovado';
             } else {
-                const data = doc.data(); currentUserNivel = data.nivel || 'agente';
-                localStorage.setItem('permissao_' + currentUserEmail, data.status || 'aprovado'); localStorage.setItem('nivel_' + currentUserEmail, currentUserNivel); return data.status || 'aprovado';
+                const data = doc.data(); 
+                currentUserNivel = data.nivel || 'agente';
+                localStorage.setItem('permissao_' + currentUserEmail, data.status || 'aprovado'); 
+                localStorage.setItem('nivel_' + currentUserEmail, currentUserNivel); 
+                return data.status || 'aprovado';
             }
         } catch (e) { 
-            currentUserNivel = localStorage.getItem('nivel_' + currentUserEmail) || 'agente'; return localStorage.getItem('permissao_' + currentUserEmail) || 'aprovado'; 
+            currentUserNivel = localStorage.getItem('nivel_' + currentUserEmail) || 'agente'; 
+            return localStorage.getItem('permissao_' + currentUserEmail) || 'aprovado'; 
         }
     }
 
@@ -507,46 +542,65 @@
             } else { 
                 if(loginOverlay) loginOverlay.style.display = 'none';
                 if (currentUserStatus === 'bloqueado') { 
-                    if(document.getElementById('blockedEmailDisplay')) document.getElementById('blockedEmailDisplay').innerText = auth.currentUser.email || 'Usuário'; 
+                    if(document.getElementById('blockedEmailDisplay')) {
+                        document.getElementById('blockedEmailDisplay').innerText = auth.currentUser.email || 'Usuário'; 
+                    }
                     if(blockedOverlay) blockedOverlay.style.display = 'flex'; 
-                } else { if(blockedOverlay) blockedOverlay.style.display = 'none'; }
+                } else { 
+                    if(blockedOverlay) blockedOverlay.style.display = 'none'; 
+                }
             }
         } else {
             if(loginOverlay) loginOverlay.style.display = 'none';
             if (auth.currentUser && currentUserStatus === 'bloqueado') { 
-                if(document.getElementById('blockedEmailDisplay')) document.getElementById('blockedEmailDisplay').innerText = auth.currentUser.email || 'Usuário'; 
+                if(document.getElementById('blockedEmailDisplay')) {
+                    document.getElementById('blockedEmailDisplay').innerText = auth.currentUser.email || 'Usuário'; 
+                }
                 if(blockedOverlay) blockedOverlay.style.display = 'flex'; 
-            } else { if(blockedOverlay) blockedOverlay.style.display = 'none'; }
+            } else { 
+                if(blockedOverlay) blockedOverlay.style.display = 'none'; 
+            }
         }
     }
 
     function updateOnlineStatus() {
         if (navigator.onLine) {
-            if(dot) dot.className = "dot online"; if(text) text.innerText = "Online";
+            if(dot) dot.className = "dot online"; 
+            if(text) text.innerText = "Online";
             if (auth && auth.currentUser && currentUserStatus === 'aprovado') { 
                 if(typeof sincronizarFirebaseAutomatica === 'function') sincronizarFirebaseAutomatica(); 
                 if(typeof sincronizarLogsOffline === 'function') sincronizarLogsOffline(); 
             }
         } else { 
-            if(dot) dot.className = "dot offline"; if(text) text.innerText = "Offline"; 
+            if(dot) dot.className = "dot offline"; 
+            if(text) text.innerText = "Offline"; 
             if(btnSync) { btnSync.innerText = "☁️ S/ Internet"; btnSync.style.backgroundColor = "#777"; }
         }
         verificarAcesso();
     }
     
-    window.addEventListener('online', updateOnlineStatus); window.addEventListener('offline', updateOnlineStatus);
+    window.addEventListener('online', updateOnlineStatus); 
+    window.addEventListener('offline', updateOnlineStatus);
 
     if(auth) {
         auth.onAuthStateChanged(async (user) => {
             if (user) {
                 try {
-                    currentUserStatus = await processarAcessoUsuario(user); verificarAcesso();
+                    currentUserStatus = await processarAcessoUsuario(user); 
+                    verificarAcesso();
+                    
                     if (currentUserStatus === 'aprovado') {
                         if(typeof setupPresenceSystem === 'function') setupPresenceSystem(user); 
                         if ((currentUserNivel === 'admin' || currentUserNivel === 'supervisor') && typeof escutarUsuariosOnline === 'function') escutarUsuariosOnline();
                         
                         const nomeExibicao = user.displayName ? user.displayName.split(" ")[0] : (user.email ? user.email.split('@')[0] : 'Agente');
-                        if(btnLogin) { btnLogin.innerHTML = `👤 ${nomeExibicao} | <span onclick="logoutGoogle()" style="text-decoration:underline; color:#ffcccc; cursor:pointer;">Sair</span>`; btnLogin.style.backgroundColor = "#333"; btnLogin.onclick = null; }
+                        
+                        if(btnLogin) { 
+                            btnLogin.innerHTML = `👤 ${nomeExibicao} | <span onclick="logoutGoogle()" style="text-decoration:underline; color:#ffcccc; cursor:pointer;">Sair</span>`;
+                            btnLogin.style.backgroundColor = "#333";
+                            btnLogin.onclick = null; 
+                        }
+                        
                         if(btnSync) btnSync.style.display = "inline-block";
                         
                         if(typeof carregarConfigZap === 'function') carregarConfigZap();
@@ -555,18 +609,30 @@
                         if(typeof iniciarEscutaNuvem === 'function') iniciarEscutaNuvem();
                         if(typeof iniciarEscutaLogsNuvem === 'function') iniciarEscutaLogsNuvem(); 
                         if(typeof carregarPainelDespacho === 'function') carregarPainelDespacho(); 
-                    } else { if(unsubscribeSnapshot) unsubscribeSnapshot(); if(unsubscribeLogs) unsubscribeLogs(); }
-                } catch(e) {}
+                    } else { 
+                        if(typeof unsubscribeSnapshot !== 'undefined' && unsubscribeSnapshot) unsubscribeSnapshot(); 
+                        if(typeof unsubscribeLogs !== 'undefined' && unsubscribeLogs) unsubscribeLogs(); 
+                    }
+                } catch(e) { console.error("Erro AuthState:", e); }
             } else {
                 currentUserStatus = 'deslogado'; currentUserEmail = ''; currentUserNivel = 'agente'; 
-                if(btnLogin) { btnLogin.innerText = "Logar Google"; btnLogin.style.backgroundColor = "#4285F4"; btnLogin.onclick = loginGoogle; }
+                if(btnLogin) { 
+                    btnLogin.innerText = "Logar Google"; 
+                    btnLogin.style.backgroundColor = "#4285F4"; 
+                    btnLogin.onclick = loginGoogle; 
+                }
                 if(btnSync) btnSync.style.display = "none";
-                if(unsubscribeSnapshot) unsubscribeSnapshot(); if(unsubscribeLogs) unsubscribeLogs(); verificarAcesso();
+                if(typeof unsubscribeSnapshot !== 'undefined' && unsubscribeSnapshot) unsubscribeSnapshot(); 
+                if(typeof unsubscribeLogs !== 'undefined' && unsubscribeLogs) unsubscribeLogs(); 
+                verificarAcesso();
             }
         });
     }
     updateOnlineStatus();
 
+    // ==========================================
+    // SISTEMA DE PRESENÇA E EQUIPE
+    // ==========================================
     function setupPresenceSystem(user) {
         if(!user || !user.email) return;
         const userStatusDatabaseRef = rtdb.ref('/status/' + user.uid);
@@ -574,31 +640,161 @@
         const isOnlineForDatabase = { state: 'online', last_changed: firebase.database.ServerValue.TIMESTAMP, email: user.email };
         rtdb.ref('.info/connected').on('value', function(snapshot) {
             if (snapshot.val() == false) return;
-            userStatusDatabaseRef.onDisconnect().set(isOfflineForDatabase).then(function() { userStatusDatabaseRef.set(isOnlineForDatabase); });
+            userStatusDatabaseRef.onDisconnect().set(isOfflineForDatabase).then(function() { 
+                userStatusDatabaseRef.set(isOnlineForDatabase); 
+            });
         });
     }
 
     function escutarUsuariosOnline() {
         rtdb.ref('/status/').on('value', (snapshot) => {
             onlineUsersMap = snapshot.val() || {};
-            if(document.getElementById('equipeModal') && document.getElementById('equipeModal').style.display === 'flex') carregarListaUsuarios(); 
+            if(document.getElementById('equipeModal') && document.getElementById('equipeModal').style.display === 'flex') {
+                carregarListaUsuarios(); 
+            }
         });
     }
 
-    function abrirModalEquipe() { const modal = document.getElementById('equipeModal'); if(modal) { modal.style.display = 'flex'; carregarListaUsuarios(); } }
-    function fecharModalEquipe() { const modal = document.getElementById('equipeModal'); if(modal) modal.style.display = 'none'; }
+    function abrirModalEquipe() { 
+        const modal = document.getElementById('equipeModal'); 
+        if(modal) { modal.style.display = 'flex'; carregarListaUsuarios(); } 
+    }
+    
+    function fecharModalEquipe() { 
+        const modal = document.getElementById('equipeModal'); 
+        if(modal) modal.style.display = 'none'; 
+    }
 
     async function adicionarUsuarioManual() {
-        const novoEmail = document.getElementById('novoEmailEquipe').value.trim().toLowerCase(); const novoNivel = document.getElementById('novoNivelEquipe').value;
+        const novoEmail = document.getElementById('novoEmailEquipe').value.trim().toLowerCase(); 
+        const novoNivel = document.getElementById('novoNivelEquipe').value;
         if(!novoEmail) { alert("Digite um e-mail válido."); return; }
+        
         try { 
-            await db.collection('usuarios_capanema').doc(novoEmail).set({ email: novoEmail, nome: 'Adicionado Manualmente', status: 'aprovado', nivel: novoNivel, dataRegistro: new Date().toLocaleString('pt-BR') }, { merge: true }); 
-            alert(`Acesso liberado para ${novoEmail} como ${novoNivel.toUpperCase()}!`); document.getElementById('novoEmailEquipe').value = ''; carregarListaUsuarios(); 
+            await db.collection('usuarios_capanema').doc(novoEmail).set({ 
+                email: novoEmail, nome: 'Adicionado Manualmente', status: 'aprovado', nivel: novoNivel, dataRegistro: new Date().toLocaleString('pt-BR') 
+            }, { merge: true }); 
+            alert(`Acesso liberado para ${novoEmail} como ${novoNivel.toUpperCase()}!`); 
+            document.getElementById('novoEmailEquipe').value = ''; 
+            carregarListaUsuarios(); 
         } catch (e) { alert("Erro ao adicionar usuário."); }
     }
 
     async function carregarListaUsuarios() {
-        const container = document.getElementById('modalEquipeContent'); if(!container) return;
+        const container = document.getElementById('modalEquipeContent'); 
+        if(!container) return;
+        
+        let htmlForm = `
+        <div style="background: #e3f2fd; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #b3e5fc;">
+            <strong>➕ Liberar Acesso / Promover</strong>
+            <div style="display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;">
+                <input type="email" id="novoEmailEquipe" placeholder="email@gmail.com" style="flex: 2; height: 32px; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
+                <select id="novoNivelEquipe" style="flex: 1; height: 32px; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
+                    <option value="agente">Agente (Padrão)</option><option value="supervisor">Supervisor</option><option value="admin">Admin</option>
+                </select>
+                <button onclick="adicionarUsuarioManual()" style="background: var(--success-color); color: white; border: none; border-radius: 3px; font-weight: bold; cursor: pointer; padding: 0 15px;">Salvar</button>
+            </div>
+        </div>`;
+        
+        try {
+            const snapshot = await db.collection('usuarios_capanema').get(); 
+            let usuarios = []; 
+            snapshot.forEach(doc => { 
+                let d = doc.data(); 
+                if(!usuarios.find(x => x.email === d.email)) usuarios.push(d); 
+            });
+            
+            let htmlTabela = `<div class="table-responsive"><table class="report-table" style="font-size: 0.8rem; width: 100%; min-width: 400px;">
+                <thead><tr style="background-color: var(--primary-color); color: white;"><th>Nome/Email</th><th>Nível</th><th>Status / Último Acesso</th><th>Ações</th></tr></thead><tbody>`;
+            
+            if(usuarios.length === 0) { htmlTabela += `<tr><td colspan="4" style="text-align:center;">Nenhum usuário.</td></tr>`; } 
+            else {
+                usuarios.forEach(u => {
+                    let isOnline = false; 
+                    let lastSeenText = '<br><span style="font-size: 0.7rem; color: #999;">Sem registro de acesso</span>';
+                    
+                    Object.values(onlineUsersMap).forEach(ou => { 
+                        if(ou.email === u.email) { 
+                            if (ou.state === 'online') { isOnline = true; } 
+                            else if (ou.last_changed) { lastSeenText = `<br><span style="font-size: 0.75rem; color: #555;">Visto em: <strong>${typeof formatarDataHora === 'function' ? formatarDataHora(ou.last_changed) : new Date(ou.last_changed).toLocaleString('pt-BR')}</strong></span>`; } 
+                        } 
+                    });
+                    
+                    let statusLigacao = isOnline ? `<span style="color:var(--success-color); font-weight:bold;">🟢 Online Agora</span>` : `<span style="color:#777;">⚪ Offline</span>${lastSeenText}`;
+                    let selectNivel = `<select onchange="alterarNivelUsuario('${u.email}', this.value)" style="width:100%; padding:2px; font-size:0.75rem;"><option value="agente" ${u.nivel === 'agente' || !u.nivel ? 'selected' : ''}>Agente</option><option value="supervisor" ${u.nivel === 'supervisor' ? 'selected' : ''}>Supervisor</option><option value="admin" ${u.nivel === 'admin' || ADMIN_EMAILS.includes(u.email) ? 'selected' : ''}>Admin</option></select>`;
+                    if (ADMIN_EMAILS.includes(u.email)) selectNivel = `<strong>Administrador</strong>`; 
+                    
+                    let botoes = `<div style="display: flex; flex-direction:column; gap: 4px; margin-top:4px;">`;
+                    if (u.status === 'bloqueado') { botoes += `<button class="btn-small" style="background-color: var(--success-color); width: 100%; padding: 4px;" onclick="alterarStatusUsuario('${u.email}', 'aprovado')">✅ Desbloquear</button>`; }
+                    if (u.status === 'aprovado' && !ADMIN_EMAILS.includes(u.email)) { botoes += `<button class="btn-small" style="background-color: #f0ad4e; width: 100%; padding: 4px;" onclick="alterarStatusUsuario('${u.email}', 'bloqueado')">🚫 Suspender</button>`; }
+                    if (!ADMIN_EMAILS.includes(u.email)) { botoes += `<button class="btn-small" style="background-color: var(--danger-color); width: 100%; padding: 4px;" onclick="excluirUsuarioDefinitivo('${u.email}')">🗑️ Excluir Agente</button>`; }
+                    botoes += `</div>`; 
+                    
+                    htmlTabela += `<tr><td><strong>${u.nome}</strong><br><span style="word-break: break-all; font-size: 0.7rem; color: #555;">${u.email}</span></td><td>${selectNivel}</td><td>${statusLigacao}</td><td>${botoes}</td></tr>`;
+                });
+            }
+            htmlTabela += `</tbody></table></div>`; 
+            container.innerHTML = htmlForm + htmlTabela;
+        } catch (e) { container.innerHTML = `<p style="text-align:center; color:red;">Erro ao carregar usuários.</p>`; }
+    }
+
+    async function alterarStatusUsuario(email, novoStatus) { if(!confirm(`Mudar o acesso de ${email} para ${novoStatus.toUpperCase()}?`)) return; try { await db.collection('usuarios_capanema').doc(email).update({ status: novoStatus }); carregarListaUsuarios(); } catch (e) { alert("Erro."); } }
+    async function alterarNivelUsuario(email, novoNivel) { if(!confirm(`Alterar permissão de ${email} para ${novoNivel.toUpperCase()}?`)) { carregarListaUsuarios(); return; } try { await db.collection('usuarios_capanema').doc(email).update({ nivel: novoNivel }); alert('Atualizado!'); carregarListaUsuarios(); } catch (e) { alert("Erro."); } }
+    async function excluirUsuarioDefinitivo(email) { if(!confirm(`⚠️ ATENÇÃO EXTREMA!\nTem certeza absoluta que deseja apagar o usuário ${email} do banco de dados?\nEle terá que se conectar e ser aprovado novamente.`)) return; try { await db.collection('usuarios_capanema').doc(email).delete(); alert('Usuário excluído com sucesso.'); carregarListaUsuarios(); } catch (e) { alert("Erro ao excluir usuário."); } }
+    // ==========================================
+    // SISTEMA DE PRESENÇA E EQUIPE
+    // ==========================================
+    function setupPresenceSystem(user) {
+        if(!user || !user.email) return;
+        const userStatusDatabaseRef = rtdb.ref('/status/' + user.uid);
+        const isOfflineForDatabase = { state: 'offline', last_changed: firebase.database.ServerValue.TIMESTAMP, email: user.email };
+        const isOnlineForDatabase = { state: 'online', last_changed: firebase.database.ServerValue.TIMESTAMP, email: user.email };
+        rtdb.ref('.info/connected').on('value', function(snapshot) {
+            if (snapshot.val() == false) return;
+            userStatusDatabaseRef.onDisconnect().set(isOfflineForDatabase).then(function() { 
+                userStatusDatabaseRef.set(isOnlineForDatabase); 
+            });
+        });
+    }
+
+    function escutarUsuariosOnline() {
+        rtdb.ref('/status/').on('value', (snapshot) => {
+            onlineUsersMap = snapshot.val() || {};
+            if(document.getElementById('equipeModal') && document.getElementById('equipeModal').style.display === 'flex') {
+                carregarListaUsuarios(); 
+            }
+        });
+    }
+
+    function abrirModalEquipe() { 
+        const modal = document.getElementById('equipeModal'); 
+        if(modal) { modal.style.display = 'flex'; carregarListaUsuarios(); } 
+    }
+    
+    function fecharModalEquipe() { 
+        const modal = document.getElementById('equipeModal'); 
+        if(modal) modal.style.display = 'none'; 
+    }
+
+    async function adicionarUsuarioManual() {
+        const novoEmail = document.getElementById('novoEmailEquipe').value.trim().toLowerCase(); 
+        const novoNivel = document.getElementById('novoNivelEquipe').value;
+        if(!novoEmail) { alert("Digite um e-mail válido."); return; }
+        
+        try { 
+            await db.collection('usuarios_capanema').doc(novoEmail).set({ 
+                email: novoEmail, nome: 'Adicionado Manualmente', status: 'aprovado', nivel: novoNivel, dataRegistro: new Date().toLocaleString('pt-BR') 
+            }, { merge: true }); 
+            alert(`Acesso liberado para ${novoEmail} como ${novoNivel.toUpperCase()}!`); 
+            document.getElementById('novoEmailEquipe').value = ''; 
+            carregarListaUsuarios(); 
+        } catch (e) { alert("Erro ao adicionar usuário."); }
+    }
+
+    async function carregarListaUsuarios() {
+        const container = document.getElementById('modalEquipeContent'); 
+        if(!container) return;
+        
         let htmlForm = `
         <div style="background: #e3f2fd; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #b3e5fc;">
             <strong>➕ Liberar Acesso / Promover</strong>
@@ -610,32 +806,53 @@
                 <button onclick="adicionarUsuarioManual()" style="background: var(--success-color); color: white; border: none; border-radius: 3px; font-weight: bold; cursor: pointer; padding: 0 15px;">Salvar</button>
             </div>
         </div>`;
+        
         try {
-            const snapshot = await db.collection('usuarios_capanema').get(); let usuarios = []; 
-            snapshot.forEach(doc => { let d = doc.data(); if(!usuarios.find(x => x.email === d.email)) usuarios.push(d); });
-            let htmlTabela = `<div class="table-responsive"><table class="report-table" style="font-size: 0.8rem; width: 100%; min-width: 400px;"><thead><tr style="background-color: var(--primary-color); color: white;"><th>Nome/Email</th><th>Nível</th><th>Status / Último Acesso</th><th>Ações</th></tr></thead><tbody>`;
-            if(usuarios.length === 0) { htmlTabela += `<tr><td colspan="4" style="text-align:center;">Nenhum usuário.</td></tr>`; } else {
+            const snapshot = await db.collection('usuarios_capanema').get(); 
+            let usuarios = []; 
+            snapshot.forEach(doc => { 
+                let d = doc.data(); 
+                if(!usuarios.find(x => x.email === d.email)) usuarios.push(d); 
+            });
+            
+            let htmlTabela = `<div class="table-responsive"><table class="report-table" style="font-size: 0.8rem; width: 100%; min-width: 400px;">
+                <thead><tr style="background-color: var(--primary-color); color: white;"><th>Nome/Email</th><th>Nível</th><th>Status / Último Acesso</th><th>Ações</th></tr></thead><tbody>`;
+            
+            if(usuarios.length === 0) { htmlTabela += `<tr><td colspan="4" style="text-align:center;">Nenhum usuário.</td></tr>`; } 
+            else {
                 usuarios.forEach(u => {
-                    let isOnline = false; let lastSeenText = '<br><span style="font-size: 0.7rem; color: #999;">Sem registro de acesso</span>';
-                    Object.values(onlineUsersMap).forEach(ou => { if(ou.email === u.email) { if (ou.state === 'online') { isOnline = true; } else if (ou.last_changed) { lastSeenText = `<br><span style="font-size: 0.75rem; color: #555;">Visto em: <strong>${formatarDataHora(ou.last_changed)}</strong></span>`; } } });
+                    let isOnline = false; 
+                    let lastSeenText = '<br><span style="font-size: 0.7rem; color: #999;">Sem registro de acesso</span>';
+                    
+                    Object.values(onlineUsersMap).forEach(ou => { 
+                        if(ou.email === u.email) { 
+                            if (ou.state === 'online') { isOnline = true; } 
+                            else if (ou.last_changed) { lastSeenText = `<br><span style="font-size: 0.75rem; color: #555;">Visto em: <strong>${typeof formatarDataHora === 'function' ? formatarDataHora(ou.last_changed) : new Date(ou.last_changed).toLocaleString('pt-BR')}</strong></span>`; } 
+                        } 
+                    });
+                    
                     let statusLigacao = isOnline ? `<span style="color:var(--success-color); font-weight:bold;">🟢 Online Agora</span>` : `<span style="color:#777;">⚪ Offline</span>${lastSeenText}`;
                     let selectNivel = `<select onchange="alterarNivelUsuario('${u.email}', this.value)" style="width:100%; padding:2px; font-size:0.75rem;"><option value="agente" ${u.nivel === 'agente' || !u.nivel ? 'selected' : ''}>Agente</option><option value="supervisor" ${u.nivel === 'supervisor' ? 'selected' : ''}>Supervisor</option><option value="admin" ${u.nivel === 'admin' || ADMIN_EMAILS.includes(u.email) ? 'selected' : ''}>Admin</option></select>`;
                     if (ADMIN_EMAILS.includes(u.email)) selectNivel = `<strong>Administrador</strong>`; 
+                    
                     let botoes = `<div style="display: flex; flex-direction:column; gap: 4px; margin-top:4px;">`;
-                    if (u.status === 'bloqueado') botoes += `<button class="btn-small" style="background-color: var(--success-color); width: 100%; padding: 4px;" onclick="alterarStatusUsuario('${u.email}', 'aprovado')">✅ Desbloquear</button>`;
-                    if (u.status === 'aprovado' && !ADMIN_EMAILS.includes(u.email)) botoes += `<button class="btn-small" style="background-color: #f0ad4e; width: 100%; padding: 4px;" onclick="alterarStatusUsuario('${u.email}', 'bloqueado')">🚫 Suspender</button>`;
-                    if (!ADMIN_EMAILS.includes(u.email)) botoes += `<button class="btn-small" style="background-color: var(--danger-color); width: 100%; padding: 4px;" onclick="excluirUsuarioDefinitivo('${u.email}')">🗑️ Excluir Agente</button>`;
+                    if (u.status === 'bloqueado') { botoes += `<button class="btn-small" style="background-color: var(--success-color); width: 100%; padding: 4px;" onclick="alterarStatusUsuario('${u.email}', 'aprovado')">✅ Desbloquear</button>`; }
+                    if (u.status === 'aprovado' && !ADMIN_EMAILS.includes(u.email)) { botoes += `<button class="btn-small" style="background-color: #f0ad4e; width: 100%; padding: 4px;" onclick="alterarStatusUsuario('${u.email}', 'bloqueado')">🚫 Suspender</button>`; }
+                    if (!ADMIN_EMAILS.includes(u.email)) { botoes += `<button class="btn-small" style="background-color: var(--danger-color); width: 100%; padding: 4px;" onclick="excluirUsuarioDefinitivo('${u.email}')">🗑️ Excluir Agente</button>`; }
                     botoes += `</div>`; 
+                    
                     htmlTabela += `<tr><td><strong>${u.nome}</strong><br><span style="word-break: break-all; font-size: 0.7rem; color: #555;">${u.email}</span></td><td>${selectNivel}</td><td>${statusLigacao}</td><td>${botoes}</td></tr>`;
                 });
             }
-            htmlTabela += `</tbody></table></div>`; container.innerHTML = htmlForm + htmlTabela;
+            htmlTabela += `</tbody></table></div>`; 
+            container.innerHTML = htmlForm + htmlTabela;
         } catch (e) { container.innerHTML = `<p style="text-align:center; color:red;">Erro ao carregar usuários.</p>`; }
     }
 
     async function alterarStatusUsuario(email, novoStatus) { if(!confirm(`Mudar o acesso de ${email} para ${novoStatus.toUpperCase()}?`)) return; try { await db.collection('usuarios_capanema').doc(email).update({ status: novoStatus }); carregarListaUsuarios(); } catch (e) { alert("Erro."); } }
     async function alterarNivelUsuario(email, novoNivel) { if(!confirm(`Alterar permissão de ${email} para ${novoNivel.toUpperCase()}?`)) { carregarListaUsuarios(); return; } try { await db.collection('usuarios_capanema').doc(email).update({ nivel: novoNivel }); alert('Atualizado!'); carregarListaUsuarios(); } catch (e) { alert("Erro."); } }
     async function excluirUsuarioDefinitivo(email) { if(!confirm(`⚠️ ATENÇÃO EXTREMA!\nTem certeza absoluta que deseja apagar o usuário ${email} do banco de dados?\nEle terá que se conectar e ser aprovado novamente.`)) return; try { await db.collection('usuarios_capanema').doc(email).delete(); alert('Usuário excluído com sucesso.'); carregarListaUsuarios(); } catch (e) { alert("Erro ao excluir usuário."); } }
+
     // ==========================================
     // TEMPO, VIGIA ANTIFRAUDE E AUTO-PREENCHIMENTO
     // ==========================================
@@ -724,269 +941,38 @@
         }
         return true;
     }
-
-    let editandoId = null; 
-    let records = JSON.parse(localStorage.getItem('defesaCivilRecords')) || [];
-
-    function buscarCadastroExistente(campo) {
-        if(editandoId || typeof records === 'undefined' || records.length === 0) return; 
-        
-        let valor = document.getElementById(campo).value.trim().toLowerCase();
-        if(valor.length < 4) return; 
-
-        let match = [...records].reverse().find(r => {
-            if(campo === 'nome' && r.nome && r.nome.toLowerCase() === valor) return true;
-            if(campo === 'rg' && r.rg && r.rg === valor) return true;
-            if(campo === 'telefone' && r.telefone && r.telefone.replace(/\D/g,'') === valor.replace(/\D/g,'')) return true;
-            return false;
-        });
-
-        if(match) {
-            let preencheuAlgo = false;
-            
-            if(!document.getElementById('telefone').value && match.telefone) { document.getElementById('telefone').value = match.telefone; preencheuAlgo = true; }
-            if(!document.getElementById('bairro').value && match.bairro) { document.getElementById('bairro').value = match.bairro; preencheuAlgo = true; }
-            if(!document.getElementById('rua').value && match.rua) { document.getElementById('rua').value = match.rua; preencheuAlgo = true; }
-            if(!document.getElementById('numero').value && match.numero) { document.getElementById('numero').value = match.numero; preencheuAlgo = true; }
-            if(!document.getElementById('localizacaoAgua').value && match.localizacaoAgua) { document.getElementById('localizacaoAgua').value = match.localizacaoAgua; preencheuAlgo = true; }
-            if(!document.getElementById('referenciaAgua').value && match.referenciaAgua) { document.getElementById('referenciaAgua').value = match.referenciaAgua; preencheuAlgo = true; }
-            if(campo !== 'nome' && !document.getElementById('nome').value && match.nome) { document.getElementById('nome').value = match.nome; preencheuAlgo = true; }
-            if(campo !== 'rg' && !document.getElementById('rg').value && match.rg) { document.getElementById('rg').value = match.rg; preencheuAlgo = true; }
-            
-            if(preencheuAlgo) {
-                let btn = document.getElementById('btnSalvarCadastro');
-                let txtOrig = btn.innerText; 
-                let corOrig = btn.style.backgroundColor;
-                btn.innerText = "✨ Dados Auto-Preenchidos!"; 
-                btn.style.backgroundColor = "#5bc0de";
-                setTimeout(()=>{ 
-                    btn.innerText = txtOrig; 
-                    btn.style.backgroundColor = corOrig; 
-                }, 2500);
-            }
-        }
-    }
-
-    function formatarNomeProprio(texto) {
-        if(!texto) return ""; 
-        let fmt = texto.toLowerCase().replace(/(?:^|\s)\S/g, a => a.toUpperCase());
-        fmt = fmt.replace(/\bJose\b/ig, "José").replace(/\bJoao\b/ig, "João").replace(/\bAntonio\b/ig, "Antônio").replace(/\bConceicao\b/ig, "Conceição").replace(/\bSao\b/ig, "São");
-        return fmt.replace(/\bDa\b/g, "da").replace(/\bDe\b/g, "de").replace(/\bDo\b/g, "do").replace(/\bDos\b/g, "dos").replace(/\bDas\b/g, "das");
-    }
-    
-    ['nome', 'bairro', 'rua', 'localizacaoAgua', 'referenciaAgua'].forEach(id => {
-        let el = document.getElementById(id); 
-        if(el) el.addEventListener('blur', function() { this.value = formatarNomeProprio(this.value); });
-    });
-
-    function prepararImpressao() { setTimeout(function() { window.print(); }, 300); }
-    function togglePrintPhotos() { document.body.classList.toggle('print-photos', document.getElementById('chkPrintPhotos').checked); }
-
-    const navInputs = document.querySelectorAll('.nav-input');
-    navInputs.forEach((input, index) => {
-        input.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault(); 
-                if(['dataFim', 'filtroRelBairro', 'filtroRg'].includes(this.id)) { 
-                    if(typeof generateReport === 'function') generateReport(); 
-                    return; 
-                }
-                this.setSelectionRange(this.value.length, this.value.length);
-                for(let i = index + 1; i < navInputs.length; i++) { 
-                    if(!navInputs[i].closest('.hidden') && navInputs[i].offsetParent !== null) { 
-                        navInputs[i].focus(); 
-                        return; 
-                    } 
-                }
-                input.blur();
-            }
-        });
-    });
-
     // ==========================================
-    // FOTOS E ASSINATURA DIGITAL CANVAS
+    // SISTEMA DE LOGS E AUDITORIA (CÉREBRO)
     // ==========================================
-    const rgInput = document.getElementById('rgPhotoInput'); 
-    const rgPreview = document.getElementById('rgPreview');
-    const cameraBtnLabel = document.getElementById('cameraBtnLabel'); 
-    const rgBase64 = document.getElementById('rgPhotoBase64');
-
-    if(rgInput) {
-        rgInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(ev) {
-                    const img = new Image(); 
-                    img.onload = function() {
-                        const canvasImg = document.createElement('canvas'); 
-                        const MAX_WIDTH = 500; 
-                        const scaleSize = MAX_WIDTH / img.width;
-                        canvasImg.width = MAX_WIDTH; 
-                        canvasImg.height = img.height * scaleSize; 
-                        const ctxImg = canvasImg.getContext('2d'); 
-                        ctxImg.drawImage(img, 0, 0, canvasImg.width, canvasImg.height);
-                        const dataUrl = canvasImg.toDataURL('image/jpeg', 0.5); 
-                        rgBase64.value = dataUrl; 
-                        rgPreview.src = dataUrl; 
-                        rgPreview.style.display = 'block'; 
-                        cameraBtnLabel.innerHTML = '✅ OK!'; 
-                        cameraBtnLabel.appendChild(rgPreview); 
-                        cameraBtnLabel.classList.add('has-photo');
-                    }; 
-                    img.src = ev.target.result;
-                }; 
-                reader.readAsDataURL(file);
-            }
-        });
-    }
-
-    function resetPhoto() { 
-        if(rgInput) rgInput.value = ''; 
-        if(rgBase64) rgBase64.value = ''; 
-        if(rgPreview) { rgPreview.src = ''; rgPreview.style.display = 'none'; } 
-        if(cameraBtnLabel) { cameraBtnLabel.innerHTML = '📷 Foto RG'; cameraBtnLabel.classList.remove('has-photo'); } 
-    }
-
-    const canvas = document.getElementById('signaturePad'); 
-    const ctx = canvas ? canvas.getContext('2d') : null; 
-    let isDrawing = false;
+    let auditLogs = JSON.parse(localStorage.getItem('defesaCivilLogs')) || [];
     
-    const fsOverlay = document.getElementById('fullscreenSigOverlay'); 
-    const fsCanvas = document.getElementById('fsSignaturePad'); 
-    const fsCtx = fsCanvas ? fsCanvas.getContext('2d') : null; 
-    let fsIsDrawing = false;
-
-    function resizeCanvas() {
-        if(!canvas || document.getElementById('telhaFieldsSig').classList.contains('hidden')) return;
-        const currentSignature = canvas.toDataURL(); 
-        const ratio = Math.max(window.devicePixelRatio || 1, 1);
-        canvas.width = canvas.offsetWidth * ratio; 
-        canvas.height = canvas.offsetHeight * ratio; 
-        ctx.scale(ratio, ratio); 
-        ctx.lineWidth = 1.5; 
-        ctx.lineCap = 'round'; 
-        ctx.lineJoin = 'round'; 
-        ctx.strokeStyle = '#000';
-        if (currentSignature !== 'data:,') { 
-            const img = new Image(); 
-            img.src = currentSignature; 
-            img.onload = () => { ctx.drawImage(img, 0, 0, canvas.width / ratio, canvas.height / ratio); }; 
-        }
-    }
-    window.addEventListener('resize', resizeCanvas);
-
-    function resizeFsCanvas() { 
-        if(!fsCanvas) return; 
-        const ratio = Math.max(window.devicePixelRatio || 1, 1); 
-        fsCanvas.width = fsCanvas.offsetWidth * ratio; 
-        fsCanvas.height = fsCanvas.offsetHeight * ratio; 
-        fsCtx.scale(ratio, ratio); 
-        fsCtx.lineWidth = 3; 
-        fsCtx.lineCap = 'round'; 
-        fsCtx.lineJoin = 'round'; 
-        fsCtx.strokeStyle = '#000'; 
-    }
-    
-    window.addEventListener("orientationchange", function() {
-        if(!fsOverlay) return; 
-        const requireFull = document.getElementById('checkTelha').checked || document.getElementById('checkCesta').checked; 
-        const isLandscape = window.orientation === 90 || window.orientation === -90; 
-        const formVisible = !document.getElementById('formSection').classList.contains('hidden');
-        if (isLandscape && requireFull && formVisible) { 
-            fsOverlay.style.display = 'flex'; 
-            setTimeout(resizeFsCanvas, 100); 
-        } else { 
-            if(fsOverlay.style.display === 'flex') closeFullscreenSignature(); 
-        }
-    });
-
-    function toggleFields() {
-        const lona = document.getElementById('checkLona').checked; 
-        const telha = document.getElementById('checkTelha').checked;
-        const cesta = document.getElementById('checkCesta').checked; 
-        const agua = document.getElementById('checkAgua').checked; 
+    async function registrarLog(acao, detalhes, codigoDC = null) {
+        const ag = (auth && auth.currentUser) ? (auth.currentUser.email || auth.currentUser.displayName) : "Offline";
+        const logEntry = { 
+            id: Date.now(), 
+            dataHora: new Date().toLocaleString('pt-BR'), 
+            agente: ag, 
+            acao: acao, 
+            detalhes: detalhes, 
+            codigoDC: codigoDC, 
+            synced: false 
+        };
+        auditLogs.push(logEntry);
+        localStorage.setItem('defesaCivilLogs', JSON.stringify(auditLogs));
         
-        document.getElementById('lblLona').classList.toggle('active-lona', lona); 
-        document.getElementById('lblTelha').classList.toggle('active-telha', telha);
-        document.getElementById('lblCesta').classList.toggle('active-cesta', cesta); 
-        document.getElementById('lblAgua').classList.toggle('active-agua', agua);
-        
-        const hasAny = lona || telha || cesta || agua; 
-        document.getElementById('mainFormFields').classList.toggle('hidden', !hasAny);
-        
-        const requireFull = telha || cesta;
-        document.getElementById('rgPhotoContainer').classList.toggle('hidden', !requireFull);
-        document.getElementById('addressExtraFields').classList.toggle('hidden', agua && !lona && !telha && !cesta); 
-        document.getElementById('aguaFieldsExtra').classList.toggle('hidden', !agua); 
-        document.getElementById('telhaFieldsEntrega').classList.toggle('hidden', !telha);
-        document.getElementById('telhaFieldsSig').classList.toggle('hidden', !requireFull); 
-        document.getElementById('lonaFields').classList.toggle('hidden', !lona); 
-        document.getElementById('telhaFieldsQtd').classList.toggle('hidden', !telha);
-        document.getElementById('cestaFieldsQtd').classList.toggle('hidden', !cesta); 
-        document.getElementById('aguaFieldsQtd').classList.toggle('hidden', !agua);
-        if (requireFull) setTimeout(resizeCanvas, 50);
-    }
-
-    function getCoordinates(e, cvs) { 
-        if (e.touches && e.touches.length > 0) { 
-            const rect = cvs.getBoundingClientRect(); 
-            return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top }; 
-        } 
-        return { x: e.offsetX, y: e.offsetY }; 
-    }
-    
-    if(canvas) {
-        function startDrawing(e) { isDrawing = true; const coords = getCoordinates(e, canvas); ctx.beginPath(); ctx.moveTo(coords.x, coords.y); e.preventDefault(); }
-        function draw(e) { if (!isDrawing) return; const coords = getCoordinates(e, canvas); ctx.lineTo(coords.x, coords.y); ctx.stroke(); e.preventDefault(); }
-        function stopDrawing() { if (isDrawing) { ctx.closePath(); isDrawing = false; } }
-        canvas.addEventListener('mousedown', startDrawing); canvas.addEventListener('mousemove', draw); canvas.addEventListener('mouseup', stopDrawing); canvas.addEventListener('mouseout', stopDrawing);
-        canvas.addEventListener('touchstart', startDrawing, { passive: false }); canvas.addEventListener('touchmove', draw, { passive: false }); canvas.addEventListener('touchend', stopDrawing);
-    }
-    
-    if(fsCanvas) {
-        function fsStartDrawing(e) { fsIsDrawing = true; const coords = getCoordinates(e, fsCanvas); fsCtx.beginPath(); fsCtx.moveTo(coords.x, coords.y); e.preventDefault(); }
-        function fsDraw(e) { if (!fsIsDrawing) return; const coords = getCoordinates(e, fsCanvas); fsCtx.lineTo(coords.x, coords.y); fsCtx.stroke(); e.preventDefault(); }
-        function fsStopDrawing() { if (fsIsDrawing) { fsCtx.closePath(); fsIsDrawing = false; } }
-        fsCanvas.addEventListener('mousedown', fsStartDrawing); fsCanvas.addEventListener('mousemove', fsDraw); fsCanvas.addEventListener('mouseup', fsStopDrawing); fsCanvas.addEventListener('mouseout', fsStopDrawing);
-        fsCanvas.addEventListener('touchstart', fsStartDrawing, { passive: false }); fsCanvas.addEventListener('touchmove', fsDraw, { passive: false }); fsCanvas.addEventListener('touchend', fsStopDrawing);
-    }
-    
-    function clearSignature() { if(ctx) ctx.clearRect(0, 0, canvas.width, canvas.height); }
-    function clearFullscreenSignature() { if(fsCtx) fsCtx.clearRect(0, 0, fsCanvas.width, fsCanvas.height); }
-    function isCanvasBlank(cvs) { if(!cvs) return true; const blank = document.createElement('canvas'); blank.width = cvs.width; blank.height = cvs.height; return cvs.toDataURL() === blank.toDataURL(); }
-
-    function trimCanvas(c) {
-        let context = c.getContext('2d'), copy = document.createElement('canvas').getContext('2d'); 
-        let pixels = context.getImageData(0, 0, c.width, c.height), l = pixels.data.length, i, bound = { top: null, left: null, right: null, bottom: null }, x, y;
-        for (i = 0; i < l; i += 4) {
-            if (pixels.data[i + 3] !== 0) {
-                x = (i / 4) % c.width; y = ~~((i / 4) / c.width);
-                if (bound.top === null) bound.top = y; if (bound.left === null) bound.left = x; else if (x < bound.left) bound.left = x;
-                if (bound.right === null) bound.right = x; else if (bound.right < x) bound.right = x;
-                if (bound.bottom === null) bound.bottom = y; else if (bound.bottom < y) bound.bottom = y;
-            }
+        if (navigator.onLine && db && currentUserStatus === 'aprovado') {
+            try { 
+                await db.collection("logs_capanema").doc(logEntry.id.toString()).set(logEntry); 
+                const idx = auditLogs.findIndex(x => x.id === logEntry.id); 
+                if (idx !== -1) { 
+                    auditLogs[idx].synced = true; 
+                    localStorage.setItem('defesaCivilLogs', JSON.stringify(auditLogs)); 
+                } 
+            } catch(e) {}
         }
-        let trimHeight = bound.bottom - bound.top + 1, trimWidth = bound.right - bound.left + 1; 
-        if(trimWidth <= 0 || trimHeight <= 0) return c;
-        let trimmed = context.getImageData(bound.left, bound.top, trimWidth, trimHeight); 
-        copy.canvas.width = trimWidth; copy.canvas.height = trimHeight; copy.putImageData(trimmed, 0, 0); 
-        return copy.canvas;
+        if(typeof renderPainelAuditoria === 'function') renderPainelAuditoria();
     }
 
-    function closeFullscreenSignature() {
-        if(fsOverlay) fsOverlay.style.display = 'none';
-        if(!isCanvasBlank(fsCanvas)) {
-            let croppedCanvas = trimCanvas(fsCanvas); 
-            clearSignature();
-            const ratio = Math.max(window.devicePixelRatio || 1, 1); 
-            let targetW = canvas.width / ratio; let targetH = canvas.height / ratio;
-            let scale = Math.min((targetW - 10) / croppedCanvas.width, (targetH - 10) / croppedCanvas.height); 
-            let newW = croppedCanvas.width * scale; let newH = croppedCanvas.height * scale;
-            let dx = (targetW - newW) / 2; let dy = (targetH - newH) / 2; 
-            ctx.drawImage(croppedCanvas, dx, dy, newW, newH);
-        }
-    }
     // ==========================================
     // SALVAMENTO E EXCLUSÃO DE DADOS
     // ==========================================
@@ -1045,7 +1031,7 @@
 
                     let aviso = `⚠️ ATENÇÃO: O beneficiário "${nm}" já recebeu doações anteriormente.\n\n`;
                     aviso += `Último registro: ${ultimo.dataHoraFormatada.split(' ')[0]} ${txtTempo}\nMaterial: ${matUltimo}\n\n`;
-                    aviso += `Deseja registrar um NOVO pedido ou destinar para OUTRO local (ex: granja, caixa d'água da comunidade)?\n\nClique em OK para continuar ou CANCELAR para abortar.`;
+                    aviso += `Deseja registrar um NOVO pedido ou destinar para OUTRO local?\n\nClique em OK para continuar ou CANCELAR para abortar.`;
 
                     if (!confirm(aviso)) { bs.disabled = false; bs.innerText = "Salvar Lançamento"; return; }
                 }
@@ -1060,13 +1046,13 @@
                 const idx = records.findIndex(x => x.id === editandoId);
                 if (idx !== -1) {
                     records[idx] = { ...records[idx], nome:nm, rg, telefone:tel, bairro:bai, rua:ru, numero:nu, localizacaoAgua:lAg, referenciaAgua:rAg, observacao:ob, qtdLona:qL, qtdTelha:qT, telhaRequerEntrega:rEnt, qtdCesta:qC, qtdAgua:qA, qtdAguaEntregue:qAe, signatureData:sig, fotoRg:fo, synced:false, agente:nAg };
-                    if(typeof registrarLog === 'function') await registrarLog("EDIÇÃO", `Alterou Cód: [${records[idx].codigo}]`); 
+                    await registrarLog("EDIÇÃO", `Alterou Cód: [${records[idx].codigo}]`); 
                     alert('Atualizado!');
                 }
             } else {
                 const cd = gerarCodigoRegistro();
                 records.push({ id: Date.now(), codigo: cd, dataISO: new Date().toISOString(), dataHoraFormatada: new Date().toLocaleString('pt-BR'), nome:nm, rg, telefone:tel, bairro:bai, rua:ru, numero:nu, localizacaoAgua:lAg, referenciaAgua:rAg, observacao:ob, qtdLona:qL, qtdTelha:qT, telhaRequerEntrega:rEnt, telhaEntregue:false, qtdCesta:qC, qtdAgua:qA, qtdAguaEntregue:qAe, entregasAgua:[], signatureData:sig, fotoRg:fo, synced:false, agente:nAg, emailCriador: currentUserEmail, logisticaPausada: false, logisticaMotivo: "" });
-                if(typeof registrarLog === 'function') await registrarLog("NOVO CADASTRO", `Cód: [${cd}]`, cd); 
+                await registrarLog("NOVO CADASTRO", `Cód: [${cd}]`, cd); 
                 
                 let lst = (typeof configZap !== 'undefined' && configZap?.emailSolicitante) ? configZap.emailSolicitante.toLowerCase().split(',').map(e => e.trim()) : [];
                 if ((cA || rEnt) && lst.includes((currentUserEmail||'').toLowerCase()) && typeof reenviarZapMotorista === 'function') { 
@@ -1075,7 +1061,8 @@
                     alert('Salvo com sucesso!'); 
                 }
             }
-            localStorage.setItem('defesaCivilRecords', JSON.stringify(records)); clearFormFields(); 
+            localStorage.setItem('defesaCivilRecords', JSON.stringify(records)); 
+            clearFormFields(); 
             if(typeof sincronizarFirebaseAutomatica === 'function') sincronizarFirebaseAutomatica(); 
             if(typeof carregarPainelDespacho === 'function') carregarPainelDespacho();
         } catch (e) { alert("⚠️ Erro:\n" + e.message); bs.disabled = false; bs.innerText = "Salvar Lançamento"; }
@@ -1087,7 +1074,7 @@
         if(!confirm("⚠️ EXCLUIR permanentemente?")) return;
         records = records.filter(x => x.id !== id); localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
         if (navigator.onLine && db) { try { await db.collection("doacoes_capanema").doc(id.toString()).delete(); } catch(e){} }
-        if(typeof registrarLog === 'function') await registrarLog("EXCLUSÃO", `Apagou Cód: [${r.codigo}]`); generateReport(); 
+        await registrarLog("EXCLUSÃO", `Apagou Cód: [${r.codigo}]`); generateReport(); 
         if(typeof carregarPainelDespacho === 'function') carregarPainelDespacho();
     }
     
@@ -1098,50 +1085,39 @@
         let b = document.getElementById('btnBulkDelete'); b.innerText = "⏳ Apagando..."; b.disabled = true; 
         let ids = Array.from(cx).map(c => parseInt(c.value)); records = records.filter(r => !ids.includes(r.id)); localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
         if (navigator.onLine && db) { let batch = db.batch(); let c=0; for (let id of ids) { let ref = db.collection("doacoes_capanema").doc(id.toString()); batch.delete(ref); c++; if(c===490) { await batch.commit(); batch = db.batch(); c=0; } } if(c>0) await batch.commit(); }
-        if(typeof registrarLog === 'function') await registrarLog("EXCLUSÃO EM LOTE", `Apagou ${ids.length} registros.`); alert(`${ids.length} apagados!`); b.disabled = false; b.style.display = 'none'; generateReport(); 
+        await registrarLog("EXCLUSÃO EM LOTE", `Apagou ${ids.length} registros.`); alert(`${ids.length} apagados!`); b.disabled = false; b.style.display = 'none'; generateReport(); 
         if(typeof carregarPainelDespacho === 'function') carregarPainelDespacho();
     }
 
     // ==========================================
-    // RELATÓRIOS COM LGPD E PROTEÇÃO DE DADOS
+    // RELATÓRIOS INTELIGENTES COM LGPD E PROTEÇÃO DE DADOS
     // ==========================================
     function showReport() { document.getElementById('formSection').classList.add('hidden'); document.getElementById('reportSection').classList.remove('hidden'); generateReport(); }
     function showForm() { document.getElementById('reportSection').classList.add('hidden'); document.getElementById('formSection').classList.remove('hidden'); }
     function updateReportToggle() { document.querySelectorAll('.report-toggle').forEach(l => { if(l.querySelector('input').checked) l.classList.add('active'); else l.classList.remove('active'); }); }
 
     function buildResumoBairrosHTML(arr) {
-        let res = {}; 
-        let tF=0, tL=0, tT=0, tC=0, tA=0, tAe=0;
+        let res = {}; let tF=0, tL=0, tT=0, tC=0, tA=0, tAe=0;
         arr.forEach(r => { 
             let b = (r.bairro||'N/I').toUpperCase(); 
             if(!res[b]) res[b]={f:0,l:0,t:0,c:0,a:0, ae:0}; 
-            res[b].f++; tF++;
-            res[b].l+=r.qtdLona||0; tL+=r.qtdLona||0;
-            res[b].t+=r.qtdTelha||0; tT+=r.qtdTelha||0;
-            res[b].c+=r.qtdCesta||0; tC+=r.qtdCesta||0;
-            res[b].a+=r.qtdAgua||0; tA+=r.qtdAgua||0;
-            res[b].ae+=r.qtdAguaEntregue||0; tAe+=r.qtdAguaEntregue||0;
+            res[b].f++; tF++; res[b].l+=r.qtdLona||0; tL+=r.qtdLona||0; res[b].t+=r.qtdTelha||0; tT+=r.qtdTelha||0; res[b].c+=r.qtdCesta||0; tC+=r.qtdCesta||0; res[b].a+=r.qtdAgua||0; tA+=r.qtdAgua||0; res[b].ae+=r.qtdAguaEntregue||0; tAe+=r.qtdAguaEntregue||0;
         });
         let h = `<div class="report-summary"><strong>Resumo por Bairros 📊</strong></div><table class="report-table"><thead><tr><th>Bairro</th><th>Famílias</th><th>Água (Sol/Emp)</th><th>Lona</th><th>Telha</th><th>Cesta</th></tr></thead><tbody>`;
-        Object.keys(res).sort().forEach(b => { 
-            h+=`<tr><td>${b}</td><td>${res[b].f}</td><td>${Number(res[b].a.toFixed(2))} / <span style="color:green;font-weight:bold">${Number(res[b].ae.toFixed(2))}</span></td><td>${Number(res[b].l.toFixed(2))}</td><td>${res[b].t}</td><td>${res[b].c}</td></tr>`; 
-        }); 
-        h += `<tr style="background-color: var(--primary-color); color: white; font-weight: bold;"><td style="text-align: right;">TOTAL GERAL:</td><td>${tF}</td><td>${Number(tA.toFixed(2))} / <span style="color:#a5d6a7;">${Number(tAe.toFixed(2))}</span></td><td>${Number(tL.toFixed(2))}</td><td>${tT}</td><td>${tC}</td></tr>`;
-        return h + `</tbody></table>`;
+        Object.keys(res).sort().forEach(b => { h+=`<tr><td>${b}</td><td>${res[b].f}</td><td>${Number(res[b].a.toFixed(2))} / <span style="color:green;font-weight:bold">${Number(res[b].ae.toFixed(2))}</span></td><td>${Number(res[b].l.toFixed(2))}</td><td>${res[b].t}</td><td>${res[b].c}</td></tr>`; }); 
+        h += `<tr style="background-color: var(--primary-color); color: white; font-weight: bold;"><td style="text-align: right;">TOTAL GERAL:</td><td>${tF}</td><td>${Number(tA.toFixed(2))} / <span style="color:#a5d6a7;">${Number(tAe.toFixed(2))}</span></td><td>${Number(tL.toFixed(2))}</td><td>${tT}</td><td>${tC}</td></tr></tbody></table>`;
+        return h;
     }
 
     function buildIndividualHTML(arr, tipo) {
         let isA = tipo === 'quantAgua'; let isL = tipo === 'quantLona'; let isT = tipo === 'quantTelha'; let isC = tipo === 'quantCesta'; 
         let u = isA ? 'm³' : (isL ? 'm²' : ' un'); let iconeMat = isA ? '💧' : (isT ? '🏠' : (isC ? '📦' : '⛺'));
         let filt = arr.filter(r => isA ? r.qtdAgua>0 : (isL ? r.qtdLona>0 : (isT ? r.qtdTelha>0 : r.qtdCesta>0))); 
-        let p = {}; 
-        
-        let grandTotalSol = 0; let grandTotalEmp = 0;
+        let p = {}; let grandTotalSol = 0; let grandTotalEmp = 0;
 
         filt.forEach(r => { 
             let k = `${r.nome.toUpperCase()}_${r.rg}`; 
             let priv = (currentUserNivel==='admin' || currentUserNivel==='supervisor' || r.emailCriador === currentUserEmail);
-
             if(!p[k]) p[k] = {n:r.nome, rg:r.rg, locais: {}, t:0, em:r.emailCriador, tel:r.telefone, ae:0, entregasBrutas: [], isPriv: priv}; 
             if(priv) p[k].isPriv = true; 
             
@@ -1159,102 +1135,52 @@
             if(!p[k].locais[nomeLocal]) p[k].locais[nomeLocal] = { t: 0, ae: 0 };
 
             let v = isA ? r.qtdAgua : (isL ? r.qtdLona : (isT ? r.qtdTelha : r.qtdCesta)); 
-            p[k].t += v; 
-            p[k].locais[nomeLocal].t += v;
-            grandTotalSol += v;
+            p[k].t += v; p[k].locais[nomeLocal].t += v; grandTotalSol += v;
             
             if(isA) { 
-                p[k].ae += (r.qtdAguaEntregue||0); 
-                p[k].locais[nomeLocal].ae += (r.qtdAguaEntregue||0);
-                grandTotalEmp += (r.qtdAguaEntregue||0);
+                p[k].ae += (r.qtdAguaEntregue||0); p[k].locais[nomeLocal].ae += (r.qtdAguaEntregue||0); grandTotalEmp += (r.qtdAguaEntregue||0);
                 if (r.entregasAgua && r.entregasAgua.length > 0) p[k].entregasBrutas.push(...r.entregasAgua);
             } else {
                 let dtEnt = r.dataHoraFormatada; let agEnt = r.agente || r.emailCriador || "Agente";
                 if (isT && r.telhaRequerEntrega) { 
                     if (r.telhaEntregue) { dtEnt = r.dataBaixaTelha || r.dataHoraFormatada; agEnt = r.agenteBaixaTelha || agEnt; p[k].entregasBrutas.push({ data: dtEnt, agente: agEnt, qtd: v }); } 
-                } else { 
-                    p[k].entregasBrutas.push({ data: dtEnt, agente: agEnt, qtd: v }); 
-                }
+                } else { p[k].entregasBrutas.push({ data: dtEnt, agente: agEnt, qtd: v }); }
             }
         });
         
         let h = `<div class="report-summary"><strong>Relatório Individual: ${iconeMat}</strong></div><table class="report-table"><tbody>`;
-        
         Object.values(p).sort((a, b) => b.t - a.t).forEach(i => { 
             let rgD = i.isPriv ? i.rg||'N/I' : '***'; 
-            
             let locaisHtml = '';
             Object.keys(i.locais).forEach(loc => {
-                let locSol = i.locais[loc].t;
-                let locEmp = i.locais[loc].ae;
-                if(isA) {
-                     locaisHtml += `<div style="margin-bottom:4px; font-size:0.85rem; color:#333;">📍 ${loc}:<br><strong>${Number(locSol.toFixed(2))}${u}</strong> <span style="color:green;">(Entregue: ${Number(locEmp.toFixed(2))}${u})</span></div>`;
-                } else {
-                     locaisHtml += `<div style="margin-bottom:4px; font-size:0.85rem; color:#333;">📍 ${loc}: <strong>${Number(locSol.toFixed(2))}${u}</strong></div>`;
-                }
+                let locSol = i.locais[loc].t; let locEmp = i.locais[loc].ae;
+                if(isA) locaisHtml += `<div style="margin-bottom:4px; font-size:0.85rem; color:#333;">📍 ${loc}:<br><strong>${Number(locSol.toFixed(2))}${u}</strong> <span style="color:green;">(Entregue: ${Number(locEmp.toFixed(2))}${u})</span></div>`;
+                else locaisHtml += `<div style="margin-bottom:4px; font-size:0.85rem; color:#333;">📍 ${loc}: <strong>${Number(locSol.toFixed(2))}${u}</strong></div>`;
             });
 
-            let statusTotal = '';
-            if (isA) {
-                statusTotal = `Solicitado: <strong>${Number(i.t.toFixed(2))}${u}</strong> &nbsp;|&nbsp; Entregue: <strong style="color:green;">${Number(i.ae.toFixed(2))}${u}</strong>`;
-                if (i.t > i.ae) statusTotal += ` &nbsp;|&nbsp; Falta: <strong style="color:var(--danger-color);">${Number((i.t - i.ae).toFixed(2))}${u}</strong>`;
-            } else {
-                statusTotal = `Total Solicitado: <strong>${Number(i.t.toFixed(2))}${u}</strong>`;
-            }
+            let statusTotal = isA ? `Solicitado: <strong>${Number(i.t.toFixed(2))}${u}</strong> &nbsp;|&nbsp; Entregue: <strong style="color:green;">${Number(i.ae.toFixed(2))}${u}</strong>` : `Total Solicitado: <strong>${Number(i.t.toFixed(2))}${u}</strong>`;
+            if (isA && i.t > i.ae) statusTotal += ` &nbsp;|&nbsp; Falta: <strong style="color:var(--danger-color);">${Number((i.t - i.ae).toFixed(2))}${u}</strong>`;
             
             let ih = ''; 
             if (i.entregasBrutas.length > 0) { 
                 let g = {};
                 i.entregasBrutas.forEach(e => {
-                    let dAp = e.data ? e.data.substring(0, 10) : "S/D"; 
-                    let hM = e.data ? e.data.match(/\d{2}:\d{2}/) : null; 
-                    let hAp = hM ? hM[0] : ""; 
-                    let agL = e.agente ? e.agente.split('@')[0] : "Agente";
-                    let cG = `${dAp}_${agL}`;
-                    
+                    let dAp = e.data ? e.data.substring(0, 10) : "S/D"; let hM = e.data ? e.data.match(/\d{2}:\d{2}/) : null; let hAp = hM ? hM[0] : ""; let agL = e.agente ? e.agente.split('@')[0] : "Agente"; let cG = `${dAp}_${agL}`;
                     if(!g[cG]) g[cG] = { data: dAp, agente: agL, totalQtd: 0, viagens: 0, hI: hAp, hF: hAp };
-                    g[cG].totalQtd += parseFloat(e.qtd); 
-                    g[cG].viagens++;
-                    
-                    if (hAp) { 
-                        if (!g[cG].hI || hAp < g[cG].hI) g[cG].hI = hAp; 
-                        if (!g[cG].hF || hAp > g[cG].hF) g[cG].hF = hAp; 
-                    }
+                    g[cG].totalQtd += parseFloat(e.qtd); g[cG].viagens++;
+                    if (hAp) { if (!g[cG].hI || hAp < g[cG].hI) g[cG].hI = hAp; if (!g[cG].hF || hAp > g[cG].hF) g[cG].hF = hAp; }
                 });
-                
                 Object.values(g).forEach(x => { 
-                    let infoH = (x.hI && x.hF && x.hI !== x.hF) ? `(das ${x.hI} às ${x.hF})` : (x.hI ? `(às ${x.hI})` : "");
-                    let infoV = x.viagens > 1 ? `[${x.viagens} viagens]` : `[1 lançamento]`;
+                    let infoH = (x.hI && x.hF && x.hI !== x.hF) ? `(das ${x.hI} às ${x.hF})` : (x.hI ? `(às ${x.hI})` : ""); let infoV = x.viagens > 1 ? `[${x.viagens} viagens]` : `[1 lançamento]`;
                     ih += `<div style="margin-bottom: 4px; font-size:0.8rem; color:#444; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">• ${x.data}: <strong style="color:var(--primary-color);">${Number(x.totalQtd.toFixed(2))}${u}</strong> por <strong>${x.agente}</strong> <br><span style="color:#777; font-size:0.75rem;">${infoV} ${infoH}</span></div>`; 
                 }); 
-            } else {
-                ih = `<div style="font-size:0.8rem; color:#777;">Nenhuma entrega registrada.</div>`;
-            }
+            } else { ih = `<div style="font-size:0.8rem; color:#777;">Nenhuma entrega registrada.</div>`; }
 
-            h += `<tr style="background-color: #e2e8f0; border-top: 2px solid #aaa;">
-                    <td colspan="2" style="padding: 6px 10px;">
-                        <div style="display:flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px;">
-                            <span style="font-size: 1.05rem; color: var(--primary-color);">👤 <strong>${i.n}</strong> <small style="color:#555;">(RG: ${rgD})</small></span>
-                            <span style="font-size: 0.95rem; background: #fff; padding: 3px 8px; border-radius: 4px; border: 1px solid #cbd5e1;">${statusTotal}</span>
-                        </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="width: 50%; vertical-align: top; padding: 8px;">
-                        <div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">📍 Endereços de Destino</div>
-                        ${locaisHtml}
-                    </td>
-                    <td style="width: 50%; vertical-align: top; padding: 8px; background: #fafafa;">
-                        <div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">🚛 Histórico de Entregas</div>
-                        ${ih}
-                    </td>
-                  </tr>`; 
+            h += `<tr style="background-color: #e2e8f0; border-top: 2px solid #aaa;"><td colspan="2" style="padding: 6px 10px;"><div style="display:flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px;"><span style="font-size: 1.05rem; color: var(--primary-color);">👤 <strong>${i.n}</strong> <small style="color:#555;">(RG: ${rgD})</small></span><span style="font-size: 0.95rem; background: #fff; padding: 3px 8px; border-radius: 4px; border: 1px solid #cbd5e1;">${statusTotal}</span></div></td></tr><tr><td style="width: 50%; vertical-align: top; padding: 8px;"><div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">📍 Endereços de Destino</div>${locaisHtml}</td><td style="width: 50%; vertical-align: top; padding: 8px; background: #fafafa;"><div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">🚛 Histórico de Entregas</div>${ih}</td></tr>`; 
         }); 
-
         let vdTotal = isA ? `Solicitado: ${Number(grandTotalSol.toFixed(2))}${u} &nbsp;&nbsp;|&nbsp;&nbsp; Empenhado: <span style="color:green">${Number(grandTotalEmp.toFixed(2))}${u}</span>` : `${Number(grandTotalSol.toFixed(2))}${u}`;
-        h += `<tr style="background-color: var(--primary-color); color: white;"><td colspan="2" style="text-align:center; font-weight:bold; font-size:1.1rem; padding: 12px;">📊 TOTAL GERAL DO RELATÓRIO ➔ ${vdTotal}</td></tr>`;
-
-        return h + `</tbody></table>`;
+        h += `<tr style="background-color: var(--primary-color); color: white;"><td colspan="2" style="text-align:center; font-weight:bold; font-size:1.1rem; padding: 12px;">📊 TOTAL GERAL DO RELATÓRIO ➔ ${vdTotal}</td></tr></tbody></table>`;
+        return h;
     }
 
     function buildGroupedHTML(arr, tit, sel) {
@@ -1269,7 +1195,6 @@
                 let pv = (currentUserNivel==='admin' || r.emailCriador === currentUserEmail); let ps = (currentUserNivel==='supervisor' || pv); 
                 let cbh = currentUserNivel === 'admin' ? `<input type="checkbox" class="bulk-checkbox no-print" value="${r.id}" onchange="checkBulkDelete()">` : ``;
                 
-                // ESCUDO DE DADOS (LGPD)
                 let rRua = ps ? r.rua : (r.rua ? r.rua.substring(0,3) + '***' : '');
                 let rNum = ps ? r.numero : (r.numero ? '***' : '');
                 let rLoc = ps ? r.localizacaoAgua : (r.localizacaoAgua ? '***' : '');
@@ -1324,7 +1249,6 @@
             if(sel.length === 0) { h += `<p style="text-align:center; padding: 20px; color: var(--primary-color);">☝️ Selecione o tipo de relatório acima.</p>`; sig.style.display = 'none'; } else { sig.style.display = 'block'; }
         } document.getElementById('reportContent').innerHTML = h; checkBulkDelete(); 
     }
-
     // ==========================================
     // AUDITORIA E LIMPEZA ANTI-SPAM
     // ==========================================
@@ -1412,13 +1336,330 @@
     }
 
     function openTab(t) { document.querySelectorAll('.tab-content, .tab-btn').forEach(e => e.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); document.getElementById('tab-btn-'+t).classList.add('active'); if (t==='log') { renderPainelAuditoria(); } }
+
+    // ==========================================
+    // SINCRONIZAÇÃO NUVEM E WHATSAPP
+    // ==========================================
+    let configZap = { emailSolicitante: '', telefonePipa: '', telefoneSocial: '' };
     
-    // Inicia os despachos ao carregar a tela
+    function carregarConfigZap() {
+        if (!navigator.onLine || !db) return;
+        db.collection("config_capanema").doc("whatsapp").get().then(doc => {
+            if (doc.exists) configZap = doc.data();
+        }).catch(e => console.log("Erro ao carregar configs de Zap", e));
+    }
+
+    async function salvarConfigZap() {
+        if(currentUserNivel !== 'admin' && currentUserNivel !== 'supervisor') return;
+        const emailSol = document.getElementById('configZapEmail').value.trim();
+        const telPipa = document.getElementById('configZapTelPipa').value.trim();
+        const telSoc = document.getElementById('configZapTelSocial').value.trim();
+        try {
+            await db.collection("config_capanema").doc("whatsapp").set({ emailSolicitante: emailSol, telefonePipa: telPipa, telefoneSocial: telSoc });
+            configZap = { emailSolicitante: emailSol, telefonePipa: telPipa, telefoneSocial: telSoc };
+            if(typeof registrarLog === 'function') await registrarLog("CONFIGURAÇÃO", "Alterou configurações de WhatsApp.");
+            alert("Configurações salvas com sucesso!");
+        } catch (e) { alert("Erro ao salvar."); }
+    }
+
+    function reenviarZapMotorista(nome, bairro, loc, rua, num, ref, obs, tel, qtd, tipo, hasCesta) {
+        let numDestino = tipo === 'agua' ? configZap.telefonePipa : configZap.telefoneSocial;
+        if(!numDestino) { alert("⚠️ Número de WhatsApp do motorista não configurado. Avise o Administrador!"); return; }
+        numDestino = numDestino.replace(/\D/g, '');
+        if(numDestino.length < 10) return;
+        
+        let emoji = tipo === 'agua' ? '💧' : '🏠';
+        let mat = tipo === 'agua' ? 'Água' : 'Telhas';
+        let txtQtd = tipo === 'agua' ? `${qtd}m³` : `${qtd} un`;
+        let cst = hasCesta ? `\n📦 *CESTA BÁSICA:* Sim (Levar)` : '';
+        let endCompl = rua ? `${rua}, ${num||'S/N'}` : `${loc}`;
+        
+        let msg = `🚨 *NOVA SOLICITAÇÃO - DEFESA CIVIL* 🚨\n\n`;
+        msg += `👤 *Nome:* ${nome}\n📞 *Tel:* ${tel}\n`;
+        msg += `📍 *Endereço:* ${bairro}\n🛣️ *Local:* ${endCompl}\n🔍 *Ref:* ${ref||'Nenhuma'}\n\n`;
+        msg += `${emoji} *Material:* ${mat} (${txtQtd})${cst}\n`;
+        if(obs) msg += `⚠️ *OBS:* ${obs}\n`;
+        
+        let url = `https://api.whatsapp.com/send?phone=55${numDestino}&text=${encodeURIComponent(msg)}`;
+        window.open(url, '_blank');
+    }
+
+    async function sincronizarFirebaseAutomatica() {
+        if (!navigator.onLine || !db || currentUserStatus !== 'aprovado') return;
+        let btn = document.getElementById('btnSync'); 
+        if(btn) { btn.innerText = "⏳ Sync..."; btn.style.backgroundColor = "#f0ad4e"; }
+        
+        let unSynced = records.filter(r => !r.synced);
+        if (unSynced.length > 0) {
+            let batch = db.batch();
+            unSynced.forEach(r => {
+                let rCopy = {...r, synced: true};
+                let ref = db.collection("doacoes_capanema").doc(r.id.toString());
+                batch.set(ref, rCopy, { merge: true });
+            });
+            try {
+                await batch.commit();
+                records.forEach(r => r.synced = true);
+                localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
+            } catch(e) { console.error("Erro Sync Firebase:", e); }
+        }
+        if(btn) { btn.innerText = "☁️ Nuvem OK"; btn.style.backgroundColor = "var(--success-color)"; }
+    }
+
+    async function sincronizarLogsOffline() {
+        if (!navigator.onLine || !db || currentUserStatus !== 'aprovado') return;
+        if(typeof auditLogs === 'undefined') return;
+        let unSynced = auditLogs.filter(l => !l.synced);
+        if (unSynced.length > 0) {
+            let batch = db.batch();
+            unSynced.forEach(l => {
+                let lCopy = {...l, synced: true};
+                let ref = db.collection("logs_capanema").doc(l.id.toString());
+                batch.set(ref, lCopy, { merge: true });
+            });
+            try {
+                await batch.commit();
+                auditLogs.forEach(l => l.synced = true);
+                localStorage.setItem('defesaCivilLogs', JSON.stringify(auditLogs));
+            } catch(e) {}
+        }
+    }
+
+    function iniciarEscutaNuvem() {
+        if (!db || currentUserStatus !== 'aprovado') return;
+        if (typeof unsubscribeSnapshot !== 'undefined' && unsubscribeSnapshot) unsubscribeSnapshot();
+        unsubscribeSnapshot = db.collection("doacoes_capanema").onSnapshot((snapshot) => {
+            let nuvemDocs = [];
+            snapshot.forEach(doc => nuvemDocs.push(doc.data()));
+            let lMap = new Map(records.map(r => [r.id, r]));
+            let changed = false;
+            nuvemDocs.forEach(n => {
+                let loc = lMap.get(n.id);
+                if (!loc || JSON.stringify(loc) !== JSON.stringify(n)) {
+                    lMap.set(n.id, n);
+                    changed = true;
+                }
+            });
+            let nIds = nuvemDocs.map(n => n.id);
+            for (let id of lMap.keys()) {
+                if (!nIds.includes(id) && lMap.get(id).synced) {
+                    lMap.delete(id); changed = true;
+                }
+            }
+            if (changed) {
+                records = Array.from(lMap.values());
+                localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
+                if (!document.getElementById('reportSection').classList.contains('hidden')) generateReport();
+                carregarPainelDespacho();
+            }
+        });
+    }
+
+    function iniciarEscutaLogsNuvem() {
+        if (!db || currentUserStatus !== 'aprovado') return;
+        if (typeof unsubscribeLogs !== 'undefined' && unsubscribeLogs) unsubscribeLogs();
+        unsubscribeLogs = db.collection("logs_capanema").onSnapshot((snapshot) => {
+            let changed = false;
+            if(typeof auditLogs === 'undefined') return;
+            let lMap = new Map(auditLogs.map(l => [l.id, l]));
+            snapshot.forEach(doc => {
+                let d = doc.data();
+                if (!lMap.has(d.id)) { lMap.set(d.id, d); changed = true; }
+            });
+            let nIds = []; snapshot.forEach(doc => nIds.push(doc.data().id));
+            for (let id of lMap.keys()) {
+                if (!nIds.includes(id) && lMap.get(id).synced) {
+                    lMap.delete(id); changed = true;
+                }
+            }
+            if(changed) {
+                auditLogs = Array.from(lMap.values());
+                localStorage.setItem('defesaCivilLogs', JSON.stringify(auditLogs));
+                if(document.getElementById('tab-log') && document.getElementById('tab-log').classList.contains('active')) {
+                    if(typeof filtrarTabelaAuditoria === 'function') filtrarTabelaAuditoria();
+                }
+            }
+        });
+    }
+
+    // ==========================================
+    // PAINEL DE LOGÍSTICA E ENTREGAS PENDENTES
+    // ==========================================
+    function abrirModalLogistica() { document.getElementById('modalLogistica').style.display = 'flex'; carregarPainelDespacho(); }
+    function fecharModalLogistica() { document.getElementById('modalLogistica').style.display = 'none'; }
+    
+    let idAlvoDescAgua = null;
+
+    function carregarPainelDespacho() {
+        const btnAlert = document.getElementById('btnLogisticaAlerta');
+        if(!btnAlert) return;
+        
+        let pendentes = records.filter(r => (r.qtdAgua > (r.qtdAguaEntregue || 0)) || (r.qtdTelha > 0 && r.telhaRequerEntrega && !r.telhaEntregue));
+        
+        if (pendentes.length > 0) {
+            btnAlert.classList.remove('hidden');
+            btnAlert.innerText = `🚨 ATENÇÃO: ${pendentes.length} Entrega(s) Pendente(s) (Logística)`;
+        } else {
+            btnAlert.classList.add('hidden');
+            if (document.getElementById('modalLogistica').style.display === 'flex') fecharModalLogistica();
+        }
+
+        const c = document.getElementById('listaDespachoContainer');
+        if(!c) return;
+        
+        if(pendentes.length === 0) {
+            c.innerHTML = '<p style="text-align:center; color:#555; padding: 20px;">Tudo limpo! Nenhuma entrega pendente.</p>';
+            return;
+        }
+
+        let h = '';
+        pendentes.forEach(r => {
+            let tA = r.qtdAgua > (r.qtdAguaEntregue || 0);
+            let tT = r.qtdTelha > 0 && r.telhaRequerEntrega && !r.telhaEntregue;
+            
+            let b = (r.bairro||'').toUpperCase(); 
+            let end = r.localizacaoAgua || r.rua || 'Sem endereço';
+            let nc = r.numero ? `, Nº ${r.numero}` : '';
+            
+            if (tA) {
+                let falta = r.qtdAgua - (r.qtdAguaEntregue || 0);
+                let cor = r.logisticaPausada ? '#e2e8f0' : '#fff';
+                let crB = r.logisticaPausada ? '1px solid #999' : 'none';
+                let txtP = r.logisticaPausada ? `<span style="color:var(--danger-color); font-weight:bold; font-size:0.8rem;"><br>⏸️ PAUSADO: ${r.logisticaMotivo}</span>` : '';
+                let btnP = r.logisticaPausada ? 
+                    `<button onclick="retomarLogistica(${r.id})" style="background:#5cb85c; color:white; border:none; padding:8px; border-radius:4px; font-weight:bold; font-size:0.8rem; cursor:pointer; width:100%;">▶️ Retomar</button>` : 
+                    `<button onclick="abrirModalDescarregarAgua(${r.id}, ${falta}, '${r.nome.replace(/'/g,"\\'")}')" style="background:var(--agua-color); color:white; border:none; padding:8px; border-radius:4px; font-weight:bold; font-size:0.8rem; cursor:pointer; width:100%;">💧 Descarregar</button>
+                     <button onclick="pausarLogistica(${r.id})" style="background:#f0ad4e; color:#333; border:none; padding:8px; border-radius:4px; font-weight:bold; font-size:0.8rem; cursor:pointer; width:100%; margin-top:4px;">⏸️ Pausar</button>`;
+
+                h += `<div class="dispatch-card" style="background:${cor}; border:${crB};">
+                        <div class="dispatch-info">
+                            <strong style="color:var(--agua-color);">💧 Água: Falta ${Number(falta.toFixed(2))}m³</strong>
+                            <p>👤 ${r.nome} - 📞 ${r.telefone}</p>
+                            <p>📍 ${b} | ${end}${nc}</p>
+                            <p style="font-size:0.75rem; color:#777; margin-top:2px;">Cód: ${r.codigo}</p>
+                            ${txtP}
+                        </div>
+                        <div class="dispatch-actions">${btnP}</div>
+                      </div>`;
+            }
+
+            if (tT) {
+                h += `<div class="dispatch-card telha">
+                        <div class="dispatch-info">
+                            <strong style="color:var(--telha-color);">🏠 Telha: Entregar ${r.qtdTelha} un</strong>
+                            <p>👤 ${r.nome} - 📞 ${r.telefone}</p>
+                            <p>📍 ${b} | ${end}${nc}</p>
+                            <p style="font-size:0.75rem; color:#777; margin-top:2px;">Cód: ${r.codigo}</p>
+                        </div>
+                        <div class="dispatch-actions">
+                            <button onclick="darBaixaTelha(${r.id})" style="background:var(--telha-color); color:white; border:none; padding:8px; border-radius:4px; font-weight:bold; font-size:0.8rem; cursor:pointer; width:100%;">✅ Entregue</button>
+                        </div>
+                      </div>`;
+            }
+        });
+        c.innerHTML = h;
+    }
+
+    async function pausarLogistica(id) {
+        let m = prompt("Motivo da pausa? (Ex: Morador ausente, estrada ruim)");
+        if(!m) return;
+        let idx = records.findIndex(x => x.id === id);
+        if(idx !== -1) {
+            records[idx].logisticaPausada = true;
+            records[idx].logisticaMotivo = m;
+            records[idx].synced = false;
+            localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
+            if(typeof registrarLog === 'function') await registrarLog("ALERTA LOGÍSTICA", `Pausou [${records[idx].codigo}] - Motivo: ${m}`);
+            sincronizarFirebaseAutomatica(); carregarPainelDespacho();
+        }
+    }
+
+    async function retomarLogistica(id) {
+        let idx = records.findIndex(x => x.id === id);
+        if(idx !== -1) {
+            records[idx].logisticaPausada = false;
+            records[idx].logisticaMotivo = "";
+            records[idx].synced = false;
+            localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
+            if(typeof registrarLog === 'function') await registrarLog("RETOMADA LOGÍSTICA", `Retomou [${records[idx].codigo}]`);
+            sincronizarFirebaseAutomatica(); carregarPainelDespacho();
+        }
+    }
+
+    function abrirModalDescarregarAgua(id, max, nome) {
+        idAlvoDescAgua = id;
+        document.getElementById('descAguaTexto').innerHTML = `Beneficiário: <strong>${nome}</strong><br>Falta entregar: <strong style="color:red;">${max}m³</strong>`;
+        document.getElementById('inputDescAgua').value = '';
+        document.getElementById('modalDescarregarAgua').style.display = 'flex';
+        setTimeout(() => document.getElementById('inputDescAgua').focus(), 100);
+    }
+
+    function fecharModalDescarregar() {
+        document.getElementById('modalDescarregarAgua').style.display = 'none';
+        idAlvoDescAgua = null;
+    }
+
+    async function confirmarDescarregar() {
+        let v = parseFloat(document.getElementById('inputDescAgua').value.replace(',','.'));
+        if(isNaN(v) || v <= 0) { alert("Valor inválido."); return; }
+        
+        let idx = records.findIndex(x => x.id === idAlvoDescAgua);
+        if(idx === -1) { fecharModalDescarregar(); return; }
+        
+        let r = records[idx];
+        let falta = r.qtdAgua - (r.qtdAguaEntregue || 0);
+        if(v > falta) { alert(`O máximo que falta é ${falta.toFixed(2)}m³!`); return; }
+        
+        r.qtdAguaEntregue = (r.qtdAguaEntregue || 0) + v;
+        r.synced = false;
+        if(!r.entregasAgua) r.entregasAgua = [];
+        
+        const ag = (auth && auth.currentUser) ? (auth.currentUser.email || auth.currentUser.displayName) : "Offline";
+        r.entregasAgua.push({
+            data: new Date().toLocaleString('pt-BR'),
+            agente: ag,
+            qtd: v
+        });
+        
+        localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
+        if(typeof registrarLog === 'function') await registrarLog("ENTREGA ÁGUA", `Descarregou ${v}m³ no cód [${r.codigo}]`, r.codigo);
+        
+        fecharModalDescarregar();
+        sincronizarFirebaseAutomatica();
+        carregarPainelDespacho();
+        if(document.getElementById('reportSection') && !document.getElementById('reportSection').classList.contains('hidden')) {
+            if(typeof generateReport === 'function') generateReport();
+        }
+    }
+
+    async function darBaixaTelha(id) {
+        if(!confirm("Confirmar entrega das TELHAS neste local?")) return;
+        let idx = records.findIndex(x => x.id === id);
+        if(idx === -1) return;
+        
+        const ag = (auth && auth.currentUser) ? (auth.currentUser.email || auth.currentUser.displayName) : "Offline";
+        records[idx].telhaEntregue = true;
+        records[idx].dataBaixaTelha = new Date().toLocaleString('pt-BR');
+        records[idx].agenteBaixaTelha = ag;
+        records[idx].synced = false;
+        
+        localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
+        if(typeof registrarLog === 'function') await registrarLog("ENTREGA TELHA", `Entregou telhas no cód [${records[idx].codigo}]`);
+        
+        sincronizarFirebaseAutomatica();
+        carregarPainelDespacho();
+        if(document.getElementById('reportSection') && !document.getElementById('reportSection').classList.contains('hidden')) {
+            if(typeof generateReport === 'function') generateReport();
+        }
+    }
+
+    // Inicia a verificação de despachos ao carregar a tela final
     window.addEventListener('DOMContentLoaded', () => { 
         if(typeof carregarPainelDespacho === 'function') {
             setTimeout(carregarPainelDespacho, 1000); 
         }
     });
+
 </script>
 </body>
 </html>
