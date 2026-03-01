@@ -192,7 +192,7 @@
     <div class="modal-content-logistica">
         <span onclick="fecharModalLogistica()" style="position:absolute; right:15px; top:5px; font-size:30px; cursor:pointer; color:#333;">×</span>
         <h3 style="color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 5px; margin-top: 0; display: flex; align-items: center; gap: 5px;">🚚 Entregas Pendentes</h3>
-        <div id="listaDespachoContainer">Carregando missões...</div>
+        <div id="listaDespachoContainer">A carregar missões...</div>
     </div>
 </div>
 
@@ -211,8 +211,8 @@
 <div id="equipeModal" class="modal" onclick="if(event.target === this) fecharModalEquipe()">
     <div style="background: #fff; width: 96%; max-width: 600px; border-radius: 8px; padding: 15px; position: relative; max-height: 90vh; overflow-y: auto;">
         <span onclick="fecharModalEquipe()" style="position:absolute; right:15px; top:5px; font-size:30px; cursor:pointer;">×</span>
-        <h3 style="color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 5px;">👥 Gerenciar Equipe</h3>
-        <div id="modalEquipeContent">Carregando...</div>
+        <h3 style="color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 5px;">👥 Gerir Equipa</h3>
+        <div id="modalEquipeContent">A carregar...</div>
     </div>
 </div>
 
@@ -223,7 +223,7 @@
     </div>
     <div style="flex: 1; position: relative; background: #f0f2f5;">
         <canvas id="fsSignaturePad" style="width: 100%; height: 100%; touch-action: none; cursor: crosshair;"></canvas>
-        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #ccc; font-size: 2rem; font-weight: bold; pointer-events: none; opacity: 0.4;">Tela de Assinatura</div>
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #ccc; font-size: 2rem; font-weight: bold; pointer-events: none; opacity: 0.4;">Ecrã de Assinatura</div>
     </div>
     <div style="padding: 10px; background: #eee;">
         <button onclick="closeFullscreenSignature()" style="width: 100%; padding: 12px; font-size: 1.2rem; font-weight: bold; background: var(--success-color); color: white; border: none; border-radius: 5px;">✅ Concluir</button>
@@ -235,8 +235,8 @@
     <div class="cloud-panel no-print">
         <div class="status-indicator"><span class="dot" id="networkStatusDot"></span><span id="networkStatusText">Aguarde...</span><span id="realtimeClock" style="margin-left: 10px; font-weight: normal; color: #555;"></span></div>
         <div class="cloud-btns">
-            <button class="btn-small" id="btnEquipe" style="background:#8e44ad; display:none;" onclick="abrirModalEquipe()">👥 Equipe</button>
-            <button class="btn-small btn-login" id="btnLogin" onclick="loginGoogle()">Logar Google</button>
+            <button class="btn-small" id="btnEquipe" style="background:#8e44ad; display:none;" onclick="abrirModalEquipe()">👥 Equipa</button>
+            <button class="btn-small btn-login" id="btnLogin" onclick="loginGoogle()">Entrar c/ Google</button>
             <button class="btn-small btn-sync" id="btnSync" onclick="sincronizarFirebaseAutomatica()">☁️ Sync</button>
         </div>
     </div>
@@ -266,7 +266,60 @@
             <span>2. Dados do Beneficiário</span>
             <button type="button" class="no-print" style="background:#e2e8f0; color:#333; border:1px solid #cbd5e1; border-radius:4px; padding:3px 8px; font-size:0.75rem; font-weight:bold; cursor:pointer;" onclick="clearFormFields()" tabindex="-1">🧹 Limpar [ESC]</button>
         </div>
-		<div class="container hidden" id="reportSection">
+        
+        <label for="nome">Nome do Responsável:</label>
+        <input type="text" id="nome" placeholder="Nome Completo (Digite e saia do campo para buscar)" required tabindex="1" class="nav-input" enterkeyhint="next" style="margin-bottom: 4px;" autocomplete="off" onblur="buscarCadastroExistente('nome')">
+        
+        <div class="form-row">
+            <div class="form-col" style="flex: 1.5;"><label>RG ou CPF:</label><input type="tel" id="rg" placeholder="Apenas nº" tabindex="2" class="nav-input" enterkeyhint="next" onblur="buscarCadastroExistente('rg')"></div>
+            <div class="form-col hidden" id="rgPhotoContainer"><label for="rgPhotoInput" class="camera-btn" id="cameraBtnLabel">📷 Foto RG<img id="rgPreview" class="rg-preview" alt="RG"></label><input type="file" id="rgPhotoInput" accept="image/*" capture="environment" tabindex="-1"><input type="hidden" id="rgPhotoBase64"></div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-col"><label for="telefone">Telefone:</label><input type="tel" id="telefone" placeholder="(46) 9..." tabindex="3" class="nav-input" enterkeyhint="next" onblur="buscarCadastroExistente('telefone')"></div>
+            <div class="form-col"><label for="bairro" id="lblBairro">Bairro / Comunidade:</label><input type="text" id="bairro" placeholder="Digite..." tabindex="4" class="nav-input" enterkeyhint="next" autocomplete="off" style="text-transform: capitalize;"></div>
+        </div>
+
+        <div id="aguaFieldsExtra" class="form-row hidden">
+            <div class="form-col" style="flex: 1.5;"><label>Localização (Rua, Nº, Rodovia, Km):</label><input type="text" id="localizacaoAgua" placeholder="Ex: Linha São Paulo, Nº 123" tabindex="5" class="nav-input" enterkeyhint="next" autocomplete="off"></div>
+            <div class="form-col" style="flex: 1;"><label>Referência:</label><input type="text" id="referenciaAgua" placeholder="Perto de..." tabindex="6" class="nav-input" enterkeyhint="next" autocomplete="off"></div>
+        </div>
+
+        <div id="addressExtraFields" class="hidden">
+            <div class="form-row">
+                <div class="form-col" style="flex: 2;"><label for="rua">Rua / Avenida:</label><input type="text" id="rua" placeholder="Comece a digitar..." tabindex="7" class="nav-input" enterkeyhint="next" autocomplete="off" style="text-transform: capitalize;"></div>
+                <div class="form-col" style="flex: 1;"><label for="numero">Número:</label><input type="tel" id="numero" placeholder="Nº casa" tabindex="8" class="nav-input" enterkeyhint="next"></div>
+            </div>
+        </div>
+
+        <div class="section-title" style="margin-top: 4px;">3. Quantidades e Material</div>
+        <div class="form-row">
+            <div class="form-col hidden" id="aguaFieldsQtd"><label>Água Pedida (m³):</label><input type="number" id="qtdAgua" min="0.1" step="0.1" placeholder="Ex: 5" tabindex="9" class="nav-input" enterkeyhint="next"><input type="hidden" id="qtdAguaEntregue" value="0"></div>
+            <div class="form-col hidden" id="lonaFields"><label>Lonas (m²):</label><input type="number" id="qtdLona" min="0.1" step="0.1" placeholder="Ex: 5" tabindex="11" class="nav-input" enterkeyhint="next"></div>
+            <div class="form-col hidden" id="telhaFieldsQtd"><label>Telhas (Un):</label><input type="number" id="qtdTelha" min="1" placeholder="Ex: 10" tabindex="12" class="nav-input" enterkeyhint="next"></div>
+            <div class="form-col hidden" id="cestaFieldsQtd"><label>Cestas (Un):</label><input type="number" id="qtdCesta" min="1" placeholder="Ex: 1" tabindex="13" class="nav-input" enterkeyhint="next"></div>
+        </div>
+        
+        <div class="form-row hidden" id="telhaFieldsEntrega" style="margin-top: 4px;">
+            <label style="display:flex; align-items:center; gap:5px; cursor:pointer; background:#e2e8f0; padding:8px; border-radius:4px; width:100%;"><input type="checkbox" id="checkTelhaEntrega" style="width:18px; height:18px;"> <strong>🏠 Empenhar transporte (Será entregue pela Ação Social)</strong></label>
+        </div>
+
+        <div class="form-row" style="margin-top: 4px;">
+            <div class="form-col" style="width: 100%;"><label style="color: var(--danger-color);">Observação / Justificativa (Cancelamentos, recados, horário para entregar):</label><input type="text" id="observacao" placeholder="Ex: Entregar após as 14h, Morador não estava em casa..." class="nav-input" autocomplete="off" tabindex="14" enterkeyhint="send"></div>
+        </div>
+
+        <div id="telhaFieldsSig" class="hidden" style="margin-top: 4px;">
+            <label>Assinatura (Obrigatória): <span style="font-weight: normal; color: #666;">(Gire o telemóvel para aumentar)</span></label>
+            <div class="signature-container"><button class="clear-btn" onclick="clearSignature()" tabindex="-1">Limpar</button><canvas id="signaturePad"></canvas></div>
+        </div>
+        
+        <div class="action-btns"><button class="btn-save" id="btnSalvarCadastro" onclick="saveRecord()" tabindex="15">Salvar Lançamento</button></div>
+    </div>
+    
+    <button class="btn-report" style="width: 100%; padding: 10px; font-size: 1rem; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; color: #333; margin-top: 8px;" onclick="showReport()" tabindex="-1">Ver Relatórios e Gestão</button>
+</div>
+
+<div class="container hidden" id="reportSection">
     <header class="form-header">
         <img src="1001145756.png" alt="Logo Defesa Civil" class="logo">
         <div class="title-container">
@@ -364,7 +417,7 @@
                     <input type="number" id="entradaCestas" placeholder="Qtd" class="nav-input">
                 </div>
             </div>
-            <button class="btn-small" style="background:var(--success-color); width:100%; height:40px; font-size:1.1rem; margin-top:10px;" onclick="salvarEntradaEstoque()">➕ Registrar Entrada no Estoque</button>
+            <button class="btn-small" style="background:var(--success-color); width:100%; height:40px; font-size:1.1rem; margin-top:10px;" onclick="salvarEntradaEstoque()">➕ Registar Entrada no Estoque</button>
         </div>
 
         <div class="no-print" style="background: #ffebee; padding: 15px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #f5c6cb;">
@@ -390,7 +443,7 @@
                     <input type="text" id="motivoSaidaEstoque" placeholder="Ex: Doação para cidade vizinha, Perda por chuva, Erro na contagem..." class="nav-input" autocomplete="off">
                 </div>
             </div>
-            <button class="btn-small" style="background:var(--danger-color); width:100%; height:40px; font-size:1.1rem; margin-top:10px;" onclick="salvarSaidaEstoque()">➖ Registrar Retirada do Estoque</button>
+            <button class="btn-small" style="background:var(--danger-color); width:100%; height:40px; font-size:1.1rem; margin-top:10px;" onclick="salvarSaidaEstoque()">➖ Registar Retirada do Estoque</button>
         </div>
 
         <div id="painelEstoqueDinamico">
@@ -416,8 +469,7 @@
 
 <script>
     // ==========================================
-    // 1. INICIALIZAÇÃO SEGURA (FIX OFFLINE E VARIÁVEIS GLOBAIS)
-    // Variáveis essenciais declaradas no topo absoluto para não gerar "is not defined"
+    // 1. INICIALIZAÇÃO SEGURA (BLINDAGEM OFFLINE E CORREÇÃO DE SYNTAX)
     // ==========================================
     let records = JSON.parse(localStorage.getItem('defesaCivilRecords')) || [];
     let auditLogs = JSON.parse(localStorage.getItem('defesaCivilLogs')) || [];
@@ -429,9 +481,9 @@
     let unsubscribeSnapshot = null; 
     let unsubscribeLogs = null; 
     let unsubscribeEstoque = null;
+    let editandoId = null;
     const ADMIN_EMAILS = ['andersonsieklicki@gmail.com', 'vanderleipettenon@gmail.com']; 
 
-    // Função de obter IP não trava se a internet estiver oscilando
     async function obterIP() { 
         if (!navigator.onLine) return "Offline"; 
         try { 
@@ -446,7 +498,6 @@
         } 
     }
 
-    // REGISTRADOR DE LOGS AGORA FUNCIONA MESMO SEM INTERNET E ESTÁ NO TOPO
     async function registrarLog(acao, detalhes, cod = "") {
         let nomeAgente = "Offline";
         if (typeof auth !== 'undefined' && auth && auth.currentUser) {
@@ -474,15 +525,465 @@
     }
 
     // ==========================================
-    // ESC - ATALHO PARA LIMPAR FORMULÁRIO
+    // INTERAÇÕES UI FALTANTES (AQUI ESTÁ A CORREÇÃO DAS CAIXINHAS)
     // ==========================================
+    function toggleFields() {
+        const lona = document.getElementById('checkLona').checked; 
+        const telha = document.getElementById('checkTelha').checked;
+        const cesta = document.getElementById('checkCesta').checked; 
+        const agua = document.getElementById('checkAgua').checked; 
+        
+        document.getElementById('lblLona').classList.toggle('active-lona', lona); 
+        document.getElementById('lblTelha').classList.toggle('active-telha', telha);
+        document.getElementById('lblCesta').classList.toggle('active-cesta', cesta); 
+        document.getElementById('lblAgua').classList.toggle('active-agua', agua);
+        
+        const hasAny = lona || telha || cesta || agua; 
+        document.getElementById('mainFormFields').classList.toggle('hidden', !hasAny);
+        
+        const requireFull = telha || cesta;
+        document.getElementById('rgPhotoContainer').classList.toggle('hidden', !requireFull);
+        document.getElementById('addressExtraFields').classList.toggle('hidden', agua && !lona && !telha && !cesta); 
+        document.getElementById('aguaFieldsExtra').classList.toggle('hidden', !agua); 
+        document.getElementById('telhaFieldsEntrega').classList.toggle('hidden', !telha);
+        document.getElementById('telhaFieldsSig').classList.toggle('hidden', !requireFull); 
+        document.getElementById('lonaFields').classList.toggle('hidden', !lona); 
+        document.getElementById('telhaFieldsQtd').classList.toggle('hidden', !telha);
+        document.getElementById('cestaFieldsQtd').classList.toggle('hidden', !cesta); 
+        document.getElementById('aguaFieldsQtd').classList.toggle('hidden', !agua);
+        
+        if (requireFull && typeof resizeCanvas === 'function') setTimeout(resizeCanvas, 50);
+    }
+
+    function clearFormFields() {
+        ['nome','rg','telefone','bairro','rua','numero','localizacaoAgua','referenciaAgua','observacao','qtdLona','qtdTelha','qtdCesta','qtdAgua'].forEach(id => {
+            if(document.getElementById(id)) document.getElementById(id).value = '';
+        });
+        if(document.getElementById('qtdAguaEntregue')) document.getElementById('qtdAguaEntregue').value = '0';
+        ['checkLona','checkTelha','checkCesta','checkAgua','checkTelhaEntrega'].forEach(id => {
+            if(document.getElementById(id)) document.getElementById(id).checked = false;
+        });
+        if(typeof resetPhoto === 'function') resetPhoto(); 
+        toggleFields(); 
+        if(typeof clearSignature === 'function') clearSignature(); 
+        if(typeof clearFullscreenSignature === 'function') clearFullscreenSignature(); 
+        editandoId = null; 
+        const bs = document.getElementById('btnSalvarCadastro'); 
+        if(bs) { bs.innerText = "Salvar Lançamento"; bs.style.backgroundColor = "#5cb85c"; bs.disabled = false; }
+    }
+
+    function editRecord(id) {
+        const r = records.find(x => x.id === id); if (!r) return; 
+        if (currentUserNivel !== 'admin' && currentUserNivel !== 'supervisor' && r.emailCriador !== currentUserEmail) { alert(`🔒 ACESSO NEGADO`); return; }
+        editandoId = id; 
+        ['nome','rg','telefone','bairro','rua','numero','localizacaoAgua','referenciaAgua','observacao'].forEach(f => {
+            if(document.getElementById(f)) document.getElementById(f).value = r[f] || '';
+        });
+        document.getElementById('checkLona').checked = r.qtdLona>0; document.getElementById('qtdLona').value = r.qtdLona||'';
+        document.getElementById('checkTelha').checked = r.qtdTelha>0; document.getElementById('qtdTelha').value = r.qtdTelha||''; 
+        document.getElementById('checkTelhaEntrega').checked = r.telhaRequerEntrega||false;
+        document.getElementById('checkCesta').checked = r.qtdCesta>0; document.getElementById('qtdCesta').value = r.qtdCesta||'';
+        document.getElementById('checkAgua').checked = r.qtdAgua>0; document.getElementById('qtdAgua').value = r.qtdAgua||'';
+        if(document.getElementById('qtdAguaEntregue')) document.getElementById('qtdAguaEntregue').value = r.qtdAguaEntregue||'0';
+        toggleFields();
+        if(r.fotoRg && typeof rgPreview !== 'undefined') { 
+            document.getElementById('rgPhotoBase64').value = r.fotoRg; rgPreview.src = r.fotoRg; rgPreview.style.display='block'; 
+            cameraBtnLabel.innerHTML='✅ OK!'; cameraBtnLabel.appendChild(rgPreview); cameraBtnLabel.classList.add('has-photo'); 
+        } else if(typeof resetPhoto === 'function') { resetPhoto(); }
+        if(typeof clearSignature === 'function') clearSignature(); 
+        if(typeof clearFullscreenSignature === 'function') clearFullscreenSignature(); 
+        if(r.signatureData && typeof ctx !== 'undefined' && canvas) { 
+            const i = new Image(); i.src = r.signatureData; i.onload = () => { ctx.drawImage(i, 0, 0, canvas.width, canvas.height); }; 
+        }
+        const bs = document.getElementById('btnSalvarCadastro'); bs.innerText = "Atualizar Lançamento"; bs.style.backgroundColor = "#0275d8"; showForm(); 
+    }
+
+    function gerarCodigoRegistro(nomeDigitado) { 
+        const now = new Date(); 
+        const yy = String(now.getFullYear()).slice(-2); 
+        const mm = String(now.getMonth() + 1).padStart(2, '0'); 
+        const dd = String(now.getDate()).padStart(2, '0');
+        const h = String(now.getHours()).padStart(2, '0'); 
+        const m = String(now.getMinutes()).padStart(2, '0'); 
+        const s = String(now.getSeconds()).padStart(2, '0');
+        let nomeLimpo = 'DESC';
+        if (nomeDigitado) {
+            let primeiroNome = nomeDigitado.trim().split(' ')[0].toUpperCase();
+            primeiroNome = primeiroNome.normalize('NFD').replace(/[\u0300-\u036f]/g, ""); 
+            nomeLimpo = primeiroNome.replace(/[^A-Z0-9]/g, ''); 
+        }
+        return `DC-${nomeLimpo}-${dd}${mm}${yy}-${h}${m}${s}`;
+    }
+
+    // ==========================================
+    // FOTOS E ASSINATURA DIGITAL CANVAS
+    // ==========================================
+    const rgInput = document.getElementById('rgPhotoInput'); 
+    const rgPreview = document.getElementById('rgPreview');
+    const cameraBtnLabel = document.getElementById('cameraBtnLabel'); 
+    const rgBase64 = document.getElementById('rgPhotoBase64');
+
+    if(rgInput) {
+        rgInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    const img = new Image(); img.onload = function() {
+                        const canvasImg = document.createElement('canvas'); const MAX_WIDTH = 500; const scaleSize = MAX_WIDTH / img.width;
+                        canvasImg.width = MAX_WIDTH; canvasImg.height = img.height * scaleSize; const ctxImg = canvasImg.getContext('2d'); ctxImg.drawImage(img, 0, 0, canvasImg.width, canvasImg.height);
+                        const dataUrl = canvasImg.toDataURL('image/jpeg', 0.5); rgBase64.value = dataUrl; rgPreview.src = dataUrl; rgPreview.style.display = 'block'; cameraBtnLabel.innerHTML = '✅ OK!'; cameraBtnLabel.appendChild(rgPreview); cameraBtnLabel.classList.add('has-photo');
+                    }; img.src = ev.target.result;
+                }; reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    function resetPhoto() { if(rgInput) rgInput.value = ''; if(rgBase64) rgBase64.value = ''; if(rgPreview) { rgPreview.src = ''; rgPreview.style.display = 'none'; } if(cameraBtnLabel) { cameraBtnLabel.innerHTML = '📷 Foto RG'; cameraBtnLabel.classList.remove('has-photo'); } }
+
+    const canvas = document.getElementById('signaturePad'); const ctx = canvas ? canvas.getContext('2d') : null; let isDrawing = false;
+    const fsOverlay = document.getElementById('fullscreenSigOverlay'); const fsCanvas = document.getElementById('fsSignaturePad'); const fsCtx = fsCanvas ? fsCanvas.getContext('2d') : null; let fsIsDrawing = false;
+
+    function resizeCanvas() {
+        if(!canvas || document.getElementById('telhaFieldsSig').classList.contains('hidden')) return;
+        const currentSignature = canvas.toDataURL(); const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio; canvas.height = canvas.offsetHeight * ratio; ctx.scale(ratio, ratio); ctx.lineWidth = 1.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#000';
+        if (currentSignature !== 'data:,') { const img = new Image(); img.src = currentSignature; img.onload = () => { ctx.drawImage(img, 0, 0, canvas.width / ratio, canvas.height / ratio); }; }
+    }
+    window.addEventListener('resize', resizeCanvas);
+    function resizeFsCanvas() { if(!fsCanvas) return; const ratio = Math.max(window.devicePixelRatio || 1, 1); fsCanvas.width = fsCanvas.offsetWidth * ratio; fsCanvas.height = fsCanvas.offsetHeight * ratio; fsCtx.scale(ratio, ratio); fsCtx.lineWidth = 3; fsCtx.lineCap = 'round'; fsCtx.lineJoin = 'round'; fsCtx.strokeStyle = '#000'; }
+    
+    window.addEventListener("orientationchange", function() {
+        if(!fsOverlay) return; const requireFull = document.getElementById('checkTelha').checked || document.getElementById('checkCesta').checked; const isLandscape = window.orientation === 90 || window.orientation === -90; const formVisible = !document.getElementById('formSection').classList.contains('hidden');
+        if (isLandscape && requireFull && formVisible) { fsOverlay.style.display = 'flex'; setTimeout(resizeFsCanvas, 100); } else { if(fsOverlay.style.display === 'flex') closeFullscreenSignature(); }
+    });
+
+    function getCoordinates(e, cvs) { if (e.touches && e.touches.length > 0) { const rect = cvs.getBoundingClientRect(); return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top }; } return { x: e.offsetX, y: e.offsetY }; }
+    
+    if(canvas) {
+        function startDrawing(e) { isDrawing = true; const coords = getCoordinates(e, canvas); ctx.beginPath(); ctx.moveTo(coords.x, coords.y); e.preventDefault(); }
+        function draw(e) { if (!isDrawing) return; const coords = getCoordinates(e, canvas); ctx.lineTo(coords.x, coords.y); ctx.stroke(); e.preventDefault(); }
+        function stopDrawing() { if (isDrawing) { ctx.closePath(); isDrawing = false; } }
+        canvas.addEventListener('mousedown', startDrawing); canvas.addEventListener('mousemove', draw); canvas.addEventListener('mouseup', stopDrawing); canvas.addEventListener('mouseout', stopDrawing);
+        canvas.addEventListener('touchstart', startDrawing, { passive: false }); canvas.addEventListener('touchmove', draw, { passive: false }); canvas.addEventListener('touchend', stopDrawing);
+    }
+    if(fsCanvas) {
+        function fsStartDrawing(e) { fsIsDrawing = true; const coords = getCoordinates(e, fsCanvas); fsCtx.beginPath(); fsCtx.moveTo(coords.x, coords.y); e.preventDefault(); }
+        function fsDraw(e) { if (!fsIsDrawing) return; const coords = getCoordinates(e, fsCanvas); fsCtx.lineTo(coords.x, coords.y); fsCtx.stroke(); e.preventDefault(); }
+        function fsStopDrawing() { if (fsIsDrawing) { fsCtx.closePath(); fsIsDrawing = false; } }
+        fsCanvas.addEventListener('mousedown', fsStartDrawing); fsCanvas.addEventListener('mousemove', fsDraw); fsCanvas.addEventListener('mouseup', fsStopDrawing); fsCanvas.addEventListener('mouseout', fsStopDrawing);
+        fsCanvas.addEventListener('touchstart', fsStartDrawing, { passive: false }); fsCanvas.addEventListener('touchmove', fsDraw, { passive: false }); fsCanvas.addEventListener('touchend', fsStopDrawing);
+    }
+    
+    function clearSignature() { if(ctx) ctx.clearRect(0, 0, canvas.width, canvas.height); }
+    function clearFullscreenSignature() { if(fsCtx) fsCtx.clearRect(0, 0, fsCanvas.width, fsCanvas.height); }
+    function isCanvasBlank(cvs) { if(!cvs) return true; const blank = document.createElement('canvas'); blank.width = cvs.width; blank.height = cvs.height; return cvs.toDataURL() === blank.toDataURL(); }
+
+    function trimCanvas(c) {
+        let context = c.getContext('2d'), copy = document.createElement('canvas').getContext('2d'); 
+        let pixels = context.getImageData(0, 0, c.width, c.height), l = pixels.data.length, i, bound = { top: null, left: null, right: null, bottom: null }, x, y;
+        for (i = 0; i < l; i += 4) {
+            if (pixels.data[i + 3] !== 0) {
+                x = (i / 4) % c.width; y = ~~((i / 4) / c.width);
+                if (bound.top === null) bound.top = y; if (bound.left === null) bound.left = x; else if (x < bound.left) bound.left = x;
+                if (bound.right === null) bound.right = x; else if (bound.right < x) bound.right = x;
+                if (bound.bottom === null) bound.bottom = y; else if (bound.bottom < y) bound.bottom = y;
+            }
+        }
+        let trimHeight = bound.bottom - bound.top + 1, trimWidth = bound.right - bound.left + 1; 
+        if(trimWidth <= 0 || trimHeight <= 0) return c;
+        let trimmed = context.getImageData(bound.left, bound.top, trimWidth, trimHeight); copy.canvas.width = trimWidth; copy.canvas.height = trimHeight; copy.putImageData(trimmed, 0, 0); return copy.canvas;
+    }
+
+    function closeFullscreenSignature() {
+        if(fsOverlay) fsOverlay.style.display = 'none';
+        if(!isCanvasBlank(fsCanvas)) {
+            let croppedCanvas = trimCanvas(fsCanvas); clearSignature(); const ratio = Math.max(window.devicePixelRatio || 1, 1); 
+            let targetW = canvas.width / ratio; let targetH = canvas.height / ratio;
+            let scale = Math.min((targetW - 10) / croppedCanvas.width, (targetH - 10) / croppedCanvas.height); 
+            let newW = croppedCanvas.width * scale; let newH = croppedCanvas.height * scale;
+            let dx = (targetW - newW) / 2; let dy = (targetH - newH) / 2; ctx.drawImage(croppedCanvas, dx, dy, newW, newH);
+        }
+    }
+	<div class="container hidden" id="reportSection">
+    <header class="form-header">
+        <img src="1001145756.png" alt="Logo Defesa Civil" class="logo">
+        <div class="title-container">
+            <h1>Defesa Civil - Capanema</h1>
+            <h2>Plano de Contingência</h2>
+        </div>
+        <img src="1001145757.png" alt="Logo Prefeitura" class="logo">
+    </header>
+
+    <div class="tabs-header no-print" style="margin-bottom: 15px; border-bottom: 3px solid #ccc;">
+        <div class="tab-btn active" id="tab-btn-geral" onclick="openTab('geral')" style="font-size: 1rem; padding: 10px 15px;">📊 Relatórios de Cadastros</div>
+        <div class="tab-btn tab-btn-estoque" id="tab-btn-estoque" onclick="openTab('estoque')" style="font-size: 1rem; padding: 10px 15px; display: none;">📦 Estoque</div>
+        <div class="tab-btn tab-btn-log" id="tab-btn-log" onclick="openTab('log')" style="font-size: 1rem; padding: 10px 15px; display: none;">🔒 Auditoria / Configs</div>
+    </div>
+    
+    <div class="tab-content active" id="tab-geral">
+        <div class="filter-group no-print" id="geralFilters" style="background: #f8f9fa; border: 1px solid #ddd; padding: 12px;">
+            <label style="width: 100%; text-align: center; color: var(--primary-color); font-size: 0.9rem; font-weight: bold; margin-bottom: 8px;">1. Selecione os tipos de relatórios:</label>
+            <div class="report-type-group">
+                <label class="report-toggle"><input type="checkbox" name="reportType" value="geral" onchange="updateReportToggle()"> 📋 Detalhado</label>
+                <label class="report-toggle"><input type="checkbox" name="reportType" value="resumoBairros" onchange="updateReportToggle()"> 📊 Bairros</label>
+                <label class="report-toggle"><input type="checkbox" name="reportType" value="quantAgua" onchange="updateReportToggle()"> 💧 Água</label>
+                <label class="report-toggle"><input type="checkbox" name="reportType" value="quantLona" onchange="updateReportToggle()"> ⛺ Lonas</label>
+                <label class="report-toggle"><input type="checkbox" name="reportType" value="quantTelha" onchange="updateReportToggle()"> 🏠 Telhas</label>
+                <label class="report-toggle"><input type="checkbox" name="reportType" value="quantCesta" onchange="updateReportToggle()"> 📦 Cestas</label>
+            </div>
+            
+            <label style="width: 100%; text-align: center; color: var(--primary-color); font-size: 0.9rem; font-weight: bold; margin-top: 10px; margin-bottom: 8px;">2. Filtros Opcionais:</label>
+            <div class="form-row">
+                <div class="form-col" style="flex: 1.5;">
+                    <label>Nome do Morador:</label>
+                    <input type="text" id="filtroNome" placeholder="Ex: João" class="nav-input">
+                </div>
+                <div class="form-col" style="flex: 1;">
+                    <label>RG/CPF:</label>
+                    <input type="tel" id="filtroRg" placeholder="Ex: 123" class="nav-input">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-col" style="flex: 1.5;">
+                    <label>Bairro:</label>
+                    <input type="text" id="filtroRelBairro" placeholder="Ex: Centro" class="nav-input">
+                </div>
+                <div class="form-col" style="flex: 1.5;">
+                    <label>Lançado por (E-mail/Agente):</label>
+                    <input type="text" id="filtroRelEmail" placeholder="email ou nome" class="nav-input">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-col" style="flex: 1;">
+                    <label>Início:</label>
+                    <input type="date" id="dataInicio" class="nav-input">
+                </div>
+                <div class="form-col" style="flex: 1;">
+                    <label>Fim:</label>
+                    <input type="date" id="dataFim" class="nav-input">
+                </div>
+            </div>
+            <div class="form-row" style="justify-content: space-between; align-items: center; margin-top: 10px; border-top: 1px solid #ddd; padding-top: 10px;">
+                <label style="font-weight: bold; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 4px; color: #555;">
+                    <input type="checkbox" id="chkPrintPhotos" onchange="togglePrintPhotos()" style="width: 16px; height: 16px; margin: 0;"> 🖨️ Incluir Fotos RG
+                </label>
+                <button class="btn-small" style="background:var(--primary-color); height:40px; font-size:1.1rem; padding: 0 20px;" onclick="generateReport()">🔍 GERAR RELATÓRIOS</button>
+            </div>
+        </div>
+
+        <button id="btnBulkDelete" class="bulk-delete-btn no-print" onclick="executarExclusaoEmLote()">🗑️ Excluir Selecionados</button>
+        <div id="reportContent" style="margin-top: 15px;"></div>
+        
+        <div class="agent-signature" id="agentSignatureBlock" style="display: none;">
+            <div class="line"></div>
+            <p>Assinatura do Agente da Defesa Civil</p>
+        </div>
+    </div>
+
+    <div class="tab-content" id="tab-estoque">
+        <div class="report-summary" style="background: #17a2b8; color: white; border-color: #117a8b;">
+            <strong>Controle Geral de Estoque 📦</strong>
+        </div>
+        
+        <div class="no-print" style="background: #e9ecef; padding: 15px; border-radius: 5px; margin-bottom: 10px; border: 1px solid #ced4da;">
+            <p style="margin-top:0; font-weight:bold; color: #333; font-size:1.1rem; border-bottom: 1px solid #ccc; padding-bottom:5px;">📥 Lançar Entrada de Materiais</p>
+            <p style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">* Cada Rolo de Lona equivale a 400m² (100m x 4m).</p>
+            <div class="form-row">
+                <div class="form-col">
+                    <label>Rolos de Lona:</label>
+                    <input type="number" id="entradaRolosLona" placeholder="Qtd" class="nav-input">
+                </div>
+                <div class="form-col">
+                    <label>Telhas (Un):</label>
+                    <input type="number" id="entradaTelhas" placeholder="Qtd" class="nav-input">
+                </div>
+                <div class="form-col">
+                    <label>Cestas (Un):</label>
+                    <input type="number" id="entradaCestas" placeholder="Qtd" class="nav-input">
+                </div>
+            </div>
+            <button class="btn-small" style="background:var(--success-color); width:100%; height:40px; font-size:1.1rem; margin-top:10px;" onclick="salvarEntradaEstoque()">➕ Registar Entrada no Estoque</button>
+        </div>
+
+        <div class="no-print" style="background: #ffebee; padding: 15px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #f5c6cb;">
+            <p style="margin-top:0; font-weight:bold; color: var(--danger-color); font-size:1.1rem; border-bottom: 1px solid #f5c6cb; padding-bottom:5px;">📤 Retirada / Ajuste Manual</p>
+            <p style="font-size: 0.8rem; color: #b71c1c; margin-bottom: 10px;">* Registre perdas, doações para outras cidades ou acertos de contagem de inventário.</p>
+            <div class="form-row">
+                <div class="form-col">
+                    <label style="color:var(--danger-color);">Retirar Rolos:</label>
+                    <input type="number" id="saidaRolosLona" placeholder="Qtd" class="nav-input">
+                </div>
+                <div class="form-col">
+                    <label style="color:var(--danger-color);">Retirar Telhas:</label>
+                    <input type="number" id="saidaTelhas" placeholder="Qtd" class="nav-input">
+                </div>
+                <div class="form-col">
+                    <label style="color:var(--danger-color);">Retirar Cestas:</label>
+                    <input type="number" id="saidaCestas" placeholder="Qtd" class="nav-input">
+                </div>
+            </div>
+            <div class="form-row" style="margin-top: 5px;">
+                <div class="form-col" style="width: 100%;">
+                    <label style="color: var(--danger-color);">Justificativa da Retirada (Obrigatório, mín. 5 letras):</label>
+                    <input type="text" id="motivoSaidaEstoque" placeholder="Ex: Doação para cidade vizinha, Perda por chuva, Erro na contagem..." class="nav-input" autocomplete="off">
+                </div>
+            </div>
+            <button class="btn-small" style="background:var(--danger-color); width:100%; height:40px; font-size:1.1rem; margin-top:10px;" onclick="salvarSaidaEstoque()">➖ Registar Retirada do Estoque</button>
+        </div>
+
+        <div id="painelEstoqueDinamico">
+            </div>
+        
+        <div style="margin-top: 20px; border-top: 2px solid #ccc; padding-top: 15px;">
+            <p style="margin-top:0; font-weight:bold; color: var(--primary-color); font-size:1.1rem;">📜 Histórico de Movimentações (Entradas e Saídas)</p>
+            <div id="historicoEntradasEstoque"></div>
+        </div>
+    </div>
+
+    <div class="tab-content" id="tab-log"></div>
+    
+    <div class="no-print" style="margin-top:20px; border-top: 2px solid #eee; padding-top: 15px;">
+        <button class="btn-print" onclick="prepararImpressao()">🖨️ Imprimir / Salvar PDF</button>
+        <button class="btn-back" onclick="showForm()"><span>🔙</span> Voltar ao Cadastro</button>
+    </div>
+</div>
+
+<div class="app-footer no-print" style="text-align: center; margin-top: 10px; padding-bottom: 10px; color: #bbb; font-size: 0.7rem;">@Sieklicki</div>
+
+<input type="file" id="importBackupFile" style="display:none;" accept=".json" onchange="processarImportacaoBackup(event)">
+
+<script>
+    // ==========================================
+    // 1. INICIALIZAÇÃO SEGURA (BLINDAGEM OFFLINE)
+    // ==========================================
+    let records = JSON.parse(localStorage.getItem('defesaCivilRecords')) || [];
+    let auditLogs = JSON.parse(localStorage.getItem('defesaCivilLogs')) || [];
+    let historicoEstoque = JSON.parse(localStorage.getItem('defesaCivilEstoque')) || [];
+    let onlineUsersMap = {}; 
+    let currentUserStatus = 'deslogado'; 
+    let currentUserEmail = ''; 
+    let currentUserNivel = 'agente'; 
+    let unsubscribeSnapshot = null; 
+    let unsubscribeLogs = null; 
+    let unsubscribeEstoque = null;
+    let editandoId = null;
+    let configZap = JSON.parse(localStorage.getItem('defesaCivilConfigZap')) || { emailSolicitante: '', telefonePipa: '', telefoneSocial: '' };
+    const ADMIN_EMAILS = ['andersonsieklicki@gmail.com', 'vanderleipettenon@gmail.com']; 
+
+    async function obterIP() { 
+        if (!navigator.onLine) return "Offline"; 
+        try { 
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
+            const response = await fetch('https://api.ipify.org?format=json', { signal: controller.signal }); 
+            clearTimeout(timeoutId);
+            const data = await response.json(); 
+            return data.ip; 
+        } catch (error) { 
+            return "IP Indisponível"; 
+        } 
+    }
+
+    async function registrarLog(acao, detalhes, cod = "") {
+        let nomeAgente = "Offline";
+        if (typeof auth !== 'undefined' && auth && auth.currentUser) {
+            nomeAgente = auth.currentUser.email || auth.currentUser.displayName || "Agente Logado";
+        }
+        let ipUsuario = await obterIP();
+        
+        const logEntry = { 
+            id: Date.now(), 
+            dataHora: new Date().toLocaleString('pt-BR'), 
+            agente: nomeAgente, 
+            ip: ipUsuario, 
+            acao: acao, 
+            detalhes: detalhes, 
+            codigoDC: cod, 
+            synced: false 
+        };
+        
+        auditLogs.push(logEntry); 
+        localStorage.setItem('defesaCivilLogs', JSON.stringify(auditLogs)); 
+        
+        if (typeof sincronizarLogsOffline === 'function') {
+            sincronizarLogsOffline(); 
+        }
+    }
+
+    function formatarDataHora(timestamp) { if (!timestamp) return ''; const dt = new Date(timestamp); return dt.toLocaleDateString('pt-BR') + ' às ' + dt.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}); }
+    function updateClock() { const clockEl = document.getElementById('realtimeClock'); if (!clockEl) return; const now = new Date(); clockEl.innerText = `(${now.toLocaleDateString('pt-BR')} - ${now.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit', second:'2-digit'})})`; }
+    setInterval(updateClock, 1000); updateClock();
+
+    // ==========================================
+    // INTERAÇÕES UI FALTANTES (CORREÇÃO DOS BOTÕES DE SELEÇÃO E NAVEGAÇÃO)
+    // ==========================================
+    function toggleFields() {
+        const lona = document.getElementById('checkLona').checked; 
+        const telha = document.getElementById('checkTelha').checked;
+        const cesta = document.getElementById('checkCesta').checked; 
+        const agua = document.getElementById('checkAgua').checked; 
+        
+        document.getElementById('lblLona').classList.toggle('active-lona', lona); 
+        document.getElementById('lblTelha').classList.toggle('active-telha', telha);
+        document.getElementById('lblCesta').classList.toggle('active-cesta', cesta); 
+        document.getElementById('lblAgua').classList.toggle('active-agua', agua);
+        
+        const hasAny = lona || telha || cesta || agua; 
+        document.getElementById('mainFormFields').classList.toggle('hidden', !hasAny);
+        
+        const requireFull = telha || cesta;
+        document.getElementById('rgPhotoContainer').classList.toggle('hidden', !requireFull);
+        document.getElementById('addressExtraFields').classList.toggle('hidden', agua && !lona && !telha && !cesta); 
+        document.getElementById('aguaFieldsExtra').classList.toggle('hidden', !agua); 
+        document.getElementById('telhaFieldsEntrega').classList.toggle('hidden', !telha);
+        document.getElementById('telhaFieldsSig').classList.toggle('hidden', !requireFull); 
+        document.getElementById('lonaFields').classList.toggle('hidden', !lona); 
+        document.getElementById('telhaFieldsQtd').classList.toggle('hidden', !telha);
+        document.getElementById('cestaFieldsQtd').classList.toggle('hidden', !cesta); 
+        document.getElementById('aguaFieldsQtd').classList.toggle('hidden', !agua);
+        
+        if (requireFull && typeof resizeCanvas === 'function') setTimeout(resizeCanvas, 50);
+    }
+
+    function clearFormFields() {
+        ['nome','rg','telefone','bairro','rua','numero','localizacaoAgua','referenciaAgua','observacao','qtdLona','qtdTelha','qtdCesta','qtdAgua'].forEach(id => {
+            if(document.getElementById(id)) document.getElementById(id).value = '';
+        });
+        if(document.getElementById('qtdAguaEntregue')) document.getElementById('qtdAguaEntregue').value = '0';
+        ['checkLona','checkTelha','checkCesta','checkAgua','checkTelhaEntrega'].forEach(id => {
+            if(document.getElementById(id)) document.getElementById(id).checked = false;
+        });
+        if(typeof resetPhoto === 'function') resetPhoto(); 
+        toggleFields(); 
+        if(typeof clearSignature === 'function') clearSignature(); 
+        if(typeof clearFullscreenSignature === 'function') clearFullscreenSignature(); 
+        editandoId = null; 
+        const bs = document.getElementById('btnSalvarCadastro'); 
+        if(bs) { bs.innerText = "Salvar Lançamento"; bs.style.backgroundColor = "#5cb85c"; bs.disabled = false; }
+    }
+
     document.addEventListener('keydown', function(event) {
         if (event.key === "Escape") {
             const formSection = document.getElementById('formSection');
             if (formSection && !formSection.classList.contains('hidden')) {
-                if (typeof clearFormFields === 'function') clearFormFields();
+                clearFormFields();
             }
         }
+    });
+
+    const navInputs = document.querySelectorAll('.nav-input');
+    navInputs.forEach((input, index) => {
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); 
+                if(['dataFim', 'filtroRelBairro', 'filtroRg'].includes(this.id)) { if(typeof generateReport === 'function') generateReport(); return; }
+                if (this.id === 'observacao') { const btnSalvar = document.getElementById('btnSalvarCadastro'); if(btnSalvar) { btnSalvar.focus(); } return; }
+                this.setSelectionRange(this.value.length, this.value.length);
+                for(let i = index + 1; i < navInputs.length; i++) { if(!navInputs[i].closest('.hidden') && navInputs[i].offsetParent !== null) { navInputs[i].focus(); return; } }
+                input.blur();
+            }
+        });
     });
 
     // ==========================================
@@ -508,14 +1009,13 @@
     const dot = document.getElementById('networkStatusDot'); 
     const text = document.getElementById('networkStatusText');
     const btnLogin = document.getElementById('btnLogin'); 
-    const btnOverlayLogin = document.getElementById('btnOverlayLogin'); // Referência ao botão do popup
+    const btnOverlayLogin = document.getElementById('btnOverlayLogin'); 
     const btnSync = document.getElementById('btnSync');
     const btnEquipe = document.getElementById('btnEquipe');
     const loginOverlay = document.getElementById('loginOverlay'); 
     const blockedOverlay = document.getElementById('blockedOverlay');
     const alertaEstoqueGlobal = document.getElementById('alertaEstoqueGlobal');
 
-    // Lida com redirecionamento de login no mobile
     auth.getRedirectResult().then((result) => {
         if (result && result.user) { console.log("Login recuperado pelo redirecionamento."); }
     }).catch((error) => {
@@ -641,7 +1141,7 @@
     updateOnlineStatus();
 
     // ==========================================
-    // SISTEMA DE PRESENÇA (REALTIME DB) E EQUIPE
+    // SISTEMA DE PRESENÇA E EQUIPA
     // ==========================================
     function setupPresenceSystem(user) {
         if(!user || !user.email) return;
@@ -664,155 +1164,6 @@
     }
 
     function abrirModalEquipe() { 
-        const modal = document.getElementById('equipeModal'); 
-        if(modal) { modal.style.display = 'flex'; if (typeof carregarListaUsuarios === 'function') carregarListaUsuarios(); } 
-    }
-    
-    function fecharModalEquipe() { 
-        const modal = document.getElementById('equipeModal'); 
-        if(modal) modal.style.display = 'none'; 
-    }
-
-    async function adicionarUsuarioManual() {
-        const novoEmail = document.getElementById('novoEmailEquipe').value.trim().toLowerCase(); 
-        const novoNivel = document.getElementById('novoNivelEquipe').value;
-        if(!novoEmail) { alert("Digite um e-mail válido."); return; }
-        
-        try { 
-            await db.collection('usuarios_capanema').doc(novoEmail).set({ 
-                email: novoEmail, 
-                nome: 'Adicionado Manualmente', 
-                status: 'aprovado', 
-                nivel: novoNivel, 
-                dataRegistro: new Date().toLocaleString('pt-BR') 
-            }, { merge: true }); 
-            alert(`Acesso liberado para ${novoEmail} como ${novoNivel.toUpperCase()}!`); 
-            document.getElementById('novoEmailEquipe').value = ''; 
-            carregarListaUsuarios(); 
-        } catch (e) { alert("Erro ao adicionar usuário: " + e.message); }
-    }
-
-    async function carregarListaUsuarios() {
-        const container = document.getElementById('modalEquipeContent'); 
-        if(!container) return;
-        
-        let htmlForm = `
-        <div style="background: #e3f2fd; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #b3e5fc;">
-            <strong>➕ Liberar Acesso / Promover</strong>
-            <div style="display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;">
-                <input type="email" id="novoEmailEquipe" placeholder="email@gmail.com" style="flex: 2; height: 32px; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                <select id="novoNivelEquipe" style="flex: 1; height: 32px; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                    <option value="agente">Agente (Padrão)</option>
-                    <option value="supervisor">Supervisor</option>
-                    <option value="admin">Administrador</option>
-                </select>
-                <button onclick="adicionarUsuarioManual()" style="background: var(--success-color); color: white; border: none; border-radius: 3px; font-weight: bold; cursor: pointer; padding: 0 15px;">Salvar</button>
-            </div>
-        </div>`;
-        
-        try {
-            const snapshot = await db.collection('usuarios_capanema').get(); 
-            let usuarios = []; 
-            snapshot.forEach(doc => { 
-                let d = doc.data(); 
-                if(!usuarios.find(x => x.email === d.email)) usuarios.push(d); 
-            });
-            
-            let htmlTabela = `<div class="table-responsive"><table class="report-table" style="font-size: 0.8rem; width: 100%; min-width: 400px;">
-                <thead>
-                    <tr style="background-color: var(--primary-color); color: white;">
-                        <th>Nome/Email</th>
-                        <th>Nível</th>
-                        <th>Status / Último Acesso</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-            
-            if(usuarios.length === 0) { 
-                htmlTabela += `<tr><td colspan="4" style="text-align:center;">Nenhum usuário.</td></tr>`; 
-            } else {
-                usuarios.forEach(u => {
-                    let isOnline = false; 
-                    let lastSeenText = '<br><span style="font-size: 0.7rem; color: #999;">Sem registro de acesso</span>';
-                    
-                    Object.values(onlineUsersMap).forEach(ou => { 
-                        if(ou.email === u.email) { 
-                            if (ou.state === 'online') { 
-                                isOnline = true; 
-                            } else if (ou.last_changed) { 
-                                lastSeenText = `<br><span style="font-size: 0.75rem; color: #555;">Visto em: <strong>${typeof formatarDataHora === 'function' ? formatarDataHora(ou.last_changed) : 'Data indisponível'}</strong></span>`; 
-                            } 
-                        } 
-                    });
-                    
-                    let statusLigacao = isOnline ? `<span style="color:var(--success-color); font-weight:bold;">🟢 Online Agora</span>` : `<span style="color:#777;">⚪ Offline</span>${lastSeenText}`;
-                    
-                    let selectNivel = `
-                    <select onchange="alterarNivelUsuario('${u.email}', this.value)" style="width:100%; padding:2px; font-size:0.75rem;">
-                        <option value="agente" ${u.nivel === 'agente' || !u.nivel ? 'selected' : ''}>Agente</option>
-                        <option value="supervisor" ${u.nivel === 'supervisor' ? 'selected' : ''}>Supervisor</option>
-                        <option value="admin" ${u.nivel === 'admin' || ADMIN_EMAILS.includes(u.email) ? 'selected' : ''}>Admin</option>
-                    </select>`;
-                    
-                    if (ADMIN_EMAILS.includes(u.email)) selectNivel = `<strong>Administrador</strong>`; 
-                    
-                    let botoes = `<div style="display: flex; flex-direction:column; gap: 4px; margin-top:4px;">`;
-                    if (u.status === 'bloqueado') {
-                        botoes += `<button class="btn-small" style="background-color: var(--success-color); width: 100%; padding: 4px;" onclick="alterarStatusUsuario('${u.email}', 'aprovado')">✅ Desbloquear</button>`;
-                    }
-                    if (u.status === 'aprovado' && !ADMIN_EMAILS.includes(u.email)) {
-                        botoes += `<button class="btn-small" style="background-color: #f0ad4e; width: 100%; padding: 4px;" onclick="alterarStatusUsuario('${u.email}', 'bloqueado')">🚫 Suspender</button>`;
-                    }
-                    if (!ADMIN_EMAILS.includes(u.email)) {
-                        botoes += `<button class="btn-small" style="background-color: var(--danger-color); width: 100%; padding: 4px;" onclick="excluirUsuarioDefinitivo('${u.email}')">🗑️ Excluir Agente</button>`;
-                    }
-                    botoes += `</div>`; 
-                    
-                    htmlTabela += `<tr>
-                        <td><strong>${u.nome}</strong><br><span style="word-break: break-all; font-size: 0.7rem; color: #555;">${u.email}</span></td>
-                        <td>${selectNivel}</td>
-                        <td>${statusLigacao}</td>
-                        <td>${botoes}</td>
-                    </tr>`;
-                });
-            }
-            htmlTabela += `</tbody></table></div>`; 
-            container.innerHTML = htmlForm + htmlTabela;
-        } catch (e) { 
-            container.innerHTML = `<p style="text-align:center; color:red;">Erro ao carregar usuários: ${e.message}</p>`; 
-        }
-    }
-
-    async function alterarStatusUsuario(email, novoStatus) { 
-        if(!confirm(`Mudar o acesso de ${email} para ${novoStatus.toUpperCase()}?`)) return; 
-        try { 
-            await db.collection('usuarios_capanema').doc(email).update({ status: novoStatus }); 
-            carregarListaUsuarios(); 
-        } catch (e) { alert("Erro: " + e.message); } 
-    }
-    
-    async function alterarNivelUsuario(email, novoNivel) { 
-        if(!confirm(`Alterar permissão de ${email} para ${novoNivel.toUpperCase()}?`)) { 
-            carregarListaUsuarios(); 
-            return; 
-        } 
-        try { 
-            await db.collection('usuarios_capanema').doc(email).update({ nivel: novoNivel }); 
-            alert('Atualizado!'); 
-            carregarListaUsuarios(); 
-        } catch (e) { alert("Erro: " + e.message); } 
-    }
-    
-    async function excluirUsuarioDefinitivo(email) { 
-        if(!confirm(`⚠️ ATENÇÃO EXTREMA!\nTem certeza absoluta que deseja apagar o usuário ${email} do banco de dados?\nEle terá que se conectar e ser aprovado novamente.`)) return; 
-        try { 
-            await db.collection('usuarios_capanema').doc(email).delete(); 
-            alert('Usuário excluído com sucesso.'); 
-            carregarListaUsuarios(); 
-        } catch (e) { alert("Erro ao excluir usuário: " + e.message); } 
-    }
-	function abrirModalEquipe() { 
         const modal = document.getElementById('equipeModal'); 
         if(modal) { modal.style.display = 'flex'; if (typeof carregarListaUsuarios === 'function') carregarListaUsuarios(); } 
     }
@@ -961,6 +1312,62 @@
             carregarListaUsuarios(); 
         } catch (e) { alert("Erro ao excluir usuário: " + e.message); } 
     }
+
+    // ==========================================
+    // ANTIFRAUDE E AUTO-PREENCHIMENTO
+    // ==========================================
+    function verificarVigiaAntifraude() {
+        if(currentUserNivel === 'admin') return true; 
+        let cAgua = document.getElementById('qtdAgua') ? parseFloat(document.getElementById('qtdAgua').value) : 0;
+        let cLona = document.getElementById('qtdLona') ? parseFloat(document.getElementById('qtdLona').value) : 0;
+        let cTelha = document.getElementById('qtdTelha') ? parseInt(document.getElementById('qtdTelha').value) : 0;
+        let cCesta = document.getElementById('qtdCesta') ? parseInt(document.getElementById('qtdCesta').value) : 0;
+        if (cAgua > 150 || cLona > 600 || cTelha > 1500 || cCesta > 50) {
+            alert(`🛑 ALERTA DE SEGURANÇA: Quantidade irreal detectada! Bloqueado por suspeita de fraude.`);
+            if(typeof registrarLog === "function") { registrarLog("TENTATIVA DE FRAUDE", `Volume absurdo. Água:${cAgua}, Telha:${cTelha}`); }
+            return false;
+        }
+        return true;
+    }
+
+    function buscarCadastroExistente(campo) {
+        if(editandoId || typeof records === 'undefined' || records.length === 0) return; 
+        let valor = document.getElementById(campo).value.trim().toLowerCase();
+        if(valor.length < 4) return; 
+        let match = [...records].reverse().find(r => {
+            if(campo === 'nome' && r.nome && r.nome.toLowerCase() === valor) return true;
+            if(campo === 'rg' && r.rg && r.rg === valor) return true;
+            if(campo === 'telefone' && r.telefone && r.telefone.replace(/\D/g,'') === valor.replace(/\D/g,'')) return true;
+            return false;
+        });
+
+        if(match) {
+            let preencheuAlgo = false;
+            if(!document.getElementById('telefone').value && match.telefone) { document.getElementById('telefone').value = match.telefone; preencheuAlgo = true; }
+            if(!document.getElementById('bairro').value && match.bairro) { document.getElementById('bairro').value = match.bairro; preencheuAlgo = true; }
+            if(!document.getElementById('rua').value && match.rua) { document.getElementById('rua').value = match.rua; preencheuAlgo = true; }
+            if(!document.getElementById('numero').value && match.numero) { document.getElementById('numero').value = match.numero; preencheuAlgo = true; }
+            if(!document.getElementById('localizacaoAgua').value && match.localizacaoAgua) { document.getElementById('localizacaoAgua').value = match.localizacaoAgua; preencheuAlgo = true; }
+            if(!document.getElementById('referenciaAgua').value && match.referenciaAgua) { document.getElementById('referenciaAgua').value = match.referenciaAgua; preencheuAlgo = true; }
+            if(campo !== 'nome' && !document.getElementById('nome').value && match.nome) { document.getElementById('nome').value = match.nome; preencheuAlgo = true; }
+            if(campo !== 'rg' && !document.getElementById('rg').value && match.rg) { document.getElementById('rg').value = match.rg; preencheuAlgo = true; }
+            if(preencheuAlgo) {
+                let btn = document.getElementById('btnSalvarCadastro');
+                let txtOrig = btn.innerText; let corOrig = btn.style.backgroundColor;
+                btn.innerText = "✨ Dados Auto-Preenchidos!"; btn.style.backgroundColor = "#5bc0de";
+                setTimeout(()=>{ btn.innerText = txtOrig; btn.style.backgroundColor = corOrig; }, 2500);
+            }
+        }
+    }
+
+    function formatarNomeProprio(texto) {
+        if(!texto) return ""; 
+        let fmt = texto.toLowerCase().replace(/(?:^|\s)\S/g, a => a.toUpperCase());
+        fmt = fmt.replace(/\bJose\b/ig, "José").replace(/\bJoao\b/ig, "João").replace(/\bAntonio\b/ig, "Antônio").replace(/\bConceicao\b/ig, "Conceição").replace(/\bSao\b/ig, "São");
+        return fmt.replace(/\bDa\b/g, "da").replace(/\bDe\b/g, "de").replace(/\bDo\b/g, "do").replace(/\bDos\b/g, "dos").replace(/\bDas\b/g, "das");
+    }
+    
+    ['nome', 'bairro', 'rua', 'localizacaoAgua', 'referenciaAgua'].forEach(id => { let el = document.getElementById(id); if(el) el.addEventListener('blur', function() { this.value = formatarNomeProprio(this.value); }); });
 
     // ==========================================
     // ESTOQUE: LÓGICA DE CÁLCULO E NUVEM
@@ -1165,7 +1572,7 @@
         
         fecharModalDescarregar();
         registrarLog("ENTREGA ÁGUA", `Total acumulado: ${Number(r.qtdAguaEntregue.toFixed(2))}m³ | Cód: [${r.codigo}] - ${r.nome}`, r.codigo).then(() => {
-            sincronizarFirebaseAutomatica(); 
+            if (typeof sincronizarFirebaseAutomatica === 'function') sincronizarFirebaseAutomatica(); 
             carregarPainelDespacho(); 
             if (!document.getElementById('reportSection').classList.contains('hidden')) generateReport();
         });
@@ -1182,7 +1589,7 @@
         
         localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
         registrarLog("ENTREGA TELHA", `Baixa de entrega de telha para ${records[index].nome} - Cód: [${records[index].codigo}]`, records[index].codigo).then(() => {
-            sincronizarFirebaseAutomatica(); 
+            if (typeof sincronizarFirebaseAutomatica === 'function') sincronizarFirebaseAutomatica(); 
             carregarPainelDespacho(); 
             if (!document.getElementById('reportSection').classList.contains('hidden')) generateReport();
         });
@@ -1199,7 +1606,7 @@
         
         localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
         registrarLog("ALERTA LOGÍSTICA", `PAUSADO - Cód: [${records[index].codigo}]. Motivo: ${motivo}`, records[index].codigo).then(() => {
-            sincronizarFirebaseAutomatica(); 
+            if (typeof sincronizarFirebaseAutomatica === 'function') sincronizarFirebaseAutomatica(); 
             carregarPainelDespacho(); 
         });
     }
@@ -1212,7 +1619,7 @@
         
         localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
         registrarLog("RETOMADA LOGÍSTICA", `RETOMADO - Cód: [${records[index].codigo}]`, records[index].codigo).then(() => {
-            sincronizarFirebaseAutomatica(); 
+            if (typeof sincronizarFirebaseAutomatica === 'function') sincronizarFirebaseAutomatica(); 
             carregarPainelDespacho(); 
         });
     }
@@ -1256,7 +1663,7 @@
                 }
                     
                 let temCesta = r.qtdCesta > 0;
-                let mapsBtn = `<button class="btn-small" style="background:#25D366; color:white; width:100%; text-align:center; margin-top:2px; font-size: 1rem; height: 36px;" onclick="reenviarZapMotorista('${r.nome}', '${r.bairro}', '${r.localizacaoAgua||''}', '${r.rua||''}', '${r.numero||''}', '${r.referenciaAgua||''}', '${r.observacao||''}', '${r.telefone}', '${isAgua ? r.qtdAgua : r.qtdTelha}', '${isAgua ? 'agua' : 'telha'}', ${temCesta})">💬 Rota WhatsApp</button>`;
+                let mapsBtn = typeof reenviarZapMotorista === 'function' ? `<button class="btn-small" style="background:#25D366; color:white; width:100%; text-align:center; margin-top:2px; font-size: 1rem; height: 36px;" onclick="reenviarZapMotorista('${r.nome}', '${r.bairro}', '${r.localizacaoAgua||''}', '${r.rua||''}', '${r.numero||''}', '${r.referenciaAgua||''}', '${r.observacao||''}', '${r.telefone}', '${isAgua ? r.qtdAgua : r.qtdTelha}', '${isAgua ? 'agua' : 'telha'}', ${temCesta})">💬 Rota WhatsApp</button>` : '';
                 
                 let endCompleto = `📍 ${r.bairro}`; if(r.localizacaoAgua) endCompleto += ` - ${r.localizacaoAgua}`; if(r.rua) endCompleto += ` - ${r.rua}, ${r.numero||'S/N'}`;
 
@@ -1270,8 +1677,37 @@
         }
     }
 
+    function reenviarZapMotorista(nome, bairro, loc, rua, num, ref, obs, tel, vol, tipo, temCesta) {
+        let numDestino = tipo === 'agua' ? configZap.telefonePipa : configZap.telefoneSocial;
+        if (!numDestino) { alert(`O telefone responsável por ${tipo === 'agua' ? 'ÁGUA' : 'TELHAS'} não está configurado na aba Auditoria.`); return; }
+        
+        let horaAtual = new Date().getHours(); let saudacao = "";
+        if (horaAtual >= 5 && horaAtual < 12) saudacao = "Bom dia"; else if (horaAtual >= 12 && horaAtual < 18) saudacao = "Boa tarde"; else saudacao = "Boa noite";
+        
+        let origemGPS = ""; let cabecalho = ""; let textMaterial = "";
+
+        if (tipo === 'agua') {
+            saudacao = `${saudacao}, Agente da Defesa Civil!`; origemGPS = encodeURIComponent("Corpo de Bombeiros, Capanema - PR");
+            cabecalho = `*Ordem de serviço Defesa Civil entrega de água potável 💧*`; textMaterial = `*Volume Solicitado:* ${Number(vol)} m³ 💧`;
+        } else {
+            saudacao = `${saudacao}, motorista!`; origemGPS = encodeURIComponent("CRAS - Rua Antônio Nieheus, 670, Centro, Capanema - PR");
+            if (temCesta) { cabecalho = `*Ordem de serviço Assistência Social: Entrega de telhas e cesta básica 🏠📦*`; textMaterial = `*Material Liberado:* ${vol} Telhas e Cesta(s) Básica(s).`; } 
+            else { cabecalho = `*Ordem de serviço Assistência Social: Entrega de telhas 🏠*`; textMaterial = `*Material Liberado:* ${vol} Telhas.`; }
+        }
+
+        let enderecoBusca = loc ? loc : (rua ? `${rua}, ${num||'S/N'}` : '');
+        let destinoMaps = encodeURIComponent(`${enderecoBusca} ${bairro} Capanema PR`.trim());
+        let linkMaps = `https://www.google.com/maps/dir/?api=1&origin=${origemGPS}&destination=${destinoMaps}`;
+        
+        let textEnd = loc ? `*Localização:* ${loc}` : ''; if(rua) textEnd += `\n*Rua:* ${rua}, Nº: ${num || 'S/N'}`;
+        let textRef = ref ? `*Ref:* ${ref}\n` : ''; let textObs = obs ? `\n*Observação:* ${obs}` : '';
+        
+        let msg = `${saudacao}\n\n${cabecalho}\n\n*Nome:* ${nome}\n*Bairro:* ${bairro}\n${textEnd}\n${textRef}*Telefone:* ${tel || 'Não informado'}${textObs}\n${textMaterial}\n\n*🗺️ Rota de Entrega (GPS Oficial):*\n${linkMaps}\n\n*⚠️ ATENÇÃO: Caso o GPS não consiga traçar a rota exata, por favor ligue para o solicitante!*`;
+        window.open(`https://api.whatsapp.com/send?phone=${numDestino}&text=${encodeURIComponent(msg)}`, '_blank');
+    }
+
     // ==========================================
-    // SALVAMENTO E EXCLUSÃO DE CADASTROS (DOAÇÕES)
+    // SALVAMENTO DE CADASTROS (DOAÇÕES)
     // ==========================================
     function saveRecord() {
         const bs = document.getElementById('btnSalvarCadastro');
@@ -1314,27 +1750,9 @@
             let finalizaSalvamento = () => {
                 localStorage.setItem('defesaCivilRecords', JSON.stringify(records)); 
                 clearFormFields(); 
-                sincronizarFirebaseAutomatica(); 
+                if (typeof sincronizarFirebaseAutomatica === 'function') sincronizarFirebaseAutomatica(); 
                 carregarPainelDespacho(); 
                 if (typeof calcularEstoqueGlobal === 'function') calcularEstoqueGlobal();
-            };
-
-            // Função gerarCodigoRegistro integrada dentro do fecho para segurança offline
-            const gerarCodLocal = () => { 
-                const now = new Date(); 
-                const yy = String(now.getFullYear()).slice(-2); 
-                const mm = String(now.getMonth() + 1).padStart(2, '0'); 
-                const dd = String(now.getDate()).padStart(2, '0');
-                const h = String(now.getHours()).padStart(2, '0'); 
-                const m = String(now.getMinutes()).padStart(2, '0'); 
-                const s = String(now.getSeconds()).padStart(2, '0');
-                let nomeLimpo = 'DESC';
-                if (nm) {
-                    let primeiroNome = nm.trim().split(' ')[0].toUpperCase();
-                    primeiroNome = primeiroNome.normalize('NFD').replace(/[\u0300-\u036f]/g, ""); 
-                    nomeLimpo = primeiroNome.replace(/[^A-Z0-9]/g, ''); 
-                }
-                return `DC-${nomeLimpo}-${dd}${mm}${yy}-${h}${m}${s}`;
             };
 
             if (editandoId) {
@@ -1344,7 +1762,7 @@
                     registrarLog("EDIÇÃO", `Alterou Cód: [${records[idx].codigo}]`).then(() => { alert('Atualizado!'); finalizaSalvamento(); });
                 }
             } else {
-                const cd = gerarCodLocal();
+                const cd = gerarCodigoRegistro(nm);
                 records.push({ id: Date.now(), codigo: cd, dataISO: new Date().toISOString(), dataHoraFormatada: new Date().toLocaleString('pt-BR'), nome:nm, rg, telefone:tel, bairro:bai, rua:ru, numero:nu, localizacaoAgua:lAg, referenciaAgua:rAg, observacao:ob, qtdLona:qL, qtdTelha:qT, telhaRequerEntrega:rEnt, telhaEntregue:false, qtdCesta:qC, qtdAgua:qA, qtdAguaEntregue:qAe, entregasAgua:[], signatureData:sig, fotoRg:fo, synced:false, agente:nAg, emailCriador: currentUserEmail, logisticaPausada: false, logisticaMotivo: "" });
                 registrarLog("NOVO CADASTRO", `Cód: [${cd}]`, cd).then(() => {
                     let lst = (configZap?.emailSolicitante || '').toLowerCase().split(',').map(e => e.trim());
@@ -1374,7 +1792,7 @@
         if(!motivo || motivo.trim().length < 5) { alert("Cancelado. Motivo inválido!"); return; }
         if(!confirm(`⚠️ Apagar DEFINITIVAMENTE os ${cx.length} registos selecionados?`)) return;
         
-        let b = document.getElementById('btnBulkDelete'); b.innerText = "⏳ Apagando..."; b.disabled = true; 
+        let b = document.getElementById('btnBulkDelete'); b.innerText = "⏳ A apagar..."; b.disabled = true; 
         let ids = Array.from(cx).map(c => parseInt(c.value)); records = records.filter(r => !ids.includes(r.id)); localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
         
         if (navigator.onLine && db) { 
@@ -1388,9 +1806,32 @@
     // ==========================================
     // RELATÓRIOS INTELIGENTES E FORMATADOS
     // ==========================================
-    function showReport() { document.getElementById('formSection').classList.add('hidden'); document.getElementById('reportSection').classList.remove('hidden'); generateReport(); calcularEstoqueGlobal(); }
-    function showForm() { document.getElementById('reportSection').classList.add('hidden'); document.getElementById('formSection').classList.remove('hidden'); }
-    function updateReportToggle() { document.querySelectorAll('.report-toggle').forEach(l => { if(l.querySelector('input').checked) l.classList.add('active'); else l.classList.remove('active'); }); }
+    function showReport() { 
+        document.getElementById('formSection').classList.add('hidden'); 
+        document.getElementById('reportSection').classList.remove('hidden'); 
+        generateReport(); 
+        if (typeof calcularEstoqueGlobal === 'function') calcularEstoqueGlobal(); 
+    }
+    
+    function showForm() { 
+        document.getElementById('reportSection').classList.add('hidden'); 
+        document.getElementById('formSection').classList.remove('hidden'); 
+    }
+    
+    function updateReportToggle() { 
+        document.querySelectorAll('.report-toggle').forEach(l => { 
+            if(l.querySelector('input').checked) l.classList.add('active'); 
+            else l.classList.remove('active'); 
+        }); 
+    }
+
+    function togglePrintPhotos() { 
+        document.body.classList.toggle('print-photos', document.getElementById('chkPrintPhotos').checked); 
+    }
+
+    function prepararImpressao() { 
+        setTimeout(function() { window.print(); }, 300); 
+    }
 
     function buildResumoBairrosHTML(arr) {
         let res = {}; let tF=0, tL=0, tT=0, tC=0, tA=0, tAe=0;
@@ -1542,7 +1983,7 @@
     }
 
     // ==========================================
-    // AUDITORIA E BACKUP DE DADOS (IMPORT/EXPORT)
+    // AUDITORIA, CONFIGS E BACKUP DE DADOS
     // ==========================================
     function exportarBackup() {
         if(currentUserNivel !== 'admin') { alert("Apenas Administradores."); return; }
@@ -1578,7 +2019,8 @@
                 }
                 registrarLog("RESTORE", `Importou arquivo: ${file.name}`).then(() => {
                     alert("✅ Backup restaurado/mesclado com sucesso! Sincronizando com a nuvem...");
-                    sincronizarFirebaseAutomatica(); generateReport(); carregarPainelDespacho(); calcularEstoqueGlobal();
+                    if (typeof sincronizarFirebaseAutomatica === 'function') sincronizarFirebaseAutomatica(); 
+                    generateReport(); carregarPainelDespacho(); calcularEstoqueGlobal();
                     if(document.getElementById('tab-btn-log').classList.contains('active')) renderPainelAuditoria();
                 });
             } catch (err) { alert("Erro ao ler o arquivo JSON de Backup."); }
@@ -1586,9 +2028,20 @@
         reader.readAsText(file); event.target.value = '';
     }
 
-    // ==========================================
-    // CONFIGS E LIMPEZA ANTI-SPAM
-    // ==========================================
+    async function salvarConfigZap() {
+        const email = document.getElementById('configZapEmail').value.toLowerCase().trim(); 
+        const telPipa = document.getElementById('configZapTelPipa').value.replace(/\D/g,''); 
+        const telSocial = document.getElementById('configZapTelSocial').value.replace(/\D/g,''); 
+        
+        configZap = { emailSolicitante: email, telefonePipa: telPipa, telefoneSocial: telSocial }; 
+        localStorage.setItem('defesaCivilConfigZap', JSON.stringify(configZap)); 
+        
+        if(navigator.onLine && db) { 
+            try { await db.collection('configuracoes_capanema').doc('whatsapp').set(configZap); alert("Configurações Salvas com Sucesso!"); } 
+            catch(e) { alert("Erro ao salvar contatos na nuvem."); } 
+        } 
+    }
+
     function renderPainelAuditoria() {
         let h = '';
         if(currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
@@ -1667,7 +2120,7 @@
         let motivo = prompt("🚨 Qual o MOTIVO OBRIGATÓRIO para a limpeza da base? (Mínimo de 5 letras):");
         if(!motivo || motivo.trim().length < 5) { alert("Ação Cancelada. Motivo inválido ou muito curto!"); return; }
 
-        if(btnSync) btnSync.innerText = "⏳ Apagando...";
+        if(btnSync) btnSync.innerText = "⏳ A apagar...";
         if (navigator.onLine && db && auth && auth.currentUser) {
             try { 
                 db.collection("doacoes_capanema").get().then(sC => { let bC = db.batch(); sC.docs.forEach(d => bC.delete(d.ref)); bC.commit(); });
