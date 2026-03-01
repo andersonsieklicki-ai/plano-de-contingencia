@@ -1537,9 +1537,23 @@
             else { if(!nm || !bai) { alert('Nome e Bairro obrigatórios.'); return; } }
 
             bs.disabled = true; bs.innerText = "Processando...";
+            
+            // NOVO VIGIA DE DUPLICIDADE MELHORADO
             if (!editandoId) {
-                let dup = records.find(x => (x.nome||"").toLowerCase() === nm.toLowerCase() || (rg && x.rg === rg));
-                if (dup && !confirm(`⚠️ DUPLICIDADE: "${dup.nome}" já tem cadastro. Se for OUTRO local (granja), clique OK.`)) { bs.disabled = false; bs.innerText = "Salvar Lançamento"; return; }
+                let historico = records.filter(x => (x.nome||"").toLowerCase() === nm.toLowerCase() || (rg && x.rg === rg));
+                if (historico.length > 0) {
+                    historico.sort((a,b) => new Date(a.dataISO) - new Date(b.dataISO));
+                    let ultimo = historico[historico.length - 1];
+                    let dias = Math.floor((new Date() - new Date(ultimo.dataISO)) / (1000 * 60 * 60 * 24));
+                    let txtTempo = dias > 365 ? `(Há mais de 1 ano)` : `(Há ${dias} dias)`;
+                    let matUltimo = ultimo.qtdAgua>0 ? 'Água' : (ultimo.qtdTelha>0 ? 'Telhas' : (ultimo.qtdLona>0 ? 'Lonas' : 'Cestas'));
+
+                    let aviso = `⚠️ ATENÇÃO: O beneficiário "${nm}" já recebeu doações anteriormente.\n\n`;
+                    aviso += `Último registro: ${ultimo.dataHoraFormatada.split(' ')[0]} ${txtTempo}\nMaterial: ${matUltimo}\n\n`;
+                    aviso += `Deseja registrar um NOVO pedido ou destinar para OUTRO local (ex: granja, caixa d'água da comunidade, órgão da prefeitura, etc.)?\n\nClique em OK para continuar ou CANCELAR para abortar.`;
+
+                    if (!confirm(aviso)) { bs.disabled = false; bs.innerText = "Salvar Lançamento"; return; }
+                }
             }
             
             const qL = cL?parseFloat(document.getElementById('qtdLona').value)||0:0; const qT = cT?parseInt(document.getElementById('qtdTelha').value)||0:0; 
@@ -1584,7 +1598,7 @@
     }
 
     // ==========================================
-    // RELATÓRIOS INTELIGENTES (AGRUPADOS POR ESCALA/DIA)
+    // RELATÓRIOS INTELIGENTES (AGRUPADOS POR ESCALA E LOCAL)
     // ==========================================
     function showReport() { document.getElementById('formSection').classList.add('hidden'); document.getElementById('reportSection').classList.remove('hidden'); generateReport(); }
     function showForm() { document.getElementById('reportSection').classList.add('hidden'); document.getElementById('formSection').classList.remove('hidden'); }
@@ -1603,14 +1617,29 @@
         let filt = arr.filter(r => isA ? r.qtdAgua>0 : (isL ? r.qtdLona>0 : (isT ? r.qtdTelha>0 : r.qtdCesta>0))); 
         let p = {}; 
         
+        let grandTotalSol = 0; let grandTotalEmp = 0;
+
         filt.forEach(r => { 
             let k = `${r.nome.toUpperCase()}_${r.rg}`; 
-            if(!p[k]) p[k] = {n:r.nome, rg:r.rg, b: new Set(), t:0, em:r.emailCriador, tel:r.telefone, ae:0, entregasBrutas: []}; 
-            if (r.bairro) p[k].b.add(r.bairro + (r.localizacaoAgua ? ` (${r.localizacaoAgua})` : ''));
-            let v = isA ? r.qtdAgua : (isL ? r.qtdLona : (isT ? r.qtdTelha : r.qtdCesta)); p[k].t += v; 
+            if(!p[k]) p[k] = {n:r.nome, rg:r.rg, locais: {}, t:0, em:r.emailCriador, tel:r.telefone, ae:0, entregasBrutas: []}; 
+            
+            let endArr = [];
+            if(r.bairro) endArr.push(r.bairro);
+            if(r.rua) endArr.push(`${r.rua}, ${r.numero||'S/N'}`);
+            if(r.localizacaoAgua) endArr.push(r.localizacaoAgua);
+            let nomeLocal = endArr.length > 0 ? endArr.join(' - ') : 'Local Não Informado';
+
+            if(!p[k].locais[nomeLocal]) p[k].locais[nomeLocal] = { t: 0, ae: 0 };
+
+            let v = isA ? r.qtdAgua : (isL ? r.qtdLona : (isT ? r.qtdTelha : r.qtdCesta)); 
+            p[k].t += v; 
+            p[k].locais[nomeLocal].t += v;
+            grandTotalSol += v;
             
             if(isA) { 
                 p[k].ae += (r.qtdAguaEntregue||0); 
+                p[k].locais[nomeLocal].ae += (r.qtdAguaEntregue||0);
+                grandTotalEmp += (r.qtdAguaEntregue||0);
                 if (r.entregasAgua && r.entregasAgua.length > 0) p[k].entregasBrutas.push(...r.entregasAgua);
             } else {
                 let dtEnt = r.dataHoraFormatada; let agEnt = r.agente || r.emailCriador || "Agente";
@@ -1624,7 +1653,19 @@
         
         let h = `<div class="report-summary"><strong>Relatório Individual: ${iconeMat}</strong></div><table class="report-table"><thead><tr><th>Beneficiário / Locais</th><th>Total ${isA?'(Solicitado / Empenhado)':''}</th></tr></thead><tbody>`;
         Object.values(p).sort((a, b) => b.t - a.t).forEach(i => { 
-            let priv = (currentUserNivel==='admin' || currentUserNivel==='supervisor' || i.em === currentUserEmail); let rgD = priv ? i.rg||'N/I' : '***'; let bt = Array.from(i.b).join(' | '); 
+            let priv = (currentUserNivel==='admin' || currentUserNivel==='supervisor' || i.em === currentUserEmail); let rgD = priv ? i.rg||'N/I' : '***'; 
+            
+            let locaisHtml = '';
+            Object.keys(i.locais).forEach(loc => {
+                let locSol = i.locais[loc].t;
+                let locEmp = i.locais[loc].ae;
+                if(isA) {
+                     locaisHtml += `<div style="margin-top:4px; margin-bottom:2px; color:var(--primary-color);">📍 ${loc}:<br><strong>${Number(locSol.toFixed(2))}${u}</strong> (Empenhado: <span style="color:green;">${Number(locEmp.toFixed(2))}${u}</span>)</div>`;
+                } else {
+                     locaisHtml += `<div style="margin-top:4px; margin-bottom:2px; color:var(--primary-color);">📍 ${loc}: <strong>${Number(locSol.toFixed(2))}${u}</strong></div>`;
+                }
+            });
+
             let vd = isA ? `Solicitado: ${Number(i.t.toFixed(2))}${u}<br><span style="color:green">Empenhado: ${Number(i.ae.toFixed(2))}${u}</span>` : `${Number(i.t.toFixed(2))}${u}`; 
             if (isA && i.t > i.ae) vd += `<br><span style="color:var(--danger-color); font-weight:bold;">Falta: ${Number((i.t - i.ae).toFixed(2))}${u}</span>`; 
             
@@ -1648,7 +1689,7 @@
                     }
                 });
                 
-                ih = `<br><div style="margin-top:6px; padding:6px; border-left:3px solid var(--secondary-color); font-size:0.75rem; color:#444; background:#f9f9f9; border-radius: 3px;">`; 
+                ih = `<div style="margin-top:8px; padding:6px; border-left:3px solid var(--secondary-color); font-size:0.75rem; color:#444; background:#f9f9f9; border-radius: 3px;">`; 
                 Object.values(g).forEach(x => { 
                     let infoH = (x.hI && x.hF && x.hI !== x.hF) ? `(das ${x.hI} às ${x.hF})` : (x.hI ? `(às ${x.hI})` : "");
                     let infoV = x.viagens > 1 ? `[${x.viagens} viagens]` : `[1 lançamento]`;
@@ -1656,8 +1697,12 @@
                 }); 
                 ih += `</div>`; 
             }
-            h+=`<tr><td><strong>${i.n}</strong><br><small style="color:var(--primary-color);">Locais: ${bt}</small><br><small>RG:${rgD}</small>${ih}</td><td style="font-weight:bold; text-align:center; vertical-align:middle;">${vd}</td></tr>`; 
+            h+=`<tr><td><strong>${i.n}</strong><br><small>RG:${rgD}</small><br><div style="font-size:0.8rem; border-left: 2px solid #ccc; padding-left: 5px; margin-top: 5px; margin-bottom: 5px;">${locaisHtml}</div>${ih}</td><td style="font-weight:bold; text-align:center; vertical-align:middle;">${vd}</td></tr>`; 
         }); 
+
+        let vdTotal = isA ? `Solicitado: ${Number(grandTotalSol.toFixed(2))}${u}<br><span style="color:green">Empenhado: ${Number(grandTotalEmp.toFixed(2))}${u}</span>` : `${Number(grandTotalSol.toFixed(2))}${u}`;
+        h += `<tr style="background-color: #e2e8f0;"><td style="text-align:right; font-weight:bold; font-size:1.1rem; color:var(--primary-color);">TOTAL GERAL:</td><td style="font-weight:bold; text-align:center; vertical-align:middle; font-size:1.1rem; color:var(--primary-color);">${vdTotal}</td></tr>`;
+
         return h + `</tbody></table>`;
     }
 
