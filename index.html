@@ -1538,7 +1538,6 @@
 
             bs.disabled = true; bs.innerText = "Processando...";
             
-            // NOVO VIGIA DE DUPLICIDADE MELHORADO
             if (!editandoId) {
                 let historico = records.filter(x => (x.nome||"").toLowerCase() === nm.toLowerCase() || (rg && x.rg === rg));
                 if (historico.length > 0) {
@@ -1598,16 +1597,30 @@
     }
 
     // ==========================================
-    // RELATÓRIOS INTELIGENTES (AGRUPADOS POR ESCALA E LOCAL)
+    // RELATÓRIOS INTELIGENTES E FORMATADOS
     // ==========================================
     function showReport() { document.getElementById('formSection').classList.add('hidden'); document.getElementById('reportSection').classList.remove('hidden'); generateReport(); }
     function showForm() { document.getElementById('reportSection').classList.add('hidden'); document.getElementById('formSection').classList.remove('hidden'); }
     function updateReportToggle() { document.querySelectorAll('.report-toggle').forEach(l => { if(l.querySelector('input').checked) l.classList.add('active'); else l.classList.remove('active'); }); }
 
     function buildResumoBairrosHTML(arr) {
-        let res = {}; arr.forEach(r => { let b = (r.bairro||'N/I').toUpperCase(); if(!res[b]) res[b]={f:0,l:0,t:0,c:0,a:0, ae:0}; res[b].f++; res[b].l+=r.qtdLona||0; res[b].t+=r.qtdTelha||0; res[b].c+=r.qtdCesta||0; res[b].a+=r.qtdAgua||0; res[b].ae+=r.qtdAguaEntregue||0; });
-        let h = `<div class="report-summary"><strong>Resumo por Bairros 📊</strong></div><table class="report-table"><thead><tr><th>Bairro</th><th>Fam</th><th>Água (Sol/Emp)</th><th>Lona</th><th>Telha</th><th>Cesta</th></tr></thead><tbody>`;
-        Object.keys(res).sort().forEach(b => { h+=`<tr><td>${b}</td><td>${res[b].f}</td><td>${Number(res[b].a.toFixed(2))} / <span style="color:green;font-weight:bold">${Number(res[b].ae.toFixed(2))}</span></td><td>${Number(res[b].l.toFixed(2))}</td><td>${res[b].t}</td><td>${res[b].c}</td></tr>`; }); 
+        let res = {}; 
+        let tF=0, tL=0, tT=0, tC=0, tA=0, tAe=0;
+        arr.forEach(r => { 
+            let b = (r.bairro||'N/I').toUpperCase(); 
+            if(!res[b]) res[b]={f:0,l:0,t:0,c:0,a:0, ae:0}; 
+            res[b].f++; tF++;
+            res[b].l+=r.qtdLona||0; tL+=r.qtdLona||0;
+            res[b].t+=r.qtdTelha||0; tT+=r.qtdTelha||0;
+            res[b].c+=r.qtdCesta||0; tC+=r.qtdCesta||0;
+            res[b].a+=r.qtdAgua||0; tA+=r.qtdAgua||0;
+            res[b].ae+=r.qtdAguaEntregue||0; tAe+=r.qtdAguaEntregue||0;
+        });
+        let h = `<div class="report-summary"><strong>Resumo por Bairros 📊</strong></div><table class="report-table"><thead><tr><th>Bairro</th><th>Famílias</th><th>Água (Sol/Emp)</th><th>Lona</th><th>Telha</th><th>Cesta</th></tr></thead><tbody>`;
+        Object.keys(res).sort().forEach(b => { 
+            h+=`<tr><td>${b}</td><td>${res[b].f}</td><td>${Number(res[b].a.toFixed(2))} / <span style="color:green;font-weight:bold">${Number(res[b].ae.toFixed(2))}</span></td><td>${Number(res[b].l.toFixed(2))}</td><td>${res[b].t}</td><td>${res[b].c}</td></tr>`; 
+        }); 
+        h += `<tr style="background-color: var(--primary-color); color: white; font-weight: bold;"><td style="text-align: right;">TOTAL GERAL:</td><td>${tF}</td><td>${Number(tA.toFixed(2))} / <span style="color:#a5d6a7;">${Number(tAe.toFixed(2))}</span></td><td>${Number(tL.toFixed(2))}</td><td>${tT}</td><td>${tC}</td></tr>`;
         return h + `</tbody></table>`;
     }
 
@@ -1651,7 +1664,8 @@
             }
         });
         
-        let h = `<div class="report-summary"><strong>Relatório Individual: ${iconeMat}</strong></div><table class="report-table"><thead><tr><th>Beneficiário / Locais</th><th>Total ${isA?'(Solicitado / Empenhado)':''}</th></tr></thead><tbody>`;
+        let h = `<div class="report-summary"><strong>Relatório Individual: ${iconeMat}</strong></div><table class="report-table"><tbody>`;
+        
         Object.values(p).sort((a, b) => b.t - a.t).forEach(i => { 
             let priv = (currentUserNivel==='admin' || currentUserNivel==='supervisor' || i.em === currentUserEmail); let rgD = priv ? i.rg||'N/I' : '***'; 
             
@@ -1660,14 +1674,19 @@
                 let locSol = i.locais[loc].t;
                 let locEmp = i.locais[loc].ae;
                 if(isA) {
-                     locaisHtml += `<div style="margin-top:4px; margin-bottom:2px; color:var(--primary-color);">📍 ${loc}:<br><strong>${Number(locSol.toFixed(2))}${u}</strong> (Empenhado: <span style="color:green;">${Number(locEmp.toFixed(2))}${u}</span>)</div>`;
+                     locaisHtml += `<div style="margin-bottom:4px; font-size:0.85rem; color:#333;">📍 ${loc}:<br><strong>${Number(locSol.toFixed(2))}${u}</strong> <span style="color:green;">(Entregue: ${Number(locEmp.toFixed(2))}${u})</span></div>`;
                 } else {
-                     locaisHtml += `<div style="margin-top:4px; margin-bottom:2px; color:var(--primary-color);">📍 ${loc}: <strong>${Number(locSol.toFixed(2))}${u}</strong></div>`;
+                     locaisHtml += `<div style="margin-bottom:4px; font-size:0.85rem; color:#333;">📍 ${loc}: <strong>${Number(locSol.toFixed(2))}${u}</strong></div>`;
                 }
             });
 
-            let vd = isA ? `Solicitado: ${Number(i.t.toFixed(2))}${u}<br><span style="color:green">Empenhado: ${Number(i.ae.toFixed(2))}${u}</span>` : `${Number(i.t.toFixed(2))}${u}`; 
-            if (isA && i.t > i.ae) vd += `<br><span style="color:var(--danger-color); font-weight:bold;">Falta: ${Number((i.t - i.ae).toFixed(2))}${u}</span>`; 
+            let statusTotal = '';
+            if (isA) {
+                statusTotal = `Solicitado: <strong>${Number(i.t.toFixed(2))}${u}</strong> &nbsp;|&nbsp; Entregue: <strong style="color:green;">${Number(i.ae.toFixed(2))}${u}</strong>`;
+                if (i.t > i.ae) statusTotal += ` &nbsp;|&nbsp; Falta: <strong style="color:var(--danger-color);">${Number((i.t - i.ae).toFixed(2))}${u}</strong>`;
+            } else {
+                statusTotal = `Total Solicitado: <strong>${Number(i.t.toFixed(2))}${u}</strong>`;
+            }
             
             let ih = ''; 
             if (i.entregasBrutas.length > 0) { 
@@ -1689,19 +1708,37 @@
                     }
                 });
                 
-                ih = `<div style="margin-top:8px; padding:6px; border-left:3px solid var(--secondary-color); font-size:0.75rem; color:#444; background:#f9f9f9; border-radius: 3px;">`; 
                 Object.values(g).forEach(x => { 
                     let infoH = (x.hI && x.hF && x.hI !== x.hF) ? `(das ${x.hI} às ${x.hF})` : (x.hI ? `(às ${x.hI})` : "");
                     let infoV = x.viagens > 1 ? `[${x.viagens} viagens]` : `[1 lançamento]`;
-                    ih += `<div style="margin-bottom: 4px; border-bottom: 1px solid #eee; padding-bottom: 2px;">• ${x.data}: <strong style="color:var(--primary-color);">${Number(x.totalQtd.toFixed(2))}${u}</strong> ${iconeMat} por <strong>${x.agente}</strong> <span style="color:#777; font-size:0.7rem;"><br>${infoV} ${infoH}</span></div>`; 
+                    ih += `<div style="margin-bottom: 4px; font-size:0.8rem; color:#444; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">• ${x.data}: <strong style="color:var(--primary-color);">${Number(x.totalQtd.toFixed(2))}${u}</strong> por <strong>${x.agente}</strong> <br><span style="color:#777; font-size:0.75rem;">${infoV} ${infoH}</span></div>`; 
                 }); 
-                ih += `</div>`; 
+            } else {
+                ih = `<div style="font-size:0.8rem; color:#777;">Nenhuma entrega registrada.</div>`;
             }
-            h+=`<tr><td><strong>${i.n}</strong><br><small>RG:${rgD}</small><br><div style="font-size:0.8rem; border-left: 2px solid #ccc; padding-left: 5px; margin-top: 5px; margin-bottom: 5px;">${locaisHtml}</div>${ih}</td><td style="font-weight:bold; text-align:center; vertical-align:middle;">${vd}</td></tr>`; 
+
+            h += `<tr style="background-color: #e2e8f0; border-top: 2px solid #aaa;">
+                    <td colspan="2" style="padding: 6px 10px;">
+                        <div style="display:flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px;">
+                            <span style="font-size: 1.05rem; color: var(--primary-color);">👤 <strong>${i.n}</strong> <small style="color:#555;">(RG: ${rgD})</small></span>
+                            <span style="font-size: 0.95rem; background: #fff; padding: 3px 8px; border-radius: 4px; border: 1px solid #cbd5e1;">${statusTotal}</span>
+                        </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="width: 50%; vertical-align: top; padding: 8px;">
+                        <div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">📍 Endereços de Destino</div>
+                        ${locaisHtml}
+                    </td>
+                    <td style="width: 50%; vertical-align: top; padding: 8px; background: #fafafa;">
+                        <div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">🚛 Histórico de Entregas</div>
+                        ${ih}
+                    </td>
+                  </tr>`; 
         }); 
 
-        let vdTotal = isA ? `Solicitado: ${Number(grandTotalSol.toFixed(2))}${u}<br><span style="color:green">Empenhado: ${Number(grandTotalEmp.toFixed(2))}${u}</span>` : `${Number(grandTotalSol.toFixed(2))}${u}`;
-        h += `<tr style="background-color: #e2e8f0;"><td style="text-align:right; font-weight:bold; font-size:1.1rem; color:var(--primary-color);">TOTAL GERAL:</td><td style="font-weight:bold; text-align:center; vertical-align:middle; font-size:1.1rem; color:var(--primary-color);">${vdTotal}</td></tr>`;
+        let vdTotal = isA ? `Solicitado: ${Number(grandTotalSol.toFixed(2))}${u} &nbsp;&nbsp;|&nbsp;&nbsp; Empenhado: <span style="color:green">${Number(grandTotalEmp.toFixed(2))}${u}</span>` : `${Number(grandTotalSol.toFixed(2))}${u}`;
+        h += `<tr style="background-color: var(--primary-color); color: white;"><td colspan="2" style="text-align:center; font-weight:bold; font-size:1.1rem; padding: 12px;">📊 TOTAL GERAL DO RELATÓRIO ➔ ${vdTotal}</td></tr>`;
 
         return h + `</tbody></table>`;
     }
@@ -1713,18 +1750,37 @@
         
         let h = `<div class="report-summary"><strong>Lista Detalhada 📋</strong></div>`;
         Object.keys(bMap).sort().forEach(b => {
-            h += `<div class="bairro-section"><div class="bairro-header">📍 ${b}</div><table class="report-table"><thead><tr><th width="5%"></th><th>Data</th><th>Beneficiário</th><th>Material</th></tr></thead><tbody>`;
+            h += `<div class="bairro-section"><div class="bairro-header">📍 ${b}</div><table class="report-table"><thead><tr><th width="5%"></th><th width="15%">Data</th><th>Beneficiário / Contato / Endereço</th><th width="35%">Materiais (Solicitado / Status)</th></tr></thead><tbody>`;
             bMap[b].reverse().forEach(r => {
                 let pv = (currentUserNivel==='admin' || r.emailCriador === currentUserEmail); let ps = (currentUserNivel==='supervisor' || pv); 
                 let cbh = currentUserNivel === 'admin' ? `<input type="checkbox" class="bulk-checkbox no-print" value="${r.id}" onchange="checkBulkDelete()">` : ``;
-                let detEnd = ''; if(r.localizacaoAgua) detEnd += `Loc: ${r.localizacaoAgua}<br>`; if(r.rua) detEnd += `Rua: ${r.rua}, Nº ${r.numero||'S/N'}<br>`; if(r.observacao) detEnd += `<span style="color:var(--danger-color); font-weight:bold;">Obs: ${r.observacao}</span><br>`;
-                let mats = ""; if(r.qtdLona > 0 && (mt || isL)) mats += `⛺ Lona: ${Number(r.qtdLona.toFixed(2))}m²<br>`; 
-                if(r.qtdTelha > 0 && (mt || isT)) { mats += `🏠 Telha: ${r.qtdTelha} un. `; if(r.telhaRequerEntrega) { mats += r.telhaEntregue ? `<span style="color:green; font-weight:bold;">(Entregue)</span><br>` : `<span style="color:var(--danger-color); font-weight:bold;">(Pendente)</span><br>`; } else mats += `<br>`; } 
-                if(r.qtdCesta > 0 && (mt || isC)) mats += `📦 Cesta: ${r.qtdCesta} un<br>`;
-                if(r.qtdAgua > 0 && (mt || isA)) { mats += `💧 Sol: ${Number(r.qtdAgua.toFixed(2))}m³<br>✔️ Emp: ${Number((r.qtdAguaEntregue||0).toFixed(2))}m³<br>`; if(r.qtdAgua > (r.qtdAguaEntregue||0)) { mats += `<span style="color:var(--danger-color); font-weight:bold;">Falta: ${Number((r.qtdAgua - (r.qtdAguaEntregue||0)).toFixed(2))}m³</span><br>`; } }
-                let act = ps ? `<button class="btn-edit no-print" onclick="editRecord(${r.id})">✏️ Editar</button>` : ''; 
-                if (currentUserNivel === 'admin') { act += `<button class="btn-small no-print" style="background-color: var(--danger-color); padding: 3px 6px; font-size: 0.7rem; width: 100%; margin-top:4px;" onclick="deleteRecord(${r.id})">🗑️ Excluir</button>`; }
-                h+=`<tr><td style="text-align:center;">${cbh}</td><td><small>${r.dataHoraFormatada.replace(' ','<br>')}</small></td><td><strong>${r.nome}</strong><br><small>RG: ${ps?r.rg||'N/I':'***'}</small><br><div style="font-size:0.75rem; color:#444; margin:4px 0;">${detEnd}</div>${act}</td><td>${mats}</td></tr>`;
+                
+                let detEnd = ''; let eArr = [];
+                if(r.rua) eArr.push(`Rua: ${r.rua}, Nº ${r.numero||'S/N'}`);
+                if(r.localizacaoAgua) eArr.push(`Loc: ${r.localizacaoAgua}`);
+                if(eArr.length > 0) detEnd += eArr.join(' | ') + `<br>`;
+                if(r.telefone) detEnd += `📞 ${r.telefone}<br>`;
+                if(r.observacao) detEnd += `<span style="color:var(--danger-color); font-weight:bold;">Obs: ${r.observacao}</span><br>`;
+
+                let mArr = [];
+                if(r.qtdLona > 0 && (mt || isL)) mArr.push(`⛺ Lona: ${Number(r.qtdLona.toFixed(2))}m²`); 
+                if(r.qtdTelha > 0 && (mt || isT)) { 
+                    let tStat = r.telhaRequerEntrega ? (r.telhaEntregue ? `<span style="color:green;">(Entregue)</span>` : `<span style="color:var(--danger-color);">(Pendente)</span>`) : `(Retirou)`;
+                    mArr.push(`🏠 Telha: ${r.qtdTelha} un ${tStat}`); 
+                } 
+                if(r.qtdCesta > 0 && (mt || isC)) mArr.push(`📦 Cesta: ${r.qtdCesta} un`);
+                if(r.qtdAgua > 0 && (mt || isA)) { 
+                    let aStat = `💧 Água: ${Number(r.qtdAgua.toFixed(2))}m³`;
+                    aStat += ` <span style="color:green;">(Emp: ${Number((r.qtdAguaEntregue||0).toFixed(2))}m³)</span>`;
+                    if(r.qtdAgua > (r.qtdAguaEntregue||0)) aStat += ` <span style="color:var(--danger-color);">(Falta: ${Number((r.qtdAgua - (r.qtdAguaEntregue||0)).toFixed(2))}m³)</span>`;
+                    mArr.push(aStat);
+                }
+                let mats = mArr.join(' &nbsp;|&nbsp; ');
+
+                let act = ps ? `<button class="btn-edit no-print" onclick="editRecord(${r.id})" style="display:inline-block; width:auto; margin-right:4px;">✏️ Editar</button>` : ''; 
+                if (currentUserNivel === 'admin') { act += `<button class="btn-small no-print" style="background-color: var(--danger-color); padding: 3px 6px; font-size: 0.7rem; display:inline-block; width:auto;" onclick="deleteRecord(${r.id})">🗑️ Excluir</button>`; }
+                
+                h+=`<tr><td style="text-align:center;">${cbh}</td><td><small>${r.dataHoraFormatada.split(' ')[0]}<br>${r.dataHoraFormatada.split(' ')[1]}</small></td><td><strong>${r.nome}</strong> <small style="color:#666;">(RG: ${ps?r.rg||'N/I':'***'})</small><br><div style="font-size:0.8rem; color:#444; margin:4px 0; line-height:1.4;">${detEnd}</div><div class="no-print" style="margin-top:4px;">${act}</div></td><td style="vertical-align:middle; line-height:1.5;">${mats}</td></tr>`;
             }); h += `</tbody></table></div>`;
         }); return h;
     }
@@ -1769,22 +1825,4 @@
         aMap.forEach(v => gLogs.push(v)); gLogs.sort((a,b) => b.id - a.id);
         let h = `<table class="report-table"><thead><tr><th>Hora</th><th>Agente</th><th>Ação / Detalhes</th></tr></thead><tbody>`; 
         if(gLogs.length === 0) { h += `<tr><td colspan="3" style="text-align:center;">Nenhum log.</td></tr>`; }
-        gLogs.slice(0,100).forEach(l => { let cr = ''; if(l.acao.includes('ENTREGA')) cr = 'color:#0275d8;'; if(l.acao.includes('EXCLUSÃO') || l.acao.includes('LIMPEZA')) cr = 'color:red; font-weight:bold;'; if(l.acao.includes('LOGÍSTICA')) cr = 'color:#e67e22; font-weight:bold;'; h+=`<tr><td><small>${l.dataHora}</small></td><td><small>${l.agente.split('@')[0]}</small></td><td style="${cr}"><strong>${l.acao}</strong><br><small style="color:#555; font-weight:normal;">${l.detalhes}</small></td></tr>`; }); 
-        document.getElementById('logTableContainer').innerHTML = h + `</tbody></table>`;
-    }
-
-    async function limparBancoDeDados() {
-        if(!confirm('⚠️ TEM CERTEZA? Vai APAGAR TUDO.')) return; 
-        if(btnSync) btnSync.innerText = "⏳ Apagando...";
-        if (navigator.onLine && db && auth && auth.currentUser) {
-            try { const sC = await db.collection("doacoes_capanema").get(); let bC = db.batch(); sC.docs.forEach(d => bC.delete(d.ref)); await bC.commit(); const sL = await db.collection("logs_capanema").get(); let bL = db.batch(); sL.docs.forEach(d => bL.delete(d.ref)); await bL.commit(); } catch(e) { }
-        }
-        localStorage.removeItem('defesaCivilRecords'); records = []; localStorage.removeItem('defesaCivilLogs'); auditLogs = [];
-        await registrarLog("LIMPEZA", "Base resetada."); alert('Apagado!'); if(btnSync) btnSync.innerText = "☁️ Nuvem OK"; showForm(); carregarPainelDespacho();
-    }
-
-    function openTab(t) { document.querySelectorAll('.tab-content, .tab-btn').forEach(e => e.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); document.getElementById('tab-btn-'+t).classList.add('active'); if (t==='log') { renderPainelAuditoria(); } }
-    window.addEventListener('DOMContentLoaded', () => { setTimeout(carregarPainelDespacho, 1000); });
-</script>
-</body>
-</html>
+        gLogs.slice(0,100).forEach(l => { let cr = ''; if(l.acao.includes('ENTREGA')) cr = 'color:#0275d8;'; if(l.acao.includes('EXCLUSÃO') || l.acao.includes('LIMPEZA')) cr = 'color:red; font-weight:bold;'; if(l.acao.includes('LOGÍSTICA')) cr = 'color:#e67e22; font-weight:bold;'; h+=
