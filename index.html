@@ -223,6 +223,7 @@
     </div>
 </div>
 <div class="print-footer-fixed"><div>@Sieklicki</div></div>
+
 <div class="container" id="formSection">
     <div class="cloud-panel no-print">
         <div class="status-indicator"><span class="dot" id="networkStatusDot"></span><span id="networkStatusText">Aguarde...</span><span id="realtimeClock" style="margin-left: 10px; font-weight: normal; color: #555;"></span></div>
@@ -442,23 +443,15 @@
     let currentUserNivel = 'agente'; 
     let onlineUsersMap = {}; 
 
-    // Lida com redirecionamento de login no mobile
     auth.getRedirectResult().then((result) => {
-        if (result && result.user) { 
-            console.log("Login recuperado pelo redirecionamento."); 
-        }
+        if (result && result.user) console.log("Login recuperado."); 
     }).catch((error) => {
-        if (error.code === 'auth/unauthorized-domain') { 
-            alert("⚠️ ALERTA DE SEGURANÇA:\nEste site não foi autorizado no Firebase."); 
-        } 
+        if (error.code === 'auth/unauthorized-domain') alert("⚠️ ALERTA DE SEGURANÇA:\\nEste site não foi autorizado no Firebase."); 
         if(btnLogin) btnLogin.innerText = "Logar Google";
     });
 
     function loginGoogle() {
-        if (!navigator.onLine) { 
-            alert("Sem internet. Conecte-se para fazer login."); 
-            return; 
-        }
+        if (!navigator.onLine) { alert("Sem internet. Conecte-se para fazer login."); return; }
         if(btnLogin) btnLogin.innerText = "Carregando..."; 
         const provider = new firebase.auth.GoogleAuthProvider();
         auth.signInWithPopup(provider).catch(error => {
@@ -476,52 +469,31 @@
         });
     }
 
-    // NOVA FUNÇÃO SAIR DEFINITIVA E SEGURA
     function logoutGoogle() { 
         if(confirm("Deseja realmente sair da sua conta?")) {
-            auth.signOut().then(() => { 
-                location.reload(); 
-            }); 
+            auth.signOut().then(() => { location.reload(); }); 
         }
     }
 
     async function processarAcessoUsuario(user) {
         currentUserEmail = user.email ? user.email.toLowerCase() : "sem-email@google.com";
-        if (ADMIN_EMAILS.includes(currentUserEmail)) { 
-            currentUserNivel = 'admin'; 
-            return 'aprovado'; 
-        }
+        if (ADMIN_EMAILS.includes(currentUserEmail)) { currentUserNivel = 'admin'; return 'aprovado'; }
         if (!navigator.onLine) { 
             currentUserNivel = localStorage.getItem('nivel_' + currentUserEmail) || 'agente'; 
             return localStorage.getItem('permissao_' + currentUserEmail) || 'aprovado'; 
         }
-        
         try {
             const docRef = db.collection('usuarios_capanema').doc(currentUserEmail); 
             const doc = await docRef.get();
-            
             if (!doc.exists) {
-                await docRef.set({ 
-                    email: currentUserEmail, 
-                    nome: user.displayName || 'Sem Nome', 
-                    status: 'aprovado', 
-                    nivel: 'agente', 
-                    dataRegistro: new Date().toLocaleString('pt-BR') 
-                });
-                localStorage.setItem('permissao_' + currentUserEmail, 'aprovado'); 
-                localStorage.setItem('nivel_' + currentUserEmail, 'agente'); 
-                currentUserNivel = 'agente'; 
-                return 'aprovado';
+                await docRef.set({ email: currentUserEmail, nome: user.displayName || 'Sem Nome', status: 'aprovado', nivel: 'agente', dataRegistro: new Date().toLocaleString('pt-BR') });
+                localStorage.setItem('permissao_' + currentUserEmail, 'aprovado'); localStorage.setItem('nivel_' + currentUserEmail, 'agente'); currentUserNivel = 'agente'; return 'aprovado';
             } else {
-                const data = doc.data(); 
-                currentUserNivel = data.nivel || 'agente';
-                localStorage.setItem('permissao_' + currentUserEmail, data.status || 'aprovado'); 
-                localStorage.setItem('nivel_' + currentUserEmail, currentUserNivel); 
-                return data.status || 'aprovado';
+                const data = doc.data(); currentUserNivel = data.nivel || 'agente';
+                localStorage.setItem('permissao_' + currentUserEmail, data.status || 'aprovado'); localStorage.setItem('nivel_' + currentUserEmail, currentUserNivel); return data.status || 'aprovado';
             }
         } catch (e) { 
-            currentUserNivel = localStorage.getItem('nivel_' + currentUserEmail) || 'agente'; 
-            return localStorage.getItem('permissao_' + currentUserEmail) || 'aprovado'; 
+            currentUserNivel = localStorage.getItem('nivel_' + currentUserEmail) || 'agente'; return localStorage.getItem('permissao_' + currentUserEmail) || 'aprovado'; 
         }
     }
 
@@ -536,70 +508,48 @@
 
         if (navigator.onLine) {
             if (!auth.currentUser) { 
-                if(loginOverlay) loginOverlay.style.display = 'flex'; 
-                if(blockedOverlay) blockedOverlay.style.display = 'none'; 
+                if(loginOverlay) loginOverlay.style.display = 'flex'; if(blockedOverlay) blockedOverlay.style.display = 'none'; 
             } else { 
                 if(loginOverlay) loginOverlay.style.display = 'none';
                 if (currentUserStatus === 'bloqueado') { 
-                    if(document.getElementById('blockedEmailDisplay')) {
-                        document.getElementById('blockedEmailDisplay').innerText = auth.currentUser.email || 'Usuário'; 
-                    }
+                    if(document.getElementById('blockedEmailDisplay')) document.getElementById('blockedEmailDisplay').innerText = auth.currentUser.email || 'Usuário'; 
                     if(blockedOverlay) blockedOverlay.style.display = 'flex'; 
-                } else { 
-                    if(blockedOverlay) blockedOverlay.style.display = 'none'; 
-                }
+                } else { if(blockedOverlay) blockedOverlay.style.display = 'none'; }
             }
         } else {
             if(loginOverlay) loginOverlay.style.display = 'none';
             if (auth.currentUser && currentUserStatus === 'bloqueado') { 
-                if(document.getElementById('blockedEmailDisplay')) {
-                    document.getElementById('blockedEmailDisplay').innerText = auth.currentUser.email || 'Usuário'; 
-                }
+                if(document.getElementById('blockedEmailDisplay')) document.getElementById('blockedEmailDisplay').innerText = auth.currentUser.email || 'Usuário'; 
                 if(blockedOverlay) blockedOverlay.style.display = 'flex'; 
-            } else { 
-                if(blockedOverlay) blockedOverlay.style.display = 'none'; 
-            }
+            } else { if(blockedOverlay) blockedOverlay.style.display = 'none'; }
         }
     }
 
     function updateOnlineStatus() {
         if (navigator.onLine) {
-            if(dot) dot.className = "dot online"; 
-            if(text) text.innerText = "Online";
+            if(dot) dot.className = "dot online"; if(text) text.innerText = "Online";
             if (auth && auth.currentUser && currentUserStatus === 'aprovado') { 
                 if(typeof sincronizarFirebaseAutomatica === 'function') sincronizarFirebaseAutomatica(); 
                 if(typeof sincronizarLogsOffline === 'function') sincronizarLogsOffline(); 
             }
         } else { 
-            if(dot) dot.className = "dot offline"; 
-            if(text) text.innerText = "Offline"; 
+            if(dot) dot.className = "dot offline"; if(text) text.innerText = "Offline"; 
             if(btnSync) { btnSync.innerText = "☁️ S/ Internet"; btnSync.style.backgroundColor = "#777"; }
         }
         verificarAcesso();
     }
-    
-    window.addEventListener('online', updateOnlineStatus); 
-    window.addEventListener('offline', updateOnlineStatus);
+    window.addEventListener('online', updateOnlineStatus); window.addEventListener('offline', updateOnlineStatus);
 
     if(auth) {
         auth.onAuthStateChanged(async (user) => {
             if (user) {
                 try {
-                    currentUserStatus = await processarAcessoUsuario(user); 
-                    verificarAcesso();
-                    
+                    currentUserStatus = await processarAcessoUsuario(user); verificarAcesso();
                     if (currentUserStatus === 'aprovado') {
                         if(typeof setupPresenceSystem === 'function') setupPresenceSystem(user); 
                         if ((currentUserNivel === 'admin' || currentUserNivel === 'supervisor') && typeof escutarUsuariosOnline === 'function') escutarUsuariosOnline();
-                        
                         const nomeExibicao = user.displayName ? user.displayName.split(" ")[0] : (user.email ? user.email.split('@')[0] : 'Agente');
-                        
-                        if(btnLogin) { 
-                            btnLogin.innerHTML = `👤 ${nomeExibicao} | <span onclick="logoutGoogle()" style="text-decoration:underline; color:#ffcccc; cursor:pointer;">Sair</span>`;
-                            btnLogin.style.backgroundColor = "#333";
-                            btnLogin.onclick = null; 
-                        }
-                        
+                        if(btnLogin) { btnLogin.innerHTML = `👤 ${nomeExibicao} | <span onclick="logoutGoogle()" style="text-decoration:underline; color:#ffcccc; cursor:pointer;">Sair</span>`; btnLogin.style.backgroundColor = "#333"; btnLogin.onclick = null; }
                         if(btnSync) btnSync.style.display = "inline-block";
                         
                         if(typeof carregarConfigZap === 'function') carregarConfigZap();
@@ -608,26 +558,18 @@
                         if(typeof iniciarEscutaNuvem === 'function') iniciarEscutaNuvem();
                         if(typeof iniciarEscutaLogsNuvem === 'function') iniciarEscutaLogsNuvem(); 
                         if(typeof carregarPainelDespacho === 'function') carregarPainelDespacho(); 
-                    } else { 
-                        if(typeof unsubscribeSnapshot !== 'undefined' && unsubscribeSnapshot) unsubscribeSnapshot(); 
-                        if(typeof unsubscribeLogs !== 'undefined' && unsubscribeLogs) unsubscribeLogs(); 
-                    }
-                } catch(e) { console.error("Erro AuthState:", e); }
+                    } else { if(unsubscribeSnapshot) unsubscribeSnapshot(); if(unsubscribeLogs) unsubscribeLogs(); }
+                } catch(e) { }
             } else {
                 currentUserStatus = 'deslogado'; currentUserEmail = ''; currentUserNivel = 'agente'; 
-                if(btnLogin) { 
-                    btnLogin.innerText = "Logar Google"; 
-                    btnLogin.style.backgroundColor = "#4285F4"; 
-                    btnLogin.onclick = loginGoogle; 
-                }
+                if(btnLogin) { btnLogin.innerText = "Logar Google"; btnLogin.style.backgroundColor = "#4285F4"; btnLogin.onclick = loginGoogle; }
                 if(btnSync) btnSync.style.display = "none";
-                if(typeof unsubscribeSnapshot !== 'undefined' && unsubscribeSnapshot) unsubscribeSnapshot(); 
-                if(typeof unsubscribeLogs !== 'undefined' && unsubscribeLogs) unsubscribeLogs(); 
-                verificarAcesso();
+                if(unsubscribeSnapshot) unsubscribeSnapshot(); if(unsubscribeLogs) unsubscribeLogs(); verificarAcesso();
             }
         });
     }
     updateOnlineStatus();
+
     // ==========================================
     // SISTEMA DE PRESENÇA E EQUIPE
     // ==========================================
@@ -638,18 +580,14 @@
         const isOnlineForDatabase = { state: 'online', last_changed: firebase.database.ServerValue.TIMESTAMP, email: user.email };
         rtdb.ref('.info/connected').on('value', function(snapshot) {
             if (snapshot.val() == false) return;
-            userStatusDatabaseRef.onDisconnect().set(isOfflineForDatabase).then(function() { 
-                userStatusDatabaseRef.set(isOnlineForDatabase); 
-            });
+            userStatusDatabaseRef.onDisconnect().set(isOfflineForDatabase).then(function() { userStatusDatabaseRef.set(isOnlineForDatabase); });
         });
     }
 
     function escutarUsuariosOnline() {
         rtdb.ref('/status/').on('value', (snapshot) => {
             onlineUsersMap = snapshot.val() || {};
-            if(document.getElementById('equipeModal') && document.getElementById('equipeModal').style.display === 'flex') {
-                carregarListaUsuarios(); 
-            }
+            if(document.getElementById('equipeModal') && document.getElementById('equipeModal').style.display === 'flex') carregarListaUsuarios(); 
         });
     }
 
@@ -657,16 +595,11 @@
     function fecharModalEquipe() { const modal = document.getElementById('equipeModal'); if(modal) modal.style.display = 'none'; }
 
     async function adicionarUsuarioManual() {
-        const novoEmail = document.getElementById('novoEmailEquipe').value.trim().toLowerCase(); 
-        const novoNivel = document.getElementById('novoNivelEquipe').value;
+        const novoEmail = document.getElementById('novoEmailEquipe').value.trim().toLowerCase(); const novoNivel = document.getElementById('novoNivelEquipe').value;
         if(!novoEmail) { alert("Digite um e-mail válido."); return; }
         try { 
-            await db.collection('usuarios_capanema').doc(novoEmail).set({ 
-                email: novoEmail, nome: 'Adicionado Manualmente', status: 'aprovado', nivel: novoNivel, dataRegistro: new Date().toLocaleString('pt-BR') 
-            }, { merge: true }); 
-            alert(`Acesso liberado para ${novoEmail} como ${novoNivel.toUpperCase()}!`); 
-            document.getElementById('novoEmailEquipe').value = ''; 
-            carregarListaUsuarios(); 
+            await db.collection('usuarios_capanema').doc(novoEmail).set({ email: novoEmail, nome: 'Adicionado Manualmente', status: 'aprovado', nivel: novoNivel, dataRegistro: new Date().toLocaleString('pt-BR') }, { merge: true }); 
+            alert(`Acesso liberado para ${novoEmail} como ${novoNivel.toUpperCase()}!`); document.getElementById('novoEmailEquipe').value = ''; carregarListaUsuarios(); 
         } catch (e) { alert("Erro ao adicionar usuário."); }
     }
 
@@ -678,7 +611,7 @@
             <div style="display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;">
                 <input type="email" id="novoEmailEquipe" placeholder="email@gmail.com" style="flex: 2; height: 32px; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
                 <select id="novoNivelEquipe" style="flex: 1; height: 32px; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                    <option value="agente">Agente (Padrão)</option><option value="supervisor">Supervisor</option><option value="admin">Administrador</option>
+                    <option value="agente">Agente</option><option value="supervisor">Supervisor</option><option value="admin">Admin</option>
                 </select>
                 <button onclick="adicionarUsuarioManual()" style="background: var(--success-color); color: white; border: none; border-radius: 3px; font-weight: bold; cursor: pointer; padding: 0 15px;">Salvar</button>
             </div>
@@ -686,37 +619,29 @@
         try {
             const snapshot = await db.collection('usuarios_capanema').get(); let usuarios = []; 
             snapshot.forEach(doc => { let d = doc.data(); if(!usuarios.find(x => x.email === d.email)) usuarios.push(d); });
-            let htmlTabela = `<div class="table-responsive"><table class="report-table" style="font-size: 0.8rem; width: 100%; min-width: 400px;">
-                <thead><tr style="background-color: var(--primary-color); color: white;"><th>Nome/Email</th><th>Nível</th><th>Status / Último Acesso</th><th>Ações</th></tr></thead><tbody>`;
-            if(usuarios.length === 0) { htmlTabela += `<tr><td colspan="4" style="text-align:center;">Nenhum usuário.</td></tr>`; } 
-            else {
+            let htmlTabela = `<div class="table-responsive"><table class="report-table" style="font-size: 0.8rem; width: 100%; min-width: 400px;"><thead><tr style="background-color: var(--primary-color); color: white;"><th>Nome/Email</th><th>Nível</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
+            if(usuarios.length === 0) { htmlTabela += `<tr><td colspan="4" style="text-align:center;">Nenhum usuário.</td></tr>`; } else {
                 usuarios.forEach(u => {
-                    let isOnline = false; let lastSeenText = '<br><span style="font-size: 0.7rem; color: #999;">Sem registro de acesso</span>';
-                    Object.values(onlineUsersMap).forEach(ou => { 
-                        if(ou.email === u.email) { 
-                            if (ou.state === 'online') { isOnline = true; } 
-                            else if (ou.last_changed) { lastSeenText = `<br><span style="font-size: 0.75rem; color: #555;">Visto em: <strong>${typeof formatarDataHora === 'function' ? formatarDataHora(ou.last_changed) : new Date(ou.last_changed).toLocaleString('pt-BR')}</strong></span>`; } 
-                        } 
-                    });
-                    let statusLigacao = isOnline ? `<span style="color:var(--success-color); font-weight:bold;">🟢 Online Agora</span>` : `<span style="color:#777;">⚪ Offline</span>${lastSeenText}`;
+                    let isOnline = false; let lastSeenText = '<br><span style="font-size: 0.7rem; color: #999;">Sem registro</span>';
+                    Object.values(onlineUsersMap).forEach(ou => { if(ou.email === u.email) { if (ou.state === 'online') { isOnline = true; } else if (ou.last_changed) { lastSeenText = `<br><span style="font-size: 0.75rem; color: #555;">Visto: <strong>${typeof formatarDataHora === 'function' ? formatarDataHora(ou.last_changed) : new Date(ou.last_changed).toLocaleString('pt-BR')}</strong></span>`; } } });
+                    let statusLigacao = isOnline ? `<span style="color:var(--success-color); font-weight:bold;">🟢 Online</span>` : `<span style="color:#777;">⚪ Offline</span>${lastSeenText}`;
                     let selectNivel = `<select onchange="alterarNivelUsuario('${u.email}', this.value)" style="width:100%; padding:2px; font-size:0.75rem;"><option value="agente" ${u.nivel === 'agente' || !u.nivel ? 'selected' : ''}>Agente</option><option value="supervisor" ${u.nivel === 'supervisor' ? 'selected' : ''}>Supervisor</option><option value="admin" ${u.nivel === 'admin' || ADMIN_EMAILS.includes(u.email) ? 'selected' : ''}>Admin</option></select>`;
-                    if (ADMIN_EMAILS.includes(u.email)) selectNivel = `<strong>Administrador</strong>`; 
+                    if (ADMIN_EMAILS.includes(u.email)) selectNivel = `<strong>Admin</strong>`; 
                     let botoes = `<div style="display: flex; flex-direction:column; gap: 4px; margin-top:4px;">`;
-                    if (u.status === 'bloqueado') { botoes += `<button class="btn-small" style="background-color: var(--success-color); width: 100%; padding: 4px;" onclick="alterarStatusUsuario('${u.email}', 'aprovado')">✅ Desbloquear</button>`; }
-                    if (u.status === 'aprovado' && !ADMIN_EMAILS.includes(u.email)) { botoes += `<button class="btn-small" style="background-color: #f0ad4e; width: 100%; padding: 4px;" onclick="alterarStatusUsuario('${u.email}', 'bloqueado')">🚫 Suspender</button>`; }
-                    if (!ADMIN_EMAILS.includes(u.email)) { botoes += `<button class="btn-small" style="background-color: var(--danger-color); width: 100%; padding: 4px;" onclick="excluirUsuarioDefinitivo('${u.email}')">🗑️ Excluir Agente</button>`; }
+                    if (u.status === 'bloqueado') botoes += `<button class="btn-small" style="background-color: var(--success-color); width: 100%; padding: 4px;" onclick="alterarStatusUsuario('${u.email}', 'aprovado')">✅ Desbloq</button>`;
+                    if (u.status === 'aprovado' && !ADMIN_EMAILS.includes(u.email)) botoes += `<button class="btn-small" style="background-color: #f0ad4e; width: 100%; padding: 4px;" onclick="alterarStatusUsuario('${u.email}', 'bloqueado')">🚫 Suspend</button>`;
+                    if (!ADMIN_EMAILS.includes(u.email)) botoes += `<button class="btn-small" style="background-color: var(--danger-color); width: 100%; padding: 4px;" onclick="excluirUsuarioDefinitivo('${u.email}')">🗑️ Excluir</button>`;
                     botoes += `</div>`; 
                     htmlTabela += `<tr><td><strong>${u.nome}</strong><br><span style="word-break: break-all; font-size: 0.7rem; color: #555;">${u.email}</span></td><td>${selectNivel}</td><td>${statusLigacao}</td><td>${botoes}</td></tr>`;
                 });
             }
             htmlTabela += `</tbody></table></div>`; container.innerHTML = htmlForm + htmlTabela;
-        } catch (e) { container.innerHTML = `<p style="text-align:center; color:red;">Erro ao carregar usuários.</p>`; }
+        } catch (e) { container.innerHTML = `<p style="text-align:center; color:red;">Erro ao carregar.</p>`; }
     }
 
     async function alterarStatusUsuario(email, novoStatus) { if(!confirm(`Mudar o acesso de ${email} para ${novoStatus.toUpperCase()}?`)) return; try { await db.collection('usuarios_capanema').doc(email).update({ status: novoStatus }); carregarListaUsuarios(); } catch (e) { alert("Erro."); } }
     async function alterarNivelUsuario(email, novoNivel) { if(!confirm(`Alterar permissão de ${email} para ${novoNivel.toUpperCase()}?`)) { carregarListaUsuarios(); return; } try { await db.collection('usuarios_capanema').doc(email).update({ nivel: novoNivel }); alert('Atualizado!'); carregarListaUsuarios(); } catch (e) { alert("Erro."); } }
-    async function excluirUsuarioDefinitivo(email) { if(!confirm(`⚠️ ATENÇÃO EXTREMA!\nTem certeza absoluta que deseja apagar o usuário ${email} do banco de dados?\nEle terá que se conectar e ser aprovado novamente.`)) return; try { await db.collection('usuarios_capanema').doc(email).delete(); alert('Usuário excluído com sucesso.'); carregarListaUsuarios(); } catch (e) { alert("Erro ao excluir usuário."); } }
-
+    async function excluirUsuarioDefinitivo(email) { if(!confirm(`⚠️ ATENÇÃO EXTREMA!\\nTem certeza absoluta que deseja apagar o usuário ${email}?`)) return; try { await db.collection('usuarios_capanema').doc(email).delete(); alert('Excluído com sucesso.'); carregarListaUsuarios(); } catch (e) { alert("Erro ao excluir usuário."); } }
     // ==========================================
     // TEMPO, VIGIA ANTIFRAUDE E AUTO-PREENCHIMENTO
     // ==========================================
@@ -1043,20 +968,26 @@
 
             bs.disabled = true; bs.innerText = "Processando...";
             
+            // INTEGRAÇÃO: REGRA DE 1 ANO E EXCEÇÃO DE GRANJA/PREFEITURA
             if (!editandoId) {
                 let historico = records.filter(x => (x.nome||"").toLowerCase() === nm.toLowerCase() || (rg && x.rg === rg));
                 if (historico.length > 0) {
                     historico.sort((a,b) => new Date(a.dataISO) - new Date(b.dataISO));
                     let ultimo = historico[historico.length - 1];
                     let dias = Math.floor((new Date() - new Date(ultimo.dataISO)) / (1000 * 60 * 60 * 24));
-                    let txtTempo = dias > 365 ? `(Há mais de 1 ano)` : `(Há ${dias} dias)`;
-                    let matUltimo = ultimo.qtdAgua>0 ? 'Água' : (ultimo.qtdTelha>0 ? 'Telhas' : (ultimo.qtdLona>0 ? 'Lonas' : 'Cestas'));
+                    
+                    if (dias > 365) {
+                        alert(`ℹ️ INFORMAÇÃO: O beneficiário "${nm}" já foi atendido há mais de 1 ano (${ultimo.dataHoraFormatada.split(' ')[0]}).\nO cadastro será liberado normalmente.`);
+                    } else {
+                        let txtTempo = `(Há ${dias} dias)`;
+                        let matUltimo = ultimo.qtdAgua>0 ? 'Água' : (ultimo.qtdTelha>0 ? 'Telhas' : (ultimo.qtdLona>0 ? 'Lonas' : 'Cestas'));
 
-                    let aviso = `⚠️ ATENÇÃO: O beneficiário "${nm}" já recebeu doações anteriormente.\n\n`;
-                    aviso += `Último registro: ${ultimo.dataHoraFormatada.split(' ')[0]} ${txtTempo}\nMaterial: ${matUltimo}\n\n`;
-                    aviso += `Deseja registrar um NOVO pedido ou destinar para OUTRO local?\n\nClique em OK para continuar ou CANCELAR para abortar.`;
+                        let aviso = `⚠️ ATENÇÃO: O beneficiário "${nm}" já recebeu doações RECENTEMENTE!\n\n`;
+                        aviso += `Último registro: ${ultimo.dataHoraFormatada.split(' ')[0]} ${txtTempo}\nMaterial: ${matUltimo}\n\n`;
+                        aviso += `Se este for um abastecimento para GRANJA, ABASTECIMENTO DA COMUNIDADE ou ÓRGÃO DA PREFEITURA, clique em OK para prosseguir.\n\nDeseja confirmar este novo cadastro?`;
 
-                    if (!confirm(aviso)) { bs.disabled = false; bs.innerText = "Salvar Lançamento"; return; }
+                        if (!confirm(aviso)) { bs.disabled = false; bs.innerText = "Salvar Lançamento"; return; }
+                    }
                 }
             }
             
@@ -1069,25 +1000,17 @@
                 const idx = records.findIndex(x => x.id === editandoId);
                 if (idx !== -1) {
                     records[idx] = { ...records[idx], nome:nm, rg, telefone:tel, bairro:bai, rua:ru, numero:nu, localizacaoAgua:lAg, referenciaAgua:rAg, observacao:ob, qtdLona:qL, qtdTelha:qT, telhaRequerEntrega:rEnt, qtdCesta:qC, qtdAgua:qA, qtdAguaEntregue:qAe, signatureData:sig, fotoRg:fo, synced:false, agente:nAg };
-                    await registrarLog("EDIÇÃO", `Alterou Cód: [${records[idx].codigo}]`); 
-                    alert('Atualizado!');
+                    await registrarLog("EDIÇÃO", `Alterou Cód: [${records[idx].codigo}]`); alert('Atualizado!');
                 }
             } else {
                 const cd = gerarCodigoRegistro();
                 records.push({ id: Date.now(), codigo: cd, dataISO: new Date().toISOString(), dataHoraFormatada: new Date().toLocaleString('pt-BR'), nome:nm, rg, telefone:tel, bairro:bai, rua:ru, numero:nu, localizacaoAgua:lAg, referenciaAgua:rAg, observacao:ob, qtdLona:qL, qtdTelha:qT, telhaRequerEntrega:rEnt, telhaEntregue:false, qtdCesta:qC, qtdAgua:qA, qtdAguaEntregue:qAe, entregasAgua:[], signatureData:sig, fotoRg:fo, synced:false, agente:nAg, emailCriador: currentUserEmail, logisticaPausada: false, logisticaMotivo: "" });
                 await registrarLog("NOVO CADASTRO", `Cód: [${cd}]`, cd); 
                 
-                let lst = (typeof configZap !== 'undefined' && configZap?.emailSolicitante) ? configZap.emailSolicitante.toLowerCase().split(',').map(e => e.trim()) : [];
-                if ((cA || rEnt) && lst.includes((currentUserEmail||'').toLowerCase()) && typeof reenviarZapMotorista === 'function') { 
-                    reenviarZapMotorista(nm, bai, lAg, ru, nu, rAg, ob, tel, cA?qA:qT, cA?'agua':'telha', qC>0); 
-                } else { 
-                    alert('Salvo com sucesso!'); 
-                }
+                if (cA || rEnt) { reenviarZapMotorista(nm, bai, lAg, ru, nu, rAg, ob, tel, cA?qA:qT, cA?'agua':'telha', qC>0); } 
+                else { alert('Salvo com sucesso!'); }
             }
-            localStorage.setItem('defesaCivilRecords', JSON.stringify(records)); 
-            clearFormFields(); 
-            if(typeof sincronizarFirebaseAutomatica === 'function') sincronizarFirebaseAutomatica(); 
-            if(typeof carregarPainelDespacho === 'function') carregarPainelDespacho();
+            localStorage.setItem('defesaCivilRecords', JSON.stringify(records)); clearFormFields(); sincronizarFirebaseAutomatica(); carregarPainelDespacho();
         } catch (e) { alert("⚠️ Erro:\n" + e.message); bs.disabled = false; bs.innerText = "Salvar Lançamento"; }
     }
 
@@ -1097,8 +1020,7 @@
         if(!confirm("⚠️ EXCLUIR permanentemente?")) return;
         records = records.filter(x => x.id !== id); localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
         if (navigator.onLine && db) { try { await db.collection("doacoes_capanema").doc(id.toString()).delete(); } catch(e){} }
-        await registrarLog("EXCLUSÃO", `Apagou Cód: [${r.codigo}]`); generateReport(); 
-        if(typeof carregarPainelDespacho === 'function') carregarPainelDespacho();
+        await registrarLog("EXCLUSÃO", `Apagou Cód: [${r.codigo}]`); generateReport(); carregarPainelDespacho();
     }
     
     function checkBulkDelete() { const cx = document.querySelectorAll('.bulk-checkbox:checked'); const b = document.getElementById('btnBulkDelete'); if(cx.length>0) { b.style.display='block'; b.innerText=`🗑️ Excluir ${cx.length}`; } else { b.style.display='none'; } }
@@ -1108,8 +1030,7 @@
         let b = document.getElementById('btnBulkDelete'); b.innerText = "⏳ Apagando..."; b.disabled = true; 
         let ids = Array.from(cx).map(c => parseInt(c.value)); records = records.filter(r => !ids.includes(r.id)); localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
         if (navigator.onLine && db) { let batch = db.batch(); let c=0; for (let id of ids) { let ref = db.collection("doacoes_capanema").doc(id.toString()); batch.delete(ref); c++; if(c===490) { await batch.commit(); batch = db.batch(); c=0; } } if(c>0) await batch.commit(); }
-        await registrarLog("EXCLUSÃO EM LOTE", `Apagou ${ids.length} registros.`); alert(`${ids.length} apagados!`); b.disabled = false; b.style.display = 'none'; generateReport(); 
-        if(typeof carregarPainelDespacho === 'function') carregarPainelDespacho();
+        await registrarLog("EXCLUSÃO EM LOTE", `Apagou ${ids.length} registros.`); alert(`${ids.length} apagados!`); b.disabled = false; b.style.display = 'none'; generateReport(); carregarPainelDespacho();
     }
 
     // ==========================================
@@ -1144,11 +1065,9 @@
             if(!p[k]) p[k] = {n:r.nome, rg:r.rg, locais: {}, t:0, em:r.emailCriador, tel:r.telefone, ae:0, entregasBrutas: [], isPriv: priv}; 
             if(priv) p[k].isPriv = true; 
             
-            // ESCUDO DE DADOS (LGPD)
             let ruaM = priv ? r.rua : (r.rua ? r.rua.substring(0,3) + '***' : '');
             let numM = priv ? r.numero : (r.numero ? '***' : '');
             let locM = priv ? r.localizacaoAgua : (r.localizacaoAgua ? '***' : '');
-
             let endArr = [];
             if(r.bairro) endArr.push(r.bairro);
             if(r.rua) endArr.push(`${ruaM}, ${numM||'S/N'}`);
@@ -1156,7 +1075,6 @@
             let nomeLocal = endArr.length > 0 ? endArr.join(' - ') : 'Local Não Informado';
 
             if(!p[k].locais[nomeLocal]) p[k].locais[nomeLocal] = { t: 0, ae: 0 };
-
             let v = isA ? r.qtdAgua : (isL ? r.qtdLona : (isT ? r.qtdTelha : r.qtdCesta)); 
             p[k].t += v; p[k].locais[nomeLocal].t += v; grandTotalSol += v;
             
@@ -1272,6 +1190,7 @@
             if(sel.length === 0) { h += `<p style="text-align:center; padding: 20px; color: var(--primary-color);">☝️ Selecione o tipo de relatório acima.</p>`; sig.style.display = 'none'; } else { sig.style.display = 'block'; }
         } document.getElementById('reportContent').innerHTML = h; checkBulkDelete(); 
     }
+
     // ==========================================
     // AUDITORIA E LIMPEZA ANTI-SPAM
     // ==========================================
@@ -1361,7 +1280,7 @@
     function openTab(t) { document.querySelectorAll('.tab-content, .tab-btn').forEach(e => e.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); document.getElementById('tab-btn-'+t).classList.add('active'); if (t==='log') { renderPainelAuditoria(); } }
 
     // ==========================================
-    // SINCRONIZAÇÃO NUVEM E WHATSAPP
+    // SINCRONIZAÇÃO NUVEM E WHATSAPP MAPS
     // ==========================================
     let configZap = { emailSolicitante: '', telefonePipa: '', telefoneSocial: '' };
     
@@ -1385,11 +1304,17 @@
         } catch (e) { alert("Erro ao salvar."); }
     }
 
+    // INTEGRAÇÃO: ROTA NO MAPS E SAUDAÇÃO INTELIGENTE
     function reenviarZapMotorista(nome, bairro, loc, rua, num, ref, obs, tel, qtd, tipo, hasCesta) {
         let numDestino = tipo === 'agua' ? configZap.telefonePipa : configZap.telefoneSocial;
         if(!numDestino) { alert("⚠️ Número de WhatsApp do motorista não configurado. Avise o Administrador!"); return; }
         numDestino = numDestino.replace(/\D/g, '');
         if(numDestino.length < 10) return;
+        
+        let horaAtual = new Date().getHours();
+        let saudacao = "Bom dia";
+        if (horaAtual >= 12 && horaAtual < 18) saudacao = "Boa tarde";
+        else if (horaAtual >= 18) saudacao = "Boa noite";
         
         let emoji = tipo === 'agua' ? '💧' : '🏠';
         let mat = tipo === 'agua' ? 'Água' : 'Telhas';
@@ -1397,11 +1322,16 @@
         let cst = hasCesta ? `\n📦 *CESTA BÁSICA:* Sim (Levar)` : '';
         let endCompl = rua ? `${rua}, ${num||'S/N'}` : `${loc}`;
         
-        let msg = `🚨 *NOVA SOLICITAÇÃO - DEFESA CIVIL* 🚨\n\n`;
+        let origemMap = "Corpo de Bombeiros, Rua Otávio Francisco de Matos, Capanema - PR";
+        let destinoMap = `${endCompl}, ${bairro}, Capanema - PR`;
+        let linkMaps = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origemMap)}&destination=${encodeURIComponent(destinoMap)}`;
+        
+        let msg = `${saudacao}! 🚨 *NOVA SOLICITAÇÃO - DEFESA CIVIL* 🚨\n\n`;
         msg += `👤 *Nome:* ${nome}\n📞 *Tel:* ${tel}\n`;
         msg += `📍 *Endereço:* ${bairro}\n🛣️ *Local:* ${endCompl}\n🔍 *Ref:* ${ref||'Nenhuma'}\n\n`;
         msg += `${emoji} *Material:* ${mat} (${txtQtd})${cst}\n`;
-        if(obs) msg += `⚠️ *OBS:* ${obs}\n`;
+        if(obs) msg += `⚠️ *OBS:* ${obs}\n\n`;
+        msg += `🗺️ *ROTA GOOGLE MAPS:*\n${linkMaps}`;
         
         let url = `https://api.whatsapp.com/send?phone=55${numDestino}&text=${encodeURIComponent(msg)}`;
         window.open(url, '_blank');
