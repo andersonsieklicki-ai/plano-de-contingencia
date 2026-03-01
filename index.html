@@ -1825,4 +1825,22 @@
         aMap.forEach(v => gLogs.push(v)); gLogs.sort((a,b) => b.id - a.id);
         let h = `<table class="report-table"><thead><tr><th>Hora</th><th>Agente</th><th>Ação / Detalhes</th></tr></thead><tbody>`; 
         if(gLogs.length === 0) { h += `<tr><td colspan="3" style="text-align:center;">Nenhum log.</td></tr>`; }
-        gLogs.slice(0,100).forEach(l => { let cr = ''; if(l.acao.includes('ENTREGA')) cr = 'color:#0275d8;'; if(l.acao.includes('EXCLUSÃO') || l.acao.includes('LIMPEZA')) cr = 'color:red; font-weight:bold;'; if(l.acao.includes('LOGÍSTICA')) cr = 'color:#e67e22; font-weight:bold;'; h+=
+        gLogs.slice(0,100).forEach(l => { let cr = ''; if(l.acao.includes('ENTREGA')) cr = 'color:#0275d8;'; if(l.acao.includes('EXCLUSÃO') || l.acao.includes('LIMPEZA')) cr = 'color:red; font-weight:bold;'; if(l.acao.includes('LOGÍSTICA')) cr = 'color:#e67e22; font-weight:bold;'; h+=`<tr><td><small>${l.dataHora}</small></td><td><small>${l.agente.split('@')[0]}</small></td><td style="${cr}"><strong>${l.acao}</strong><br><small style="color:#555; font-weight:normal;">${l.detalhes}</small></td></tr>`; }); 
+        document.getElementById('logTableContainer').innerHTML = h + `</tbody></table>`;
+    }
+
+    async function limparBancoDeDados() {
+        if(!confirm('⚠️ TEM CERTEZA? Vai APAGAR TUDO.')) return; 
+        if(btnSync) btnSync.innerText = "⏳ Apagando...";
+        if (navigator.onLine && db && auth && auth.currentUser) {
+            try { const sC = await db.collection("doacoes_capanema").get(); let bC = db.batch(); sC.docs.forEach(d => bC.delete(d.ref)); await bC.commit(); const sL = await db.collection("logs_capanema").get(); let bL = db.batch(); sL.docs.forEach(d => bL.delete(d.ref)); await bL.commit(); } catch(e) { }
+        }
+        localStorage.removeItem('defesaCivilRecords'); records = []; localStorage.removeItem('defesaCivilLogs'); auditLogs = [];
+        await registrarLog("LIMPEZA", "Base resetada."); alert('Apagado!'); if(btnSync) btnSync.innerText = "☁️ Nuvem OK"; showForm(); carregarPainelDespacho();
+    }
+
+    function openTab(t) { document.querySelectorAll('.tab-content, .tab-btn').forEach(e => e.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); document.getElementById('tab-btn-'+t).classList.add('active'); if (t==='log') { renderPainelAuditoria(); } }
+    window.addEventListener('DOMContentLoaded', () => { setTimeout(carregarPainelDespacho, 1000); });
+</script>
+</body>
+</html>
