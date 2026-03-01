@@ -254,17 +254,21 @@
     </div>
 
     <div id="mainFormFields" class="hidden">
-        <div class="section-title">2. Dados do Beneficiário</div>
+        <div class="section-title" style="display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 2px;">
+            <span>2. Dados do Beneficiário</span>
+            <button type="button" class="no-print" style="background:#e2e8f0; color:#333; border:1px solid #cbd5e1; border-radius:4px; padding:3px 8px; font-size:0.75rem; font-weight:bold; cursor:pointer;" onclick="clearFormFields()" tabindex="-1">🧹 Limpar [ESC]</button>
+        </div>
+        
         <label for="nome">Nome do Responsável:</label>
-        <input type="text" id="nome" placeholder="Nome Completo (Obrigatório Nome e Sobrenome)" required tabindex="1" class="nav-input" enterkeyhint="next" style="margin-bottom: 4px;" autocomplete="off">
+        <input type="text" id="nome" placeholder="Nome Completo (Digite e saia do campo para buscar)" required tabindex="1" class="nav-input" enterkeyhint="next" style="margin-bottom: 4px;" autocomplete="off" onblur="buscarCadastroExistente('nome')">
         
         <div class="form-row">
-            <div class="form-col" style="flex: 1.5;"><label>RG ou CPF:</label><input type="tel" id="rg" placeholder="Apenas nº" tabindex="2" class="nav-input" enterkeyhint="next"></div>
+            <div class="form-col" style="flex: 1.5;"><label>RG ou CPF:</label><input type="tel" id="rg" placeholder="Apenas nº" tabindex="2" class="nav-input" enterkeyhint="next" onblur="buscarCadastroExistente('rg')"></div>
             <div class="form-col hidden" id="rgPhotoContainer"><label for="rgPhotoInput" class="camera-btn" id="cameraBtnLabel">📷 Foto RG<img id="rgPreview" class="rg-preview" alt="RG"></label><input type="file" id="rgPhotoInput" accept="image/*" capture="environment" tabindex="-1"><input type="hidden" id="rgPhotoBase64"></div>
         </div>
 
         <div class="form-row">
-            <div class="form-col"><label for="telefone">Telefone:</label><input type="tel" id="telefone" placeholder="(46) 9..." tabindex="3" class="nav-input" enterkeyhint="next"></div>
+            <div class="form-col"><label for="telefone">Telefone:</label><input type="tel" id="telefone" placeholder="(46) 9..." tabindex="3" class="nav-input" enterkeyhint="next" onblur="buscarCadastroExistente('telefone')"></div>
             <div class="form-col"><label for="bairro" id="lblBairro">Bairro / Comunidade:</label><input type="text" id="bairro" placeholder="Digite..." tabindex="4" class="nav-input" enterkeyhint="next" autocomplete="off" style="text-transform: capitalize;"></div>
         </div>
 
@@ -386,6 +390,18 @@
 <div class="app-footer no-print" style="text-align: center; margin-top: 10px; padding-bottom: 10px; color: #bbb; font-size: 0.7rem;">@Sieklicki</div>
 
 <script>
+    // ==========================================
+    // ESC - ATALHO PARA LIMPAR FORMULÁRIO
+    // ==========================================
+    document.addEventListener('keydown', function(event) {
+        if (event.key === "Escape") {
+            const formSection = document.getElementById('formSection');
+            if (formSection && !formSection.classList.contains('hidden')) {
+                clearFormFields();
+            }
+        }
+    });
+
     // ==========================================
     // CONFIGURAÇÃO FIREBASE E ACESSOS
     // ==========================================
