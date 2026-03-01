@@ -49,7 +49,6 @@
         .title-container h1 { margin: 0; font-size: 1.05rem; color: var(--primary-color);}
         .title-container h2 { margin: 0; font-size: 0.8rem; color: var(--danger-color); text-transform: uppercase; font-weight: bold;}
 
-        /* ALERTA PISCANTE DA LOGÍSTICA */
         @keyframes blink-red { 0% { background-color: var(--danger-color); } 50% { background-color: #ff9999; color: #900; } 100% { background-color: var(--danger-color); } }
         .blink { animation: blink-red 1.5s infinite; }
         .btn-logistica { width: 100%; padding: 12px; font-size: 1.1rem; font-weight: bold; color: white; border: none; border-radius: 5px; margin-bottom: 10px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
@@ -76,7 +75,7 @@
         input:focus, select:focus { outline: 2px solid var(--primary-color); }
         #nome { text-transform: capitalize; }
         
-        .camera-btn { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; background: rgba(238,238,238,0.9); border: 1px dashed #777; border-radius: 4px; font-size: 0.8rem; font-weight: bold; color: #444; cursor: pointer; height: 32px; margin: 0; }
+        .camera-btn { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; background: rgba(238, 238, 238, 0.9); border: 1px dashed #777; border-radius: 4px; font-size: 0.8rem; font-weight: bold; color: #444; cursor: pointer; height: 32px; margin: 0; }
         .camera-btn.has-photo { background: #dff0d8; border-color: var(--success-color); color: var(--success-color); }
         #rgPhotoInput { display: none; } .rg-preview { max-height: 20px; border-radius: 3px; display: none; margin-left: 4px; border: 1px solid #555; }
 
@@ -479,8 +478,14 @@
         });
     }
 
+    // NOVA FUNÇÃO SAIR DEFINITIVA
     function logoutGoogle() { 
-        auth.signOut().then(() => { location.reload(); }); 
+        if(confirm("Deseja realmente sair da sua conta?")) {
+            auth.signOut().then(() => { 
+                localStorage.clear();
+                location.reload(); 
+            }); 
+        }
     }
 
     async function processarAcessoUsuario(user) {
@@ -591,7 +596,14 @@
                         if ((currentUserNivel === 'admin' || currentUserNivel === 'supervisor') && typeof escutarUsuariosOnline === 'function') escutarUsuariosOnline();
                         
                         const nomeExibicao = user.displayName ? user.displayName.split(" ")[0] : (user.email ? user.email.split('@')[0] : 'Agente');
-                        if(btnLogin) { btnLogin.innerText = nomeExibicao; btnLogin.style.backgroundColor = "#555"; }
+                        
+                        // Atualiza botão com nome e opção de Sair visível
+                        if(btnLogin) { 
+                            btnLogin.innerHTML = `👤 ${nomeExibicao} | <span onclick="logoutGoogle()" style="text-decoration:underline; color:#ffcccc; cursor:pointer;">Sair</span>`;
+                            btnLogin.style.backgroundColor = "#333";
+                            btnLogin.onclick = null; // Remove a função de login de todo o botão para evitar re-logar
+                        }
+                        
                         if(btnSync) btnSync.style.display = "inline-block";
                         
                         if(typeof carregarConfigZap === 'function') carregarConfigZap();
@@ -607,7 +619,11 @@
                 } catch(e) { console.error("Erro AuthState:", e); }
             } else {
                 currentUserStatus = 'deslogado'; currentUserEmail = ''; currentUserNivel = 'agente'; 
-                if(btnLogin) { btnLogin.innerText = "Logar Google"; btnLogin.style.backgroundColor = "#4285F4"; }
+                if(btnLogin) { 
+                    btnLogin.innerText = "Logar Google"; 
+                    btnLogin.style.backgroundColor = "#4285F4"; 
+                    btnLogin.onclick = loginGoogle; // Restaura a função de login caso tenha deslogado
+                }
                 if(btnSync) btnSync.style.display = "none";
                 if(unsubscribeSnapshot) unsubscribeSnapshot(); 
                 if(unsubscribeLogs) unsubscribeLogs(); 
@@ -1151,353 +1167,6 @@
         }
     }
     // ==========================================
-    // LOGS E SINCRONIZAÇÃO NUVEM (AUDITORIA AO VIVO)
-    // ==========================================
-    let auditLogs = JSON.parse(localStorage.getItem('defesaCivilLogs')) || [];
-
-    async function registrarLog(acao, detalhes, cod = "") {
-        let nomeAgente = (auth && auth.currentUser) ? (auth.currentUser.email || auth.currentUser.displayName) : "Offline"; 
-        let ipUsuario = await obterIP();
-        const logEntry = { 
-            id: Date.now(), 
-            dataHora: new Date().toLocaleString('pt-BR'), 
-            agente: nomeAgente, 
-            ip: ipUsuario, 
-            acao: acao, 
-            detalhes: detalhes, 
-            codigoDC: cod, 
-            synced: false 
-        };
-        auditLogs.push(logEntry); 
-        localStorage.setItem('defesaCivilLogs', JSON.stringify(auditLogs)); 
-        sincronizarLogsOffline(); 
-    }
-
-    async function sincronizarLogsOffline() {
-        if (!navigator.onLine || !db || !auth.currentUser || currentUserStatus !== 'aprovado') return;
-        
-        let unsyncedLogs = auditLogs.filter(l => !l.synced);
-        for (let l of unsyncedLogs) { 
-            try { 
-                let lNuvem = { ...l, synced: true }; 
-                await db.collection("logs_capanema").doc(l.id.toString()).set(lNuvem); 
-                l.synced = true; 
-            } catch (e) { console.error("Erro log:", e); } 
-        }
-        localStorage.setItem('defesaCivilLogs', JSON.stringify(auditLogs));
-    }
-
-    function iniciarEscutaLogsNuvem() {
-        if(!db || !auth.currentUser || currentUserStatus !== 'aprovado' || currentUserNivel === 'agente') return;
-        
-        if(unsubscribeLogs) unsubscribeLogs();
-        
-        unsubscribeLogs = db.collection("logs_capanema").onSnapshot((snapshot) => {
-            let novosLogs = []; 
-            snapshot.forEach(doc => { novosLogs.push(doc.data()); });
-            
-            let map = new Map(); 
-            novosLogs.forEach(l => map.set(l.id, l));
-            auditLogs.forEach(l => { if(!map.has(l.id)) map.set(l.id, l); });
-            
-            auditLogs = Array.from(map.values()).sort((a,b) => b.id - a.id); 
-            localStorage.setItem('defesaCivilLogs', JSON.stringify(auditLogs));
-            
-            if (document.getElementById('tab-btn-log') && document.getElementById('tab-btn-log').classList.contains('active')) { 
-                filtrarTabelaAuditoria(); 
-            }
-        });
-    }
-
-    function iniciarEscutaNuvem() {
-        if(!db || !auth.currentUser || currentUserStatus !== 'aprovado') return;
-        
-        if(unsubscribeSnapshot) unsubscribeSnapshot();
-        
-        unsubscribeSnapshot = db.collection("doacoes_capanema").onSnapshot((snapshot) => {
-            let nuvemRecords = []; 
-            snapshot.forEach(doc => { 
-                let data = doc.data(); 
-                data.synced = true; 
-                nuvemRecords.push(data); 
-            });
-            
-            let unsyncedLocal = records.filter(r => r.synced === false); 
-            let map = new Map();
-            nuvemRecords.forEach(r => map.set(r.id, r)); 
-            unsyncedLocal.forEach(r => { if (!map.has(r.id)) map.set(r.id, r); });
-            
-            records = Array.from(map.values()).sort((a,b) => new Date(a.dataISO) - new Date(b.dataISO));
-            localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
-            
-            carregarPainelDespacho();
-            if (!document.getElementById('reportSection').classList.contains('hidden')) generateReport();
-        });
-    }
-
-    async function sincronizarFirebaseAutomatica() {
-        if(!db || !auth.currentUser || !navigator.onLine || currentUserStatus !== 'aprovado') return;
-        
-        let unsyncedRecords = records.filter(r => r.synced !== true);
-        if (unsyncedRecords.length === 0) { 
-            if(btnSync){ btnSync.innerText = "☁️ Nuvem OK"; btnSync.style.backgroundColor = "var(--success-color)"; } 
-            return; 
-        }
-        
-        if(btnSync) { btnSync.innerText = "☁️ Enviando..."; btnSync.style.backgroundColor = "#f0ad4e"; }
-        
-        try {
-            for (let r of unsyncedRecords) { 
-                let rNuvem = { ...r, synced: true }; 
-                await db.collection("doacoes_capanema").doc(r.id.toString()).set(rNuvem); 
-                r.synced = true; 
-            }
-            localStorage.setItem('defesaCivilRecords', JSON.stringify(records)); 
-            if(btnSync) { btnSync.innerText = "☁️ Nuvem OK"; btnSync.style.backgroundColor = "var(--success-color)"; }
-        } catch (error) { 
-            if(btnSync) { btnSync.innerText = "⚠️ Erro Sync"; btnSync.style.backgroundColor = "var(--danger-color)"; } 
-        }
-    }
-
-    // ==========================================
-    // WHATSAPP: MAPS DE ROTAS OFICIAL (API DIR)
-    // ==========================================
-    let configZap = JSON.parse(localStorage.getItem('defesaCivilConfigZap')) || { emailSolicitante: '', telefonePipa: '', telefoneSocial: '' };
-    
-    function carregarConfigZap() { 
-        if(navigator.onLine && db) { 
-            db.collection('configuracoes_capanema').doc('whatsapp').get().then(doc => { 
-                if(doc.exists) { 
-                    configZap = doc.data(); 
-                    localStorage.setItem('defesaCivilConfigZap', JSON.stringify(configZap)); 
-                } 
-            }).catch(e => { console.error("Erro ao carregar zap:", e); }); 
-        } 
-    }
-
-    async function salvarConfigZap() {
-        const email = document.getElementById('configZapEmail').value.toLowerCase().trim(); 
-        const telPipa = document.getElementById('configZapTelPipa').value.replace(/\D/g,''); 
-        const telSocial = document.getElementById('configZapTelSocial').value.replace(/\D/g,''); 
-        
-        configZap = { emailSolicitante: email, telefonePipa: telPipa, telefoneSocial: telSocial }; 
-        localStorage.setItem('defesaCivilConfigZap', JSON.stringify(configZap)); 
-        
-        if(navigator.onLine && db) { 
-            try { 
-                await db.collection('configuracoes_capanema').doc('whatsapp').set(configZap); 
-                alert("Configurações Salvas com Sucesso!"); 
-            } catch(e) { 
-                alert("Erro ao salvar contatos na nuvem."); 
-            } 
-        } 
-    }
-
-    function reenviarZapMotorista(nome, bairro, loc, rua, num, ref, obs, tel, vol, tipo, temCesta) {
-        let numDestino = tipo === 'agua' ? configZap.telefonePipa : configZap.telefoneSocial;
-        
-        if (!numDestino) { 
-            alert(`O telefone responsável por ${tipo === 'agua' ? 'ÁGUA' : 'TELHAS'} não está configurado na aba Auditoria.`); 
-            return; 
-        }
-        
-        let horaAtual = new Date().getHours(); 
-        let saudacao = "";
-        
-        if (horaAtual >= 5 && horaAtual < 12) saudacao = "Bom dia"; 
-        else if (horaAtual >= 12 && horaAtual < 18) saudacao = "Boa tarde"; 
-        else saudacao = "Boa noite";
-        
-        let origemGPS = "";
-        let cabecalho = "";
-        let textMaterial = "";
-
-        if (tipo === 'agua') {
-            saudacao = `${saudacao}, Agente da Defesa Civil!`;
-            origemGPS = encodeURIComponent("Corpo de Bombeiros, Capanema - PR");
-            cabecalho = `*Ordem de serviço Defesa Civil entrega de água potável 💧*`;
-            textMaterial = `*Volume Solicitado:* ${Number(vol)} m³ 💧`;
-        } else {
-            saudacao = `${saudacao}, motorista!`;
-            origemGPS = encodeURIComponent("CRAS - Rua Antônio Nieheus, 670, Centro, Capanema - PR");
-            if (temCesta) {
-                cabecalho = `*Ordem de serviço Assistência Social: Entrega de telhas e cesta básica 🏠📦*`;
-                textMaterial = `*Material Liberado:* ${vol} Telhas e Cesta(s) Básica(s).`;
-            } else {
-                cabecalho = `*Ordem de serviço Assistência Social: Entrega de telhas 🏠*`;
-                textMaterial = `*Material Liberado:* ${vol} Telhas.`;
-            }
-        }
-
-        // Link OFICIAL do Google Maps Direções
-        let enderecoBusca = loc ? loc : (rua ? `${rua}, ${num||'S/N'}` : '');
-        let destinoMaps = encodeURIComponent(`${enderecoBusca} ${bairro} Capanema PR`.trim());
-        let linkMaps = `https://www.google.com/maps/dir/?api=1&origin=${origemGPS}&destination=${destinoMaps}`;
-        
-        let textEnd = loc ? `*Localização:* ${loc}` : ''; 
-        if(rua) textEnd += `\n*Rua:* ${rua}, Nº: ${num || 'S/N'}`;
-        
-        let textRef = ref ? `*Ref:* ${ref}\n` : ''; 
-        let textObs = obs ? `\n*Observação:* ${obs}` : '';
-        
-        let msg = `${saudacao}\n\n${cabecalho}\n\n*Nome:* ${nome}\n*Bairro:* ${bairro}\n${textEnd}\n${textRef}*Telefone:* ${tel || 'Não informado'}${textObs}\n${textMaterial}\n\n*🗺️ Rota de Entrega (GPS Oficial):*\n${linkMaps}\n\n*⚠️ ATENÇÃO: Caso o GPS não consiga traçar a rota exata, por favor ligue para o solicitante!*`;
-        
-        window.open(`https://api.whatsapp.com/send?phone=${numDestino}&text=${encodeURIComponent(msg)}`, '_blank');
-    }
-
-    // ==========================================
-    // LOGÍSTICA DE FROTAS
-    // ==========================================
-    function abrirModalLogistica() { 
-        document.getElementById('modalLogistica').style.display = 'flex'; 
-        carregarPainelDespacho(); 
-    }
-    function fecharModalLogistica() { document.getElementById('modalLogistica').style.display = 'none'; }
-
-    let modalAguaId = null; let modalAguaFalta = 0;
-
-    function adicionarAgua(id) {
-        const index = records.findIndex(r => r.id === id); if (index === -1) return;
-        let r = records[index]; let falta = r.qtdAgua - (r.qtdAguaEntregue || 0);
-        
-        if (falta <= 0) { alert("Toda a água solicitada já foi entregue!"); return; }
-        
-        modalAguaId = id; modalAguaFalta = falta;
-        document.getElementById('descAguaTexto').innerHTML = `Faltam entregar <strong>${Number(falta.toFixed(2))} m³</strong> para <strong>${r.nome}</strong>.`;
-        document.getElementById('inputDescAgua').value = '';
-        document.getElementById('modalDescarregarAgua').style.display = 'flex';
-        setTimeout(() => document.getElementById('inputDescAgua').focus(), 100);
-    }
-
-    function fecharModalDescarregar() { 
-        document.getElementById('modalDescarregarAgua').style.display = 'none'; 
-        modalAguaId = null; 
-    }
-
-    async function confirmarDescarregar() {
-        if (!modalAguaId) return;
-        let novaQtd = parseFloat(document.getElementById('inputDescAgua').value.replace(',','.'));
-        
-        if (isNaN(novaQtd) || novaQtd <= 0) { alert("Valor inválido."); return; }
-        if (novaQtd > modalAguaFalta) { alert(`Atenção: Não pode entregar mais do que o solicitado! Faltam apenas ${Number(modalAguaFalta.toFixed(2))} m³.`); return; }
-        
-        const index = records.findIndex(r => r.id === modalAguaId); if (index === -1) return; 
-        
-        let r = records[index];
-        r.qtdAguaEntregue = (r.qtdAguaEntregue || 0) + novaQtd; 
-        if (!r.entregasAgua) r.entregasAgua = [];
-        
-        let nomeAgente = auth.currentUser ? (auth.currentUser.email || auth.currentUser.displayName) : "Desconhecido";
-        r.entregasAgua.push({ data: new Date().toLocaleString('pt-BR'), agente: nomeAgente, qtd: novaQtd });
-        r.synced = false; 
-        records[index] = r; 
-        localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
-        
-        fecharModalDescarregar();
-        await registrarLog("ENTREGA ÁGUA", `Total acumulado: ${Number(r.qtdAguaEntregue.toFixed(2))}m³ | Cód: [${r.codigo}] - ${r.nome}`, r.codigo); 
-        
-        sincronizarFirebaseAutomatica(); 
-        carregarPainelDespacho(); 
-        if (!document.getElementById('reportSection').classList.contains('hidden')) generateReport();
-    }
-
-    async function marcarEntregaTelha(id) {
-        const index = records.findIndex(r => r.id === id); if (index === -1) return;
-        if(!confirm("Deseja marcar estas telhas como ENTREGUES NO LOCAL? O alerta sairá do painel do motorista.")) return;
-        
-        records[index].telhaEntregue = true; 
-        records[index].dataBaixaTelha = new Date().toLocaleString('pt-BR');
-        records[index].agenteBaixaTelha = auth.currentUser ? (auth.currentUser.email || auth.currentUser.displayName) : "Desconhecido";
-        records[index].synced = false; 
-        
-        localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
-        await registrarLog("ENTREGA TELHA", `Baixa de entrega de telha para ${records[index].nome} - Cód: [${records[index].codigo}]`, records[index].codigo);
-        sincronizarFirebaseAutomatica(); 
-        carregarPainelDespacho(); 
-        if (!document.getElementById('reportSection').classList.contains('hidden')) generateReport();
-    }
-
-    async function pausarEntrega(id) {
-        const index = records.findIndex(r => r.id === id); if (index === -1) return;
-        let motivo = prompt("⚠️ Informe o motivo do problema ou cancelamento\n(Ex: Caminhão quebrou, Sem água na rede, Endereço não achado):");
-        if (!motivo) return; 
-        
-        records[index].logisticaPausada = true;
-        records[index].logisticaMotivo = motivo;
-        records[index].synced = false;
-        
-        localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
-        await registrarLog("ALERTA LOGÍSTICA", `PAUSADO - Cód: [${records[index].codigo}]. Motivo: ${motivo}`, records[index].codigo);
-        sincronizarFirebaseAutomatica(); 
-        carregarPainelDespacho(); 
-    }
-
-    async function retomarEntrega(id) {
-        const index = records.findIndex(r => r.id === id); if (index === -1) return;
-        records[index].logisticaPausada = false;
-        records[index].logisticaMotivo = "";
-        records[index].synced = false;
-        
-        localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
-        await registrarLog("RETOMADA LOGÍSTICA", `RETOMADO - Cód: [${records[index].codigo}]`, records[index].codigo);
-        sincronizarFirebaseAutomatica(); 
-        carregarPainelDespacho(); 
-    }
-
-    function carregarPainelDespacho() {
-        const btnAlerta = document.getElementById('btnLogisticaAlerta'); 
-        const container = document.getElementById('listaDespachoContainer'); 
-        if(!container) return;
-
-        let pendentes = records.filter(r => (r.qtdAgua > (r.qtdAguaEntregue || 0)) || (r.telhaRequerEntrega && !r.telhaEntregue));
-        
-        if(pendentes.length === 0) { 
-            if(btnAlerta) btnAlerta.classList.add('hidden'); 
-            container.innerHTML = "<p style='text-align:center; padding: 20px; font-size: 1.1rem; color:#555;'>Nenhuma entrega pendente! A equipe está em dia. ✅</p>";
-        } else {
-            if(btnAlerta) btnAlerta.classList.remove('hidden'); 
-            let h = '';
-            
-            pendentes.sort((a,b) => new Date(a.dataISO) - new Date(b.dataISO)).forEach(r => {
-                let isAgua = r.qtdAgua > (r.qtdAguaEntregue || 0); 
-                let faltaAgua = isAgua ? (r.qtdAgua - (r.qtdAguaEntregue || 0)) : 0;
-                let classeCard = isAgua ? '' : 'telha'; 
-                let icone = isAgua ? '💧' : '🏠';
-                
-                let isPausado = r.logisticaPausada === true;
-                let estiloCard = isPausado ? `style="border-left-color: #f0ad4e; background-color: #fff3cd;"` : ``;
-                let statusPausa = isPausado ? `<div style="color:#856404; font-weight:bold; background:#ffeeba; padding:5px; border-radius:4px; margin:6px 0; border: 1px dashed #f0ad4e;">⚠️ ATENÇÃO - PAUSADO:<br><span style="font-weight:normal;">${r.logisticaMotivo}</span></div>` : '';
-                
-                let mat = isAgua 
-                    ? `<span style="color:var(--danger-color); font-weight:bold;">Falta levar: ${Number(faltaAgua.toFixed(2))} m³</span> (Solicitou ${Number(r.qtdAgua)})` 
-                    : `Entregar: <strong>${r.qtdTelha} Telhas</strong>`;
-                    
-                let btnHtml = '';
-                if (isPausado) {
-                    btnHtml = `<button class="btn-small" style="background:#f0ad4e; color:#333; margin-bottom: 4px; border: 1px solid #d39e00; width: 100%; font-size: 1.1rem; height: 38px;" onclick="retomarEntrega(${r.id})">▶️ Retomar Entrega</button>`;
-                } else {
-                    btnHtml = isAgua 
-                        ? `<button class="btn-small" style="background:var(--agua-color); margin-bottom: 4px; width: 100%; font-size: 1.1rem; height: 38px;" onclick="adicionarAgua(${r.id})">🚛 Descarregar</button>` 
-                        : `<button class="btn-small" style="background:var(--telha-color); margin-bottom: 4px; width: 100%; font-size: 1.1rem; height: 38px;" onclick="marcarEntregaTelha(${r.id})">✅ Concluir</button>`;
-                    btnHtml += `<button class="btn-small" style="background:#e67e22; color:white; width:100%; text-align:center; margin-bottom: 4px; height: 34px;" onclick="pausarEntrega(${r.id})">⚠️ Relatar Problema</button>`;
-                }
-                    
-                let temCesta = r.qtdCesta > 0;
-                let mapsBtn = `<button class="btn-small" style="background:#25D366; color:white; width:100%; text-align:center; margin-top:2px; font-size: 1rem; height: 36px;" onclick="reenviarZapMotorista('${r.nome}', '${r.bairro}', '${r.localizacaoAgua||''}', '${r.rua||''}', '${r.numero||''}', '${r.referenciaAgua||''}', '${r.observacao||''}', '${r.telefone}', '${isAgua ? r.qtdAgua : r.qtdTelha}', '${isAgua ? 'agua' : 'telha'}', ${temCesta})">💬 Rota WhatsApp</button>`;
-                
-                let endCompleto = `📍 ${r.bairro}`; if(r.localizacaoAgua) endCompleto += ` - ${r.localizacaoAgua}`; if(r.rua) endCompleto += ` - ${r.rua}, ${r.numero||'S/N'}`;
-
-                let emailCriadorFormatado = r.emailCriador || "Desconhecido";
-                if (ADMIN_EMAILS.includes(emailCriadorFormatado.toLowerCase())) emailCriadorFormatado = "Administrador"; 
-                else if (emailCriadorFormatado.includes('@')) emailCriadorFormatado = emailCriadorFormatado.split('@')[0];
-
-                h += `<div class="dispatch-card ${classeCard}" ${estiloCard}><div class="dispatch-info"><strong>${icone} ${r.nome}</strong><p>${endCompleto}</p><p>${mat}</p>${statusPausa}<div style="font-size:0.75rem; color:#888; margin-top: 8px; border-top: 1px dashed #ccc; padding-top: 6px; line-height: 1.3;"><strong>Cód:</strong> ${r.codigo}<br><strong>Lançado por:</strong> <span style="color:var(--primary-color); font-weight:bold;">${emailCriadorFormatado}</span><br><span style="font-size: 0.65rem;">Data: ${r.dataHoraFormatada}</span></div></div><div class="dispatch-actions" style="min-width: 120px;">${btnHtml}${mapsBtn}</div></div>`;
-            });
-            container.innerHTML = h;
-        }
-    }
-
-    // ==========================================
     // SALVAMENTO E EXCLUSÃO DE DADOS
     // ==========================================
     function clearFormFields() {
@@ -1555,7 +1224,7 @@
 
                     let aviso = `⚠️ ATENÇÃO: O beneficiário "${nm}" já recebeu doações anteriormente.\n\n`;
                     aviso += `Último registro: ${ultimo.dataHoraFormatada.split(' ')[0]} ${txtTempo}\nMaterial: ${matUltimo}\n\n`;
-                    aviso += `Deseja registrar um NOVO pedido ou destinar para OUTRO local (ex: granja, caixa d'água da comunidade, órgão da prefeitura, etc.)?\n\nClique em OK para continuar ou CANCELAR para abortar.`;
+                    aviso += `Deseja registrar um NOVO pedido ou destinar para OUTRO local?\n\nClique em OK para continuar ou CANCELAR para abortar.`;
 
                     if (!confirm(aviso)) { bs.disabled = false; bs.innerText = "Salvar Lançamento"; return; }
                 }
@@ -1603,173 +1272,7 @@
     }
 
     // ==========================================
-    // RELATÓRIOS INTELIGENTES E FORMATADOS
-    // ==========================================
-    function showReport() { document.getElementById('formSection').classList.add('hidden'); document.getElementById('reportSection').classList.remove('hidden'); generateReport(); }
-    function showForm() { document.getElementById('reportSection').classList.add('hidden'); document.getElementById('formSection').classList.remove('hidden'); }
-    function updateReportToggle() { document.querySelectorAll('.report-toggle').forEach(l => { if(l.querySelector('input').checked) l.classList.add('active'); else l.classList.remove('active'); }); }
-
-    function buildResumoBairrosHTML(arr) {
-        let res = {}; 
-        let tF=0, tL=0, tT=0, tC=0, tA=0, tAe=0;
-        arr.forEach(r => { 
-            let b = (r.bairro||'N/I').toUpperCase(); 
-            if(!res[b]) res[b]={f:0,l:0,t:0,c:0,a:0, ae:0}; 
-            res[b].f++; tF++;
-            res[b].l+=r.qtdLona||0; tL+=r.qtdLona||0;
-            res[b].t+=r.qtdTelha||0; tT+=r.qtdTelha||0;
-            res[b].c+=r.qtdCesta||0; tC+=r.qtdCesta||0;
-            res[b].a+=r.qtdAgua||0; tA+=r.qtdAgua||0;
-            res[b].ae+=r.qtdAguaEntregue||0; tAe+=r.qtdAguaEntregue||0;
-        });
-        let h = `<div class="report-summary"><strong>Resumo por Bairros 📊</strong></div><table class="report-table"><thead><tr><th>Bairro</th><th>Famílias</th><th>Água (Sol/Emp)</th><th>Lona</th><th>Telha</th><th>Cesta</th></tr></thead><tbody>`;
-        Object.keys(res).sort().forEach(b => { 
-            h+=`<tr><td>${b}</td><td>${res[b].f}</td><td>${Number(res[b].a.toFixed(2))} / <span style="color:green;font-weight:bold">${Number(res[b].ae.toFixed(2))}</span></td><td>${Number(res[b].l.toFixed(2))}</td><td>${res[b].t}</td><td>${res[b].c}</td></tr>`; 
-        }); 
-        h += `<tr style="background-color: var(--primary-color); color: white; font-weight: bold;"><td style="text-align: right;">TOTAL GERAL:</td><td>${tF}</td><td>${Number(tA.toFixed(2))} / <span style="color:#a5d6a7;">${Number(tAe.toFixed(2))}</span></td><td>${Number(tL.toFixed(2))}</td><td>${tT}</td><td>${tC}</td></tr>`;
-        return h + `</tbody></table>`;
-    }
-
-    function buildIndividualHTML(arr, tipo) {
-        let isA = tipo === 'quantAgua'; let isL = tipo === 'quantLona'; let isT = tipo === 'quantTelha'; let isC = tipo === 'quantCesta'; 
-        let u = isA ? 'm³' : (isL ? 'm²' : ' un'); let iconeMat = isA ? '💧' : (isT ? '🏠' : (isC ? '📦' : '⛺'));
-        let filt = arr.filter(r => isA ? r.qtdAgua>0 : (isL ? r.qtdLona>0 : (isT ? r.qtdTelha>0 : r.qtdCesta>0))); 
-        let p = {}; 
-        
-        let grandTotalSol = 0; let grandTotalEmp = 0;
-
-        filt.forEach(r => { 
-            let k = `${r.nome.toUpperCase()}_${r.rg}`; 
-            if(!p[k]) p[k] = {n:r.nome, rg:r.rg, locais: {}, t:0, em:r.emailCriador, tel:r.telefone, ae:0, entregasBrutas: []}; 
-            
-            let endArr = [];
-            if(r.bairro) endArr.push(r.bairro);
-            if(r.rua) endArr.push(`${r.rua}, ${r.numero||'S/N'}`);
-            if(r.localizacaoAgua) endArr.push(r.localizacaoAgua);
-            let nomeLocal = endArr.length > 0 ? endArr.join(' - ') : 'Local Não Informado';
-
-            if(!p[k].locais[nomeLocal]) p[k].locais[nomeLocal] = { t: 0, ae: 0 };
-
-            let v = isA ? r.qtdAgua : (isL ? r.qtdLona : (isT ? r.qtdTelha : r.qtdCesta)); 
-            p[k].t += v; 
-            p[k].locais[nomeLocal].t += v;
-            grandTotalSol += v;
-            
-            if(isA) { 
-                p[k].ae += (r.qtdAguaEntregue||0); 
-                p[k].locais[nomeLocal].ae += (r.qtdAguaEntregue||0);
-                grandTotalEmp += (r.qtdAguaEntregue||0);
-                if (r.entregasAgua && r.entregasAgua.length > 0) p[k].entregasBrutas.push(...r.entregasAgua);
-            } else {
-                let dtEnt = r.dataHoraFormatada; let agEnt = r.agente || r.emailCriador || "Agente";
-                if (isT && r.telhaRequerEntrega) { 
-                    if (r.telhaEntregue) { dtEnt = r.dataBaixaTelha || r.dataHoraFormatada; agEnt = r.agenteBaixaTelha || agEnt; p[k].entregasBrutas.push({ data: dtEnt, agente: agEnt, qtd: v }); } 
-                } else { 
-                    p[k].entregasBrutas.push({ data: dtEnt, agente: agEnt, qtd: v }); 
-                }
-            }
-        });
-        
-        let h = `<div class="report-summary"><strong>Relatório Individual: ${iconeMat}</strong></div><table class="report-table"><tbody>`;
-        
-        Object.values(p).sort((a, b) => b.t - a.t).forEach(i => { 
-            let priv = (currentUserNivel==='admin' || currentUserNivel==='supervisor' || i.em === currentUserEmail); let rgD = priv ? i.rg||'N/I' : '***'; 
-            
-            let locaisHtml = '';
-            Object.keys(i.locais).forEach(loc => {
-                let locSol = i.locais[loc].t;
-                let locEmp = i.locais[loc].ae;
-                if(isA) {
-                     locaisHtml += `<div style="margin-bottom:4px; font-size:0.85rem; color:#333;">📍 ${loc}:<br><strong>${Number(locSol.toFixed(2))}${u}</strong> <span style="color:green;">(Entregue: ${Number(locEmp.toFixed(2))}${u})</span></div>`;
-                } else {
-                     locaisHtml += `<div style="margin-bottom:4px; font-size:0.85rem; color:#333;">📍 ${loc}: <strong>${Number(locSol.toFixed(2))}${u}</strong></div>`;
-                }
-            });
-
-            let statusTotal = '';
-            if (isA) {
-                statusTotal = `Solicitado: <strong>${Number(i.t.toFixed(2))}${u}</strong>  |  Entregue: <strong style="color:green;">${Number(i.ae.toFixed(2))}${u}</strong>`;
-                if (i.t > i.ae) statusTotal += `  |  Falta: <strong style="color:var(--danger-color);">${Number((i.t - i.ae).toFixed(2))}${u}</strong>`;
-            } else {
-                statusTotal = `Total Solicitado: <strong>${Number(i.t.toFixed(2))}${u}</strong>`;
-            }
-            
-            let ih = ''; 
-            if (i.entregasBrutas.length > 0) { 
-                let g = {};
-                i.entregasBrutas.forEach(e => {
-                    let dAp = e.data ? e.data.substring(0, 10) : "S/D"; 
-                    let hM = e.data ? e.data.match(/\d{2}:\d{2}/) : null; 
-                    let hAp = hM ? hM[0] : ""; 
-                    let agL = e.agente ? e.agente.split('@')[0] : "Agente";
-                    let cG = `${dAp}_${agL}`;
-                    
-                    if(!g[cG]) g[cG] = { data: dAp, agente: agL, totalQtd: 0, viagens: 0, hI: hAp, hF: hAp };
-                    g[cG].totalQtd += parseFloat(e.qtd); 
-                    g[cG].viagens++;
-                    
-                    if (hAp) { 
-                        if (!g[cG].hI || hAp < g[cG].hI) g[cG].hI = hAp; 
-                        if (!g[cG].hF || hAp > g[cG].hF) g[cG].hF = hAp; 
-                    }
-                });
-                
-                Object.values(g).forEach(x => { 
-                    let infoH = (x.hI && x.hF && x.hI !== x.hF) ? `(das ${x.hI} às ${x.hF})` : (x.hI ? `(às ${x.hI})` : "");
-                    let infoV = x.viagens > 1 ? `[${x.viagens} viagens]` : `[1 lançamento]`;
-                    ih += `<div style="margin-bottom: 4px; font-size:0.8rem; color:#444; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">• ${x.data}: <strong style="color:var(--primary-color);">${Number(x.totalQtd.toFixed(2))}${u}</strong> por <strong>${x.agente}</strong> <br><span style="color:#777; font-size:0.75rem;">${infoV} ${infoH}</span></div>`; 
-                }); 
-            } else {
-                ih = `<div style="font-size:0.8rem; color:#777;">Nenhuma entrega registrada.</div>`;
-            }
-
-            h += `<tr style="background-color: #e2e8f0; border-top: 2px solid #aaa;">
-                    <td colspan="2" style="padding: 6px 10px;">
-                        <div style="display:flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px;">
-                            <span style="font-size: 1.05rem; color: var(--primary-color);">👤 <strong>${i.n}</strong> <small style="color:#555;">(RG: ${rgD})</small></span>
-                            <span style="font-size: 0.95rem; background: #fff; padding: 3px 8px; border-radius: 4px; border: 1px solid #cbd5e1;">${statusTotal}</span>
-                        </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="width: 50%; vertical-align: top; padding: 8px;">
-                        <div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">📍 Endereços de Destino</div>
-                        ${locaisHtml}
-                    </td>
-                    <td style="width: 50%; vertical-align: top; padding: 8px; background: #fafafa;">
-                        <div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">🚛 Histórico de Entregas</div>
-                        ${ih}
-                    </td>
-                  </tr>`; 
-        }); 
-
-        let vdTotal = isA ? `Solicitado: ${Number(grandTotalSol.toFixed(2))}${u}   |   Empenhado: <span style="color:green">${Number(grandTotalEmp.toFixed(2))}${u}</span>` : `${Number(grandTotalSol.toFixed(2))}${u}`;
-        h += `<tr style="background-color: var(--primary-color); color: white;"><td colspan="2" style="text-align:center; font-weight:bold; font-size:1.1rem; padding: 12px;">📊 TOTAL GERAL DO RELATÓRIO ➔ ${vdTotal}</td></tr>`;
-
-        return h + `</tbody></table>`;
-    }
-
-    function buildGroupedHTML(arr, tit, sel) {
-        let isA = sel.includes('quantAgua'); let isL = sel.includes('quantLona'); let isT = sel.includes('quantTelha'); let isC = sel.includes('quantCesta'); let mt = (!isA && !isL && !isT && !isC); 
-        let fF = arr; if (!mt) { fF = arr.filter(r => (isA && r.qtdAgua>0) || (isL && r.qtdLona>0) || (isT && r.qtdTelha>0) || (isC && r.qtdCesta>0)); }
-        let bMap = {}; fF.forEach(r => { let b = (r.bairro||'N/I').toUpperCase(); if(!bMap[b]) bMap[b]=[]; bMap[b].push(r); }); 
-        
-        let h = `<div class="report-summary"><strong>Lista Detalhada 📋</strong></div>`;
-        Object.keys(bMap).sort().forEach(b => {
-            h += `<div class="bairro-section"><div class="bairro-header">📍 ${b}</div><table class="report-table"><thead><tr><th width="5%"></th><th width="15%">Data</th><th>Beneficiário / Contato / Endereço</th><th width="35%">Materiais (Solicitado / Status)</th></tr></thead><tbody>`;
-            bMap[b].reverse().forEach(r => {
-                let pv = (currentUserNivel==='admin' || r.emailCriador === currentUserEmail); let ps = (currentUserNivel==='supervisor' || pv); 
-                let cbh = currentUserNivel === 'admin' ? `<input type="checkbox" class="bulk-checkbox no-print" value="${r.id}" onchange="checkBulkDelete()">` : ``;
-                
-                let detEnd = ''; let eArr = [];
-                if(r.rua) eArr.push(`Rua: ${r.rua}, Nº ${r.numero||'S/N'}`);
-                if(r.localizacaoAgua) eArr.push(`Loc: ${r.localizacaoAgua}`);
-                if(eArr.length > 0) detEnd += eArr.join(' | ') + `<br>`;
-                if(r.telefone) detEnd += `📞 ${r.telefone}<br>`;
-                if(r.observacao) detEnd += `<span style="color:var(--danger-color); font-weight:bold;">Obs: ${r.observacao}</span><br>`;
-            }
-                                         // ==========================================
-    // RELATÓRIOS INTELIGENTES E FORMATADOS
+    // RELATÓRIOS INTELIGENTES, FORMATADOS E COM LGPD
     // ==========================================
     function showReport() { document.getElementById('formSection').classList.add('hidden'); document.getElementById('reportSection').classList.remove('hidden'); generateReport(); }
     function showForm() { document.getElementById('reportSection').classList.add('hidden'); document.getElementById('formSection').classList.remove('hidden'); }
@@ -1990,7 +1493,7 @@
             if(sel.length === 0) { h += `<p style="text-align:center; padding: 20px; color: var(--primary-color);">☝️ Selecione o tipo de relatório acima.</p>`; sig.style.display = 'none'; } else { sig.style.display = 'block'; }
         } document.getElementById('reportContent').innerHTML = h; checkBulkDelete(); 
     }
- 
+
     // ==========================================
     // AUDITORIA, CONFIGS E LIMPEZA ANTI-SPAM
     // ==========================================
