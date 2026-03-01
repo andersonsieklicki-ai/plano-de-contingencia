@@ -135,7 +135,6 @@
         .modal img { max-width: 95%; max-height: 90%; border-radius: 8px; border: 2px solid white; }
         .print-footer-fixed { display: none; }
 
-        /* Estilos do Alerta de Estoque e Inputs */
         .alert-estoque-global { background: var(--danger-color); color: white; padding: 12px; font-weight: bold; border-radius: 5px; margin-bottom: 10px; display: none; text-align: center; border: 2px solid #800; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .stock-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 15px; border-left: 5px solid #17a2b8; flex: 1; min-width: 30%; text-align: center; }
 
@@ -177,7 +176,7 @@
     <img src="1001145756.png" alt="Defesa Civil" style="width: 80px; margin-bottom: 15px;">
     <h2 style="color: var(--primary-color); margin-bottom: 10px;">Defesa Civil Capanema</h2>
     <p style="margin-bottom: 20px; font-size: 1.1rem; max-width: 300px; color: #555;">Acesso Restrito: É obrigatório fazer login com sua conta Google.</p>
-    <button class="btn-login" style="padding: 15px 30px; font-size: 1.1rem; border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: bold; margin-bottom: 15px;" onclick="loginGoogle()">Fazer Login com Google</button>
+    <button class="btn-login" id="btnOverlayLogin" style="padding: 15px 30px; font-size: 1.1rem; border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: bold; margin-bottom: 15px;" onclick="loginGoogle()">Fazer Login com Google</button>
     <button class="btn-small" style="padding: 10px 20px; font-size: 1rem; border: 1px solid #ccc; background: #fff; color: #333; cursor: pointer; font-weight: bold; border-radius: 5px;" onclick="logoutGoogle()">Sair / Trocar de Conta</button>
 </div>
 
@@ -552,6 +551,7 @@
     const dot = document.getElementById('networkStatusDot'); 
     const text = document.getElementById('networkStatusText');
     const btnLogin = document.getElementById('btnLogin'); 
+    const btnOverlayLogin = document.getElementById('btnOverlayLogin'); // Referência ao botão do popup
     const btnSync = document.getElementById('btnSync');
     const btnEquipe = document.getElementById('btnEquipe');
     const loginOverlay = document.getElementById('loginOverlay'); 
@@ -573,16 +573,23 @@
     }).catch((error) => {
         if (error.code === 'auth/unauthorized-domain') { alert("⚠️ ALERTA DE SEGURANÇA:\nEste site não foi autorizado no Firebase."); } 
         if(btnLogin) btnLogin.innerText = "Logar Google";
+        if(btnOverlayLogin) btnOverlayLogin.innerText = "Fazer Login com Google";
     });
 
     function loginGoogle() {
         if (!navigator.onLine) { alert("Sem internet. Conecte-se para fazer login."); return; }
         if(btnLogin) btnLogin.innerText = "Carregando..."; 
+        if(btnOverlayLogin) btnOverlayLogin.innerText = "Aguarde, carregando..."; 
+        
         const provider = new firebase.auth.GoogleAuthProvider();
         auth.signInWithPopup(provider).catch(error => {
-            if (error.code === 'auth/popup-blocked' || error.code === 'auth/web-storage-unsupported') { auth.signInWithRedirect(provider); } 
-            else if (error.code === 'auth/unauthorized-domain') { alert("⛔ ERRO: Este site não está liberado no Firebase."); if(btnLogin) btnLogin.innerText = "Logar Google"; } 
-            else { if(btnLogin) btnLogin.innerText = "Logar Google"; }
+            if (error.code === 'auth/popup-blocked' || error.code === 'auth/web-storage-unsupported') { 
+                auth.signInWithRedirect(provider); 
+            } else { 
+                if (error.code === 'auth/unauthorized-domain') { alert("⛔ ERRO: Este site não está liberado no Firebase."); }
+                if(btnLogin) btnLogin.innerText = "Logar Google"; 
+                if(btnOverlayLogin) btnOverlayLogin.innerText = "Fazer Login com Google"; 
+            }
         });
     }
 
@@ -676,6 +683,7 @@
             } else {
                 currentUserStatus = 'deslogado'; currentUserEmail = ''; currentUserNivel = 'agente'; 
                 if(btnLogin) { btnLogin.innerText = "Logar Google"; btnLogin.style.backgroundColor = "#4285F4"; }
+                if(btnOverlayLogin) btnOverlayLogin.innerText = "Fazer Login com Google";
                 if(btnSync) btnSync.style.display = "none";
                 if(unsubscribeSnapshot) unsubscribeSnapshot(); if(unsubscribeLogs) unsubscribeLogs(); if(unsubscribeEstoque) unsubscribeEstoque(); 
                 verificarAcesso();
@@ -1199,7 +1207,7 @@
             const qAe = document.getElementById('qtdAguaEntregue') ? (parseFloat(document.getElementById('qtdAguaEntregue').value)||0) : 0;
             let sig = (cT || cC) ? canvas.toDataURL() : null; let nAg = (auth && auth.currentUser) ? (auth.currentUser.email || auth.currentUser.displayName) : "Offline";
             
-            // Promise encadeada para não bugar offline
+            // Lógica isolada para não bugar o fluxo caso o log assíncrono atrase
             let finalizaSalvamento = () => {
                 localStorage.setItem('defesaCivilRecords', JSON.stringify(records)); 
                 clearFormFields(); 
