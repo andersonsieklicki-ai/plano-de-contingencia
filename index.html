@@ -1341,12 +1341,15 @@
             const cC = document.getElementById('checkCesta').checked; const cA = document.getElementById('checkAgua').checked;
             if(!cL && !cT && !cC && !cA) { alert('Selecione material/água!'); return; }
             
-            let nm = formatarNomeProprio(document.getElementById('nome').value.trim()); if(nm.split(' ').length < 2) { alert('NOME COMPLETO obrigatório.'); document.getElementById('nome').focus(); return; }
-            let rg = document.getElementById('rg').value.trim(); let tel = document.getElementById('telefone').value.trim(); 
-            let bai = document.getElementById('bairro').value.trim().toUpperCase(); let ru = document.getElementById('rua').value.trim().toUpperCase(); 
-            let nu = document.getElementById('numero').value.trim(); let fo = document.getElementById('rgPhotoBase64').value; 
-            let lAg = document.getElementById('localizacaoAgua').value.trim(); let rAg = document.getElementById('referenciaAgua').value.trim(); 
+           let bai = document.getElementById('bairro').value.trim().toUpperCase(); 
+            let fo = document.getElementById('rgPhotoBase64').value; 
             let ob = document.getElementById('observacao').value.trim(); let rEnt = document.getElementById('checkTelhaEntrega').checked;
+            
+            // CORREÇÃO: Só captura rua/numero se for Lona, Telha ou Cesta. Só captura Localização Água se for Água.
+            let ru = (cL || cT || cC) ? document.getElementById('rua').value.trim().toUpperCase() : ''; 
+            let nu = (cL || cT || cC) ? document.getElementById('numero').value.trim() : ''; 
+            let lAg = cA ? document.getElementById('localizacaoAgua').value.trim() : ''; 
+            let rAg = cA ? document.getElementById('referenciaAgua').value.trim() : '';
             
             if (cT || cC) { if(!nm || !bai || (!ru && !rEnt)) { alert('Nome, Bairro e Rua são obrigatórios.'); return; } if(isCanvasBlank(canvas)) { alert('Assinatura OBRIGATÓRIA.'); return; } } 
             else { if(!nm || !bai) { alert('Nome e Bairro obrigatórios.'); return; } }
@@ -1469,7 +1472,12 @@
             
             let endArr = []; 
             if(pData.temPermissao) {
-                if(r.bairro) endArr.push(r.bairro); if(r.rua) endArr.push(`${r.rua}, ${r.numero||'S/N'}`); if(r.localizacaoAgua) endArr.push(r.localizacaoAgua);
+                if(r.bairro) endArr.push(r.bairro); 
+                if(r.rua) endArr.push(`${r.rua}, ${r.numero||'S/N'}`); 
+                // Evita repetir a localização da água se ela tiver o mesmo texto cadastrado no campo de rua
+                if(r.localizacaoAgua && (!r.rua || r.localizacaoAgua.toUpperCase().trim() !== r.rua.toUpperCase().trim())) {
+                    endArr.push(r.localizacaoAgua);
+                }
             } else {
                 if(r.bairro) endArr.push(r.bairro);
                 if(r.rua || r.localizacaoAgua) endArr.push('***');
@@ -1544,9 +1552,13 @@
                 let pData = aplicarPrivacidade(r); // Aplica regras de privacidade
                 let cbh = currentUserNivel === 'admin' ? `<input type="checkbox" class="bulk-checkbox no-print" value="${r.id}" onchange="checkBulkDelete()">` : ``;
                 
-                let detEnd = ''; let eArr = [];
+               let detEnd = ''; let eArr = [];
                 if(pData.temPermissao) {
-                    if(r.rua) eArr.push(`Rua: ${r.rua}, Nº ${r.numero||'S/N'}`); if(r.localizacaoAgua) eArr.push(`Loc: ${r.localizacaoAgua}`);
+                    if(r.rua) eArr.push(`Rua: ${r.rua}, Nº ${r.numero||'S/N'}`); 
+                    // Evita repetir a localização da água se for idêntica à rua
+                    if(r.localizacaoAgua && (!r.rua || r.localizacaoAgua.toUpperCase().trim() !== r.rua.toUpperCase().trim())) {
+                        eArr.push(`Loc: ${r.localizacaoAgua}`);
+                    }
                 } else {
                     if(r.rua || r.localizacaoAgua) eArr.push(`Endereço: ***`);
                 }
