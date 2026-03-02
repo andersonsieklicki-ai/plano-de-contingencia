@@ -321,11 +321,7 @@
         <img src="1001145757.png" alt="Logo Prefeitura" class="logo">
     </header>
 
-  <div class="tabs-header no-print" style="margin-bottom: 15px; border-bottom: 3px solid #ccc;">
-        <div class="tab-btn active" id="tab-btn-geral" onclick="openTab('geral')" style="font-size: 1rem; padding: 10px 15px;">📊 Relatórios de Cadastros</div>
-        <div class="tab-btn tab-btn-log" id="tab-btn-log" onclick="openTab('log')" style="font-size: 1rem; padding: 10px 15px; display: none;">🔒 Auditoria e Configs</div>
-        <div class="tab-btn" id="tab-btn-estoque" onclick="openTab('estoque')" style="font-size: 1rem; padding: 10px 15px; display: none;">📦 Controle de Estoque</div>
-    </div><div class="tabs-header no-print" style="margin-bottom: 15px; border-bottom: 3px solid #ccc;">
+    <div class="tabs-header no-print" style="margin-bottom: 15px; border-bottom: 3px solid #ccc;">
         <div class="tab-btn active" id="tab-btn-geral" onclick="openTab('geral')" style="font-size: 1rem; padding: 10px 15px;">📊 Relatórios de Cadastros</div>
         <div class="tab-btn tab-btn-log" id="tab-btn-log" onclick="openTab('log')" style="font-size: 1rem; padding: 10px 15px; display: none;">🔒 Auditoria e Configs</div>
         <div class="tab-btn" id="tab-btn-estoque" onclick="openTab('estoque')" style="font-size: 1rem; padding: 10px 15px; display: none;">📦 Controle de Estoque</div>
@@ -391,8 +387,9 @@
         </div>
     </div>
 
+
     <div class="tab-content" id="tab-log"></div>
-    <div class="tab-content" id="tab-estoque"></div> id="tab-log"></div>
+<div class="tab-content" id="tab-estoque"></div>
     
     <div class="no-print" style="margin-top:20px; border-top: 2px solid #eee; padding-top: 15px;">
         <button class="btn-print" onclick="prepararImpressao()">🖨️ Imprimir / Salvar PDF</button>
@@ -471,7 +468,7 @@
     const ADMIN_EMAILS = ['andersonsieklicki@gmail.com', 'vanderleipettenon@gmail.com']; 
     let currentUserStatus = 'deslogado'; 
     let currentUserEmail = ''; 
-    let currentUserNivel = 'agente'; 
+    let currentUserNivel = 'padrao';
     let onlineUsersMap = {}; 
 
     auth.getRedirectResult().then((result) => {
@@ -512,44 +509,28 @@
         auth.signOut().then(() => { location.reload(); }); 
     }
 
+
+
     async function processarAcessoUsuario(user) {
         currentUserEmail = user.email ? user.email.toLowerCase() : "sem-email@google.com";
-        if (ADMIN_EMAILS.includes(currentUserEmail)) { 
-            currentUserNivel = 'admin'; 
-            return 'aprovado'; 
-        }
-        if (!navigator.onLine) { 
-            currentUserNivel = localStorage.getItem('nivel_' + currentUserEmail) || 'agente'; 
-            return localStorage.getItem('permissao_' + currentUserEmail) || 'aprovado'; 
-        }
+        if (ADMIN_EMAILS.includes(currentUserEmail)) { currentUserNivel = 'admin'; return 'aprovado'; }
+        if (!navigator.onLine) { currentUserNivel = localStorage.getItem('nivel_' + currentUserEmail) || 'padrao'; return localStorage.getItem('permissao_' + currentUserEmail) || 'aprovado'; }
         
         try {
             const docRef = db.collection('usuarios_capanema').doc(currentUserEmail); 
             const doc = await docRef.get();
             
             if (!doc.exists) {
-                await docRef.set({ 
-                    email: currentUserEmail, 
-                    nome: user.displayName || 'Sem Nome', 
-                    status: 'aprovado', 
-                    nivel: 'agente', 
-                    dataRegistro: new Date().toLocaleString('pt-BR') 
-                });
+                await docRef.set({ email: currentUserEmail, nome: user.displayName || 'Sem Nome', status: 'aprovado', nivel: 'padrao', dataRegistro: new Date().toLocaleString('pt-BR') });
                 localStorage.setItem('permissao_' + currentUserEmail, 'aprovado'); 
-                localStorage.setItem('nivel_' + currentUserEmail, 'agente'); 
-                currentUserNivel = 'agente'; 
-                return 'aprovado';
+                localStorage.setItem('nivel_' + currentUserEmail, 'padrao'); 
+                currentUserNivel = 'padrao'; return 'aprovado';
             } else {
-                const data = doc.data(); 
-                currentUserNivel = data.nivel || 'agente';
+                const data = doc.data(); currentUserNivel = data.nivel || 'padrao';
                 localStorage.setItem('permissao_' + currentUserEmail, data.status || 'aprovado'); 
-                localStorage.setItem('nivel_' + currentUserEmail, currentUserNivel); 
-                return data.status || 'aprovado';
+                localStorage.setItem('nivel_' + currentUserEmail, currentUserNivel); return data.status || 'aprovado';
             }
-        } catch (e) { 
-            currentUserNivel = localStorage.getItem('nivel_' + currentUserEmail) || 'agente'; 
-            return localStorage.getItem('permissao_' + currentUserEmail) || 'aprovado'; 
-        }
+        } catch (e) { currentUserNivel = localStorage.getItem('nivel_' + currentUserEmail) || 'padrao'; return localStorage.getItem('permissao_' + currentUserEmail) || 'aprovado'; }
     }
 
  function verificarAcesso() {
@@ -641,7 +622,7 @@
                     }
                 } catch(e) { console.error("Erro AuthState:", e); }
             } else {
-                currentUserStatus = 'deslogado'; currentUserEmail = ''; currentUserNivel = 'agente'; 
+                currentUserStatus = 'deslogado'; currentUserEmail = ''; currentUserNivel = 'padrao'; 
                 if(btnLogin) { btnLogin.innerText = "Logar Google"; btnLogin.style.backgroundColor = "#4285F4"; }
                 if(btnSync) btnSync.style.display = "none";
                 if(unsubscribeSnapshot) unsubscribeSnapshot(); 
@@ -697,7 +678,8 @@
             <div style="display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;">
                 <input type="email" id="novoEmailEquipe" placeholder="email@gmail.com" style="flex: 2; height: 32px; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
                 <select id="novoNivelEquipe" style="flex: 1; height: 32px; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                    <option value="agente">Agente (Padrão)</option>
+                    <option value="padrao">Padrão (Visualiza só o seu)</option>
+                    <option value="agente">Agente (Visualiza todos)</option>
                     <option value="supervisor">Supervisor</option>
                     <option value="admin">Administrador</option>
                 </select>
@@ -717,7 +699,7 @@
                     Object.values(onlineUsersMap).forEach(ou => { if(ou.email === u.email) { if (ou.state === 'online') { isOnline = true; } else if (ou.last_changed) { lastSeenText = `<br><span style="font-size: 0.75rem; color: #555;">Visto em: <strong>${formatarDataHora(ou.last_changed)}</strong></span>`; } } });
                     
                     let statusLigacao = isOnline ? `<span style="color:var(--success-color); font-weight:bold;">🟢 Online Agora</span>` : `<span style="color:#777;">⚪ Offline</span>${lastSeenText}`;
-                    let selectNivel = `<select onchange="alterarNivelUsuario('${u.email}', this.value)" style="width:100%; padding:2px; font-size:0.75rem;"><option value="agente" ${u.nivel === 'agente' || !u.nivel ? 'selected' : ''}>Agente</option><option value="supervisor" ${u.nivel === 'supervisor' ? 'selected' : ''}>Supervisor</option><option value="admin" ${u.nivel === 'admin' || ADMIN_EMAILS.includes(u.email) ? 'selected' : ''}>Admin</option></select>`;
+                    let selectNivel = `<select onchange="alterarNivelUsuario('${u.email}', this.value)" style="width:100%; padding:2px; font-size:0.75rem;"><option value="padrao" ${u.nivel === 'padrao' || !u.nivel ? 'selected' : ''}>Padrão</option><option value="agente" ${u.nivel === 'agente' ? 'selected' : ''}>Agente</option><option value="supervisor" ${u.nivel === 'supervisor' ? 'selected' : ''}>Supervisor</option><option value="admin" ${u.nivel === 'admin' || ADMIN_EMAILS.includes(u.email) ? 'selected' : ''}>Admin</option></select>`;
                     if (ADMIN_EMAILS.includes(u.email)) selectNivel = `<strong>Administrador</strong>`; 
                     
                     let botoes = `<div style="display: flex; flex-direction:column; gap: 4px; margin-top:4px;">`;
@@ -883,12 +865,7 @@
     function prepararImpressao() { setTimeout(function() { window.print(); }, 300); }
     function togglePrintPhotos() { document.body.classList.toggle('print-photos', document.getElementById('chkPrintPhotos').checked); }
 
-    // ==========================================
-    // NAVEGAÇÃO COM ENTER E FUNÇÃO DE PRIVACIDADE
-    // ==========================================
-// ==========================================
-    // NAVEGAÇÃO COM ENTER E FUNÇÃO DE PRIVACIDADE
-    // ==========================================
+  
   // ==========================================
     // NAVEGAÇÃO COM ENTER E FUNÇÃO DE PRIVACIDADE
     // ==========================================
@@ -1370,7 +1347,7 @@
         const bs = document.getElementById('btnSalvarCadastro'); bs.innerText = "Atualizar Lançamento"; bs.style.backgroundColor = "#0275d8"; showForm(); 
     }
 
-    async function saveRecord() {
+ async function saveRecord() {
         const bs = document.getElementById('btnSalvarCadastro');
         try {
             if(!verificarVigiaAntifraude()) return;
@@ -1378,23 +1355,12 @@
             const cC = document.getElementById('checkCesta').checked; const cA = document.getElementById('checkAgua').checked;
             if(!cL && !cT && !cC && !cA) { alert('Selecione material/água!'); return; }
             
-            // AS VARIÁVEIS QUE HAVIAM SUMIDO FORAM RESTAURADAS AQUI:
-            let nm = formatarNomeProprio(document.getElementById('nome').value.trim()); 
-            if(nm.split(' ').length < 2) { alert('NOME COMPLETO obrigatório.'); document.getElementById('nome').focus(); return; }
-            let rg = document.getElementById('rg').value.trim(); 
-            let tel = document.getElementById('telefone').value.trim(); 
-            
-            // CAPTURA DE BAIRRO, FOTO E OBSERVAÇÃO
-            let bai = document.getElementById('bairro').value.trim().toUpperCase(); 
-            let fo = document.getElementById('rgPhotoBase64').value; 
-            let ob = document.getElementById('observacao').value.trim(); 
-            let rEnt = document.getElementById('checkTelhaEntrega').checked;
-            
-            // CORREÇÃO DO ENDEREÇO DUPLICADO: Separa o que é de Telha/Lona/Cesta do que é Água
-            let ru = (cL || cT || cC) ? document.getElementById('rua').value.trim().toUpperCase() : ''; 
-            let nu = (cL || cT || cC) ? document.getElementById('numero').value.trim() : ''; 
-            let lAg = cA ? document.getElementById('localizacaoAgua').value.trim() : ''; 
-            let rAg = cA ? document.getElementById('referenciaAgua').value.trim() : ''; 
+            let nm = formatarNomeProprio(document.getElementById('nome').value.trim()); if(nm.split(' ').length < 2) { alert('NOME COMPLETO obrigatório.'); document.getElementById('nome').focus(); return; }
+            let rg = document.getElementById('rg').value.trim(); let tel = document.getElementById('telefone').value.trim(); 
+            let bai = document.getElementById('bairro').value.trim().toUpperCase(); let ru = document.getElementById('rua').value.trim().toUpperCase(); 
+            let nu = document.getElementById('numero').value.trim(); let fo = document.getElementById('rgPhotoBase64').value; 
+            let lAg = document.getElementById('localizacaoAgua').value.trim(); let rAg = document.getElementById('referenciaAgua').value.trim(); 
+            let ob = document.getElementById('observacao').value.trim(); let rEnt = document.getElementById('checkTelhaEntrega').checked;
             
             if (cT || cC) { if(!nm || !bai || (!ru && !rEnt)) { alert('Nome, Bairro e Rua são obrigatórios.'); return; } if(isCanvasBlank(canvas)) { alert('Assinatura OBRIGATÓRIA.'); return; } } 
             else { if(!nm || !bai) { alert('Nome e Bairro obrigatórios.'); return; } }
@@ -1419,19 +1385,33 @@
             const qAe = document.getElementById('qtdAguaEntregue') ? (parseFloat(document.getElementById('qtdAguaEntregue').value)||0) : 0;
             let sig = (cT || cC) ? canvas.toDataURL() : null; let nAg = (auth && auth.currentUser) ? (auth.currentUser.email || auth.currentUser.displayName) : "Offline";
             
+            let diffL = 0; let diffT = 0; let diffC = 0; 
+
             if (editandoId) {
                 const idx = records.findIndex(x => x.id === editandoId);
                 if (idx !== -1) {
+                    diffL = qL - (records[idx].qtdLona || 0); diffT = qT - (records[idx].qtdTelha || 0); diffC = qC - (records[idx].qtdCesta || 0);
                     records[idx] = { ...records[idx], nome:nm, rg, telefone:tel, bairro:bai, rua:ru, numero:nu, localizacaoAgua:lAg, referenciaAgua:rAg, observacao:ob, qtdLona:qL, qtdTelha:qT, telhaRequerEntrega:rEnt, qtdCesta:qC, qtdAgua:qA, qtdAguaEntregue:qAe, signatureData:sig, fotoRg:fo, synced:false, agente:nAg };
                     await registrarLog("EDIÇÃO", `Alterou Cód: [${records[idx].codigo}]`); alert('Atualizado!');
                 }
             } else {
+                diffL = qL; diffT = qT; diffC = qC;
                 const cd = gerarCodigoRegistro(nm);
                 records.push({ id: Date.now(), codigo: cd, dataISO: new Date().toISOString(), dataHoraFormatada: new Date().toLocaleString('pt-BR'), nome:nm, rg, telefone:tel, bairro:bai, rua:ru, numero:nu, localizacaoAgua:lAg, referenciaAgua:rAg, observacao:ob, qtdLona:qL, qtdTelha:qT, telhaRequerEntrega:rEnt, telhaEntregue:false, qtdCesta:qC, qtdAgua:qA, qtdAguaEntregue:qAe, entregasAgua:[], signatureData:sig, fotoRg:fo, synced:false, agente:nAg, emailCriador: currentUserEmail, logisticaPausada: false, logisticaMotivo: "" });
                 await registrarLog("NOVO CADASTRO", `Cód: [${cd}]`, cd); 
                 let lst = (configZap?.emailSolicitante || '').toLowerCase().split(',').map(e => e.trim());
                 if ((cA || rEnt) && lst.includes((currentUserEmail||'').toLowerCase())) { reenviarZapMotorista(nm, bai, lAg, ru, nu, rAg, ob, tel, cA?qA:qT, cA?'agua':'telha', qC>0); } else { alert('Salvo com sucesso!'); }
             }
+
+            // ATUALIZAÇÃO DO ESTOQUE
+            if (navigator.onLine && typeof db !== 'undefined' && (diffL !== 0 || diffT !== 0 || diffC !== 0)) {
+                let updatesEstoque = {};
+                if (diffL !== 0) updatesEstoque.lona = firebase.firestore.FieldValue.increment(-diffL);
+                if (diffT !== 0) updatesEstoque.telha = firebase.firestore.FieldValue.increment(-diffT);
+                if (diffC !== 0) updatesEstoque.cesta = firebase.firestore.FieldValue.increment(-diffC);
+                db.collection('configuracoes_capanema').doc('estoque').set(updatesEstoque, { merge: true }).catch(e=>{});
+            }
+
             localStorage.setItem('defesaCivilRecords', JSON.stringify(records)); clearFormFields(); sincronizarFirebaseAutomatica(); carregarPainelDespacho();
         } catch (e) { alert("⚠️ Erro:\n" + e.message); bs.disabled = false; bs.innerText = "Salvar Lançamento"; }
     }
@@ -1501,31 +1481,25 @@
         return h + `</tbody></table>`;
     }
 
-    function buildIndividualHTML(arr, tipo) {
+   function buildIndividualHTML(arr, tipo) {
         let isA = tipo === 'quantAgua'; let isL = tipo === 'quantLona'; let isT = tipo === 'quantTelha'; let isC = tipo === 'quantCesta'; 
         let u = isA ? 'm³' : (isL ? 'm²' : ' un'); 
         let nomeMat = isA ? 'Água 💧' : (isT ? 'Telhas 🏠' : (isC ? 'Cestas Básicas 📦' : 'Lonas ⛺'));
         let filt = arr.filter(r => isA ? r.qtdAgua>0 : (isL ? r.qtdLona>0 : (isT ? r.qtdTelha>0 : r.qtdCesta>0))); 
         let p = {}; let grandTotalSol = 0; let grandTotalEmp = 0;
+        
+        let hasFullView = (currentUserNivel === 'admin' || currentUserNivel === 'supervisor' || currentUserNivel === 'agente');
 
         filt.forEach(r => { 
-            let pData = aplicarPrivacidade(r);
-            // Novo modelo de agrupamento: junta sempre pelo nome para evitar separação por erro de RG
-            let k = r.nome.toUpperCase().trim(); 
-            
-            if(!p[k]) p[k] = {n: pData.nome, rg: pData.rg, locais: {}, t:0, ae:0, entregasBrutas: []}; 
+            let priv = (hasFullView || r.emailCriador === currentUserEmail);
+            let k = `${r.nome.toUpperCase()}_${priv ? (r.rg||'N/I') : '***'}`; 
+            if(!p[k]) p[k] = {n:r.nome, rg:(priv ? r.rg||'N/I' : '***'), locais: {}, t:0, em:r.emailCriador, tel:(priv ? r.telefone : '***'), ae:0, entregasBrutas: []}; 
             
             let endArr = []; 
-            if(pData.temPermissao) {
-                if(r.bairro) endArr.push(r.bairro); 
-                if(r.rua) endArr.push(`${r.rua}, ${r.numero||'S/N'}`); 
-                // Evita repetir a localização da água se ela tiver o mesmo texto cadastrado no campo de rua
-                if(r.localizacaoAgua && (!r.rua || r.localizacaoAgua.toUpperCase().trim() !== r.rua.toUpperCase().trim())) {
-                    endArr.push(r.localizacaoAgua);
-                }
+            if(priv) {
+                if(r.bairro) endArr.push(r.bairro); if(r.rua) endArr.push(`${r.rua}, ${r.numero||'S/N'}`); if(r.localizacaoAgua) endArr.push(r.localizacaoAgua);
             } else {
-                if(r.bairro) endArr.push(r.bairro);
-                if(r.rua || r.localizacaoAgua) endArr.push('***');
+                if(r.bairro) endArr.push(r.bairro); if(r.rua || r.localizacaoAgua) endArr.push('***');
             }
             let nomeLocal = endArr.length > 0 ? endArr.join(' - ') : 'Local Não Informado';
 
@@ -1545,7 +1519,6 @@
         
         let h = `<div class="report-summary"><strong>Relatório Individual: ${nomeMat}</strong></div><table class="report-table"><tbody>`;
         
-        // A ordenação b.t - a.t já garante a classificação decrescente das quantidades
         Object.values(p).sort((a, b) => b.t - a.t).forEach(i => { 
             let locaisHtml = '';
             Object.keys(i.locais).forEach(loc => {
@@ -1585,31 +1558,29 @@
         return h + `</tbody></table>`;
     }
 
-    function buildGroupedHTML(arr, tit, sel) {
+      function buildGroupedHTML(arr, tit, sel) {
         let isA = sel.includes('quantAgua'); let isL = sel.includes('quantLona'); let isT = sel.includes('quantTelha'); let isC = sel.includes('quantCesta'); let mt = (!isA && !isL && !isT && !isC); 
         let fF = arr; if (!mt) { fF = arr.filter(r => (isA && r.qtdAgua>0) || (isL && r.qtdLona>0) || (isT && r.qtdTelha>0) || (isC && r.qtdCesta>0)); }
         let bMap = {}; fF.forEach(r => { let b = (r.bairro||'N/I').toUpperCase(); if(!bMap[b]) bMap[b]=[]; bMap[b].push(r); }); 
         
+        let hasFullView = (currentUserNivel === 'admin' || currentUserNivel === 'supervisor' || currentUserNivel === 'agente');
+
         let h = `<div class="report-summary"><strong>Lista Detalhada 📋</strong></div>`;
         Object.keys(bMap).sort().forEach(b => {
             h += `<div class="bairro-section"><div class="bairro-header">📍 ${b}</div><table class="report-table"><thead><tr><th width="5%"></th><th width="15%">Data</th><th>Beneficiário / Contato / Endereço</th><th width="35%">Materiais (Solicitado / Status)</th></tr></thead><tbody>`;
             bMap[b].reverse().forEach(r => {
-                let pData = aplicarPrivacidade(r); // Aplica regras de privacidade
+                let pv = (hasFullView || r.emailCriador === currentUserEmail); 
+                let ps = (currentUserNivel==='supervisor' || currentUserNivel==='admin' || r.emailCriador === currentUserEmail); 
                 let cbh = currentUserNivel === 'admin' ? `<input type="checkbox" class="bulk-checkbox no-print" value="${r.id}" onchange="checkBulkDelete()">` : ``;
                 
-               let detEnd = ''; let eArr = [];
-                if(pData.temPermissao) {
-                    if(r.rua) eArr.push(`Rua: ${r.rua}, Nº ${r.numero||'S/N'}`); 
-                    // Evita repetir a localização da água se for idêntica à rua
-                    if(r.localizacaoAgua && (!r.rua || r.localizacaoAgua.toUpperCase().trim() !== r.rua.toUpperCase().trim())) {
-                        eArr.push(`Loc: ${r.localizacaoAgua}`);
-                    }
+                let detEnd = ''; let eArr = [];
+                if(pv) {
+                    if(r.rua) eArr.push(`Rua: ${r.rua}, Nº ${r.numero||'S/N'}`); if(r.localizacaoAgua) eArr.push(`Loc: ${r.localizacaoAgua}`);
                 } else {
                     if(r.rua || r.localizacaoAgua) eArr.push(`Endereço: ***`);
                 }
-                
                 if(eArr.length > 0) detEnd += eArr.join(' | ') + `<br>`;
-                detEnd += `📞 ${pData.telefone}<br>`;
+                if(r.telefone) detEnd += `📞 ${pv ? r.telefone : '***'}<br>`;
                 if(r.codigo) detEnd += `🏷️ <strong>Cód:</strong> ${r.codigo}<br>`;
                 if(r.observacao) detEnd += `<span style="color:var(--danger-color); font-weight:bold;">Obs: ${r.observacao}</span><br>`;
 
@@ -1625,14 +1596,13 @@
                 }
                 let mats = mArr.join('  |  ');
 
-                let act = pData.temPermissao ? `<button class="btn-edit no-print" onclick="editRecord(${r.id})" style="display:inline-block; width:auto; margin-right:4px;">✏️ Editar</button>` : ''; 
+                let act = ps ? `<button class="btn-edit no-print" onclick="editRecord(${r.id})" style="display:inline-block; width:auto; margin-right:4px;">✏️ Editar</button>` : ''; 
                 if (currentUserNivel === 'admin') { act += `<button class="btn-small no-print" style="background-color: var(--danger-color); padding: 3px 6px; font-size: 0.7rem; display:inline-block; width:auto;" onclick="deleteRecord(${r.id})">🗑️ Excluir</button>`; }
                 
-                h+=`<tr><td style="text-align:center;">${cbh}</td><td><small>${r.dataHoraFormatada.split(' ')[0]}<br>${r.dataHoraFormatada.split(' ')[1]}</small></td><td><strong>${pData.nome}</strong> <small style="color:#666;">(RG: ${pData.rg})</small><br><div style="font-size:0.8rem; color:#444; margin:4px 0; line-height:1.4;">${detEnd}</div><div class="no-print" style="margin-top:4px;">${act}</div></td><td style="vertical-align:middle; line-height:1.5;">${mats}</td></tr>`;
+                h+=`<tr><td style="text-align:center;">${cbh}</td><td><small>${r.dataHoraFormatada.split(' ')[0]}<br>${r.dataHoraFormatada.split(' ')[1]}</small></td><td><strong>${r.nome}</strong> <small style="color:#666;">(RG: ${pv?r.rg||'N/I':'***'})</small><br><div style="font-size:0.8rem; color:#444; margin:4px 0; line-height:1.4;">${detEnd}</div><div class="no-print" style="margin-top:4px;">${act}</div></td><td style="vertical-align:middle; line-height:1.5;">${mats}</td></tr>`;
             }); h += `</tbody></table></div>`;
         }); return h;
     }
-
     function generateReport() {
         const sel = Array.from(document.querySelectorAll('input[name="reportType"]:checked')).map(c => c.value); 
         const dI = document.getElementById('dataInicio').value; const dF = document.getElementById('dataFim').value; 
@@ -1793,15 +1763,15 @@
         await registrarLog("LIMPEZA", `Base resetada completamente. Motivo: ${motivo}`); alert('Apagado e Limpo!'); if(btnSync) btnSync.innerText = "☁️ Nuvem OK"; showForm(); carregarPainelDespacho();
     }
 
-    function openTab(t) { 
+   function openTab(t) { 
         document.querySelectorAll('.tab-content, .tab-btn').forEach(e => e.classList.remove('active')); 
         document.getElementById('tab-'+t).classList.add('active'); 
         if(document.getElementById('tab-btn-'+t)) document.getElementById('tab-btn-'+t).classList.add('active'); 
         if (t==='log') { renderPainelAuditoria(); } 
         if (t==='estoque') { renderPainelEstoque(); } 
     }
-    window.addEventListener('DOMContentLoaded', () => { setTimeout(carregarPainelDespacho, 1000); });
-	// ==========================================
+
+    // ==========================================
     // CONTROLE DE ESTOQUE CENTRAL
     // ==========================================
     let estoqueAtual = { lona: 0, telha: 0, cesta: 0 };
@@ -1851,13 +1821,12 @@
     async function processarMovimentoEstoque(chave, tipo, qtd, motivo) {
         if(qtd <= 0) return;
         let diff = tipo === 'entrada' ? qtd : -qtd;
-        
         try {
             await db.collection('configuracoes_capanema').doc('estoque').set({ 
                 [chave]: firebase.firestore.FieldValue.increment(diff) 
             }, { merge: true });
             
-            await registrarLog("AJUSTE DE ESTOQUE", `${tipo.toUpperCase()} MANUAL: ${qtd} ${chave}. Motivo: ${motivo}`);
+            if(typeof registrarLog === 'function') await registrarLog("AJUSTE DE ESTOQUE", `${tipo.toUpperCase()} MANUAL: ${qtd} ${chave}. Motivo: ${motivo}`);
             alert(`Estoque atualizado com sucesso!`);
         } catch(e) { alert("Erro ao atualizar estoque."); }
     }
@@ -1875,9 +1844,13 @@
         if (tipo === 'saida' && (estoqueAtual[chave] || 0) - qtd < 0) {
             if(!confirm(`⚠️ ALERTA: O estoque atual é ${(estoqueAtual[chave] || 0)}. Essa retirada vai deixar o estoque NEGATIVO.\n\nDeseja continuar mesmo assim?`)) return;
         }
-        
         processarMovimentoEstoque(chave, tipo, qtd, motivo);
     }
+    
+    // Assegurar que o estoque inicie após o Firebase
+    window.addEventListener('DOMContentLoaded', () => { 
+        setTimeout(() => { carregarPainelDespacho(); if(typeof iniciarEscutaEstoque === 'function') iniciarEscutaEstoque(); }, 1000); 
+    });
 </script>
 </body>
 </html>
