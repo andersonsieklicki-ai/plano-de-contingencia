@@ -324,7 +324,6 @@
     <div class="tabs-header no-print" style="margin-bottom: 15px; border-bottom: 3px solid #ccc;">
         <div class="tab-btn active" id="tab-btn-geral" onclick="openTab('geral')" style="font-size: 1rem; padding: 10px 15px;">📊 Relatórios de Cadastros</div>
         <div class="tab-btn tab-btn-log" id="tab-btn-log" onclick="openTab('log')" style="font-size: 1rem; padding: 10px 15px; display: none;">🔒 Auditoria e Configs</div>
-        <div class="tab-btn" id="tab-btn-estoque" onclick="openTab('estoque')" style="font-size: 1rem; padding: 10px 15px; display: none;">📦 Controle de Estoque</div>
     </div>
     
     <div class="tab-content active" id="tab-geral">
@@ -388,7 +387,6 @@
     </div>
 
     <div class="tab-content" id="tab-log"></div>
-    <div class="tab-content" id="tab-estoque"></div>
     
     <div class="no-print" style="margin-top:20px; border-top: 2px solid #eee; padding-top: 15px;">
         <button class="btn-print" onclick="prepararImpressao()">🖨️ Imprimir / Salvar PDF</button>
@@ -552,13 +550,9 @@
         if (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') { 
             if(btnEquipe && currentUserNivel === 'admin') btnEquipe.style.display = 'inline-block';
             if(document.getElementById('tab-btn-log')) document.getElementById('tab-btn-log').style.display = 'block'; 
-            if(document.getElementById('tab-btn-estoque')) document.getElementById('tab-btn-estoque').style.display = 'block'; 
         } else { 
             if(btnEquipe) btnEquipe.style.display = 'none'; 
             if(document.getElementById('tab-btn-log')) document.getElementById('tab-btn-log').style.display = 'none'; 
-            if(document.getElementById('tab-btn-estoque')) document.getElementById('tab-btn-estoque').style.display = 'none'; 
-        }
-        // ... (Mantenha o resto da função igualzinho)
         }
 
         if (navigator.onLine) {
