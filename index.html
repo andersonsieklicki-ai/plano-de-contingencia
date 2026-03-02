@@ -324,6 +324,7 @@
     <div class="tabs-header no-print" style="margin-bottom: 15px; border-bottom: 3px solid #ccc;">
         <div class="tab-btn active" id="tab-btn-geral" onclick="openTab('geral')" style="font-size: 1rem; padding: 10px 15px;">📊 Relatórios de Cadastros</div>
         <div class="tab-btn tab-btn-log" id="tab-btn-log" onclick="openTab('log')" style="font-size: 1rem; padding: 10px 15px; display: none;">🔒 Auditoria e Configs</div>
+        <div class="tab-btn" id="tab-btn-estoque" onclick="openTab('estoque')" style="font-size: 1rem; padding: 10px 15px; display: none;">📦 Controle de Estoque</div>
     </div>
     
     <div class="tab-content active" id="tab-geral">
@@ -387,6 +388,7 @@
     </div>
 
     <div class="tab-content" id="tab-log"></div>
+    <div class="tab-content" id="tab-estoque"></div>
     
     <div class="no-print" style="margin-top:20px; border-top: 2px solid #eee; padding-top: 15px;">
         <button class="btn-print" onclick="prepararImpressao()">🖨️ Imprimir / Salvar PDF</button>
@@ -550,9 +552,13 @@
         if (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') { 
             if(btnEquipe && currentUserNivel === 'admin') btnEquipe.style.display = 'inline-block';
             if(document.getElementById('tab-btn-log')) document.getElementById('tab-btn-log').style.display = 'block'; 
+            if(document.getElementById('tab-btn-estoque')) document.getElementById('tab-btn-estoque').style.display = 'block'; 
         } else { 
             if(btnEquipe) btnEquipe.style.display = 'none'; 
             if(document.getElementById('tab-btn-log')) document.getElementById('tab-btn-log').style.display = 'none'; 
+            if(document.getElementById('tab-btn-estoque')) document.getElementById('tab-btn-estoque').style.display = 'none'; 
+        }
+        // ... (Mantenha o resto da função igualzinho)
         }
 
         if (navigator.onLine) {
@@ -620,8 +626,11 @@
                         if(typeof carregarConfigZap === 'function') carregarConfigZap();
                         if(typeof sincronizarFirebaseAutomatica === 'function') sincronizarFirebaseAutomatica(); 
                         if(typeof sincronizarLogsOffline === 'function') sincronizarLogsOffline(); 
-                        if(typeof iniciarEscutaNuvem === 'function') iniciarEscutaNuvem();
+                       if(typeof iniciarEscutaNuvem === 'function') iniciarEscutaNuvem();
                         if(typeof iniciarEscutaLogsNuvem === 'function') iniciarEscutaLogsNuvem(); 
+                        if(typeof carregarPainelDespacho === 'function') carregarPainelDespacho(); 
+                        // INICIA O ESTOQUE QUANDO LOGAR
+                        if(typeof iniciarEscutaEstoque === 'function') iniciarEscutaEstoque();
                         if(typeof carregarPainelDespacho === 'function') carregarPainelDespacho(); 
                     } else { 
                         if(unsubscribeSnapshot) unsubscribeSnapshot(); 
@@ -1686,7 +1695,83 @@
         };
         reader.readAsText(file); event.target.value = '';
     }
+// ==========================================
+    // CONTROLE DE ESTOQUE CENTRAL
+    // ==========================================
+    let estoqueAtual = { lona: 0, telha: 0, cesta: 0 };
 
+    function iniciarEscutaEstoque() {
+        if(!db || !auth.currentUser || currentUserStatus !== 'aprovado') return;
+        db.collection('configuracoes_capanema').doc('estoque').onSnapshot(doc => {
+            if(doc.exists) estoqueAtual = doc.data();
+            else estoqueAtual = { lona: 0, telha: 0, cesta: 0 };
+            
+            if(document.getElementById('tab-estoque').classList.contains('active')) {
+                renderPainelEstoque();
+            }
+        });
+    }
+
+    function renderPainelEstoque() {
+        if(currentUserNivel !== 'admin' && currentUserNivel !== 'supervisor') return;
+        let h = `<div class="report-summary"><strong>📦 Gestão Central de Estoque</strong></div>`;
+
+        const gerarCard = (nome, chave, qtd, limiteBaixo, unidade) => {
+            let cor = qtd <= limiteBaixo ? (qtd < 0 ? 'var(--danger-color)' : '#f0ad4e') : 'var(--success-color)';
+            let status = qtd < 0 ? '⚠️ ESTOQUE NEGATIVO' : (qtd <= limiteBaixo ? '⚠️ ESTOQUE BAIXO' : '✅ NORMAL');
+            let fundo = qtd < 0 ? '#ffebee' : (qtd <= limiteBaixo ? '#fff8e1' : '#f1f8e9');
+            
+            return `<div style="background:${fundo}; border:2px solid ${cor}; padding:15px; border-radius:8px; flex:1; min-width:280px; text-align:center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h3 style="margin-top:0; color:var(--primary-color); border-bottom:1px solid #ccc; padding-bottom:5px;">${nome}</h3>
+                <div style="font-size:2.5rem; font-weight:bold; color:${cor}; margin: 10px 0;">${Number(qtd).toFixed(chave==='lona'?1:0)} <small style="font-size:1.2rem; color:#555;">${unidade}</small></div>
+                <div style="font-size:0.9rem; color:#555; margin-bottom:15px; font-weight:bold; background:#fff; padding:4px; border-radius:4px; border:1px solid #ddd;">Status: ${status}</div>
+                <div style="display:flex; gap:10px;">
+                    <button style="background:#28a745; color:#fff; border:none; border-radius:4px; flex:1; padding:10px; font-weight:bold; cursor:pointer;" onclick="abrirModalEstoque('${chave}', 'entrada')">📥 Repor</button>
+                    <button style="background:#d9534f; color:#fff; border:none; border-radius:4px; flex:1; padding:10px; font-weight:bold; cursor:pointer;" onclick="abrirModalEstoque('${chave}', 'saida')">📤 Retirada Avulsa</button>
+                </div>
+            </div>`;
+        };
+
+        h += `<div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom:20px;">
+            ${gerarCard('⛺ Lonas (Rolo ~400m²)', 'lona', estoqueAtual.lona, 400, 'm²')}
+            ${gerarCard('🏠 Telhas (Unidades)', 'telha', estoqueAtual.telha, 100, 'un')}
+            ${gerarCard('📦 Cestas Básicas', 'cesta', estoqueAtual.cesta, 10, 'un')}
+        </div>
+        <p style="font-size: 0.85rem; color: #666; text-align: center; background: #eee; padding: 10px; border-radius: 4px;">As baixas de doações aos moradores são debitadas do estoque automaticamente ao salvar o cadastro. Retiradas avulsas (ex: Defesa Civil de Realeza) devem ser feitas pelos botões acima.</p>`;
+        
+        document.getElementById('tab-estoque').innerHTML = h;
+    }
+
+    async function processarMovimentoEstoque(chave, tipo, qtd, motivo) {
+        if(qtd <= 0) return;
+        let diff = tipo === 'entrada' ? qtd : -qtd;
+        
+        try {
+            await db.collection('configuracoes_capanema').doc('estoque').set({ 
+                [chave]: firebase.firestore.FieldValue.increment(diff) 
+            }, { merge: true });
+            
+            await registrarLog("AJUSTE DE ESTOQUE", `${tipo.toUpperCase()} MANUAL: ${qtd} ${chave}. Motivo: ${motivo}`);
+            alert(`Estoque atualizado com sucesso!`);
+        } catch(e) { alert("Erro ao atualizar estoque."); }
+    }
+    
+    function abrirModalEstoque(chave, tipo) {
+        let acaoText = tipo === 'entrada' ? 'REPOR / DAR ENTRADA' : 'RETIRADA AVULSA';
+        let qtdStr = prompt(`Digite a quantidade para ${acaoText} de ${chave.toUpperCase()}:`);
+        if(!qtdStr) return;
+        let qtd = parseFloat(qtdStr.replace(',','.'));
+        if(isNaN(qtd) || qtd <= 0) { alert("Valor inválido."); return; }
+        
+        let motivo = prompt(`Qual o motivo/destino desta ${tipo}? \n(Ex: Para Realeza, Compra Nota 123, Ajuste contábil...)`);
+        if(!motivo || motivo.trim().length < 4) { alert("Você precisa justificar com um motivo válido!"); return; }
+        
+        if (tipo === 'saida' && (estoqueAtual[chave] || 0) - qtd < 0) {
+            if(!confirm(`⚠️ ALERTA: O estoque atual é ${(estoqueAtual[chave] || 0)}. Essa retirada vai deixar o estoque NEGATIVO.\n\nDeseja continuar mesmo assim?`)) return;
+        }
+        
+        processarMovimentoEstoque(chave, tipo, qtd, motivo);
+    }
     // ==========================================
     // CONFIGS E LIMPEZA ANTI-SPAM
     // ==========================================
@@ -1781,8 +1866,13 @@
         await registrarLog("LIMPEZA", `Base resetada completamente. Motivo: ${motivo}`); alert('Apagado e Limpo!'); if(btnSync) btnSync.innerText = "☁️ Nuvem OK"; showForm(); carregarPainelDespacho();
     }
 
-    function openTab(t) { document.querySelectorAll('.tab-content, .tab-btn').forEach(e => e.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); document.getElementById('tab-btn-'+t).classList.add('active'); if (t==='log') { renderPainelAuditoria(); } }
-    window.addEventListener('DOMContentLoaded', () => { setTimeout(carregarPainelDespacho, 1000); });
+    function openTab(t) { 
+        document.querySelectorAll('.tab-content, .tab-btn').forEach(e => e.classList.remove('active')); 
+        document.getElementById('tab-'+t).classList.add('active'); 
+        if(document.getElementById('tab-btn-'+t)) document.getElementById('tab-btn-'+t).classList.add('active'); 
+        if (t==='log') { renderPainelAuditoria(); } 
+        if (t==='estoque') { renderPainelEstoque(); } 
+    }('DOMContentLoaded', () => { setTimeout(carregarPainelDespacho, 1000); });
 </script>
 </body>
 </html>
