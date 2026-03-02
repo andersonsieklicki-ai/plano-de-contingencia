@@ -399,15 +399,36 @@
 <input type="file" id="importBackupFile" style="display:none;" accept=".json" onchange="processarImportacaoBackup(event)">
 
 <script>
-    // ==========================================
-    // ESC - ATALHO PARA LIMPAR FORMULÁRIO
+  // ==========================================
+    // ATALHOS GLOBAIS (ESC, BACKSPACE E VOLTAR DO CELULAR)
     // ==========================================
     document.addEventListener('keydown', function(event) {
+        // Atalho ESC para limpar formulário
         if (event.key === "Escape") {
             const formSection = document.getElementById('formSection');
             if (formSection && !formSection.classList.contains('hidden')) {
                 clearFormFields();
             }
+        }
+        
+        // Atalho Backspace para voltar aos cadastros (apenas se não estiver digitando nada)
+        if (event.key === "Backspace") {
+            const reportSection = document.getElementById('reportSection');
+            if (reportSection && !reportSection.classList.contains('hidden')) {
+                const tag = event.target.tagName.toLowerCase();
+                // Só volta se não estiver dentro de um campo de texto pesquisando
+                if (tag !== 'input' && tag !== 'textarea') {
+                    event.preventDefault(); 
+                    history.back(); // Aciona a inteligência de voltar
+                }
+            }
+        }
+    });
+
+    // Inteligência para o botão físico "Voltar" do celular
+    window.addEventListener('popstate', function(event) {
+        if (!document.getElementById('reportSection').classList.contains('hidden')) {
+            showForm(); // Volta para o formulário
         }
     });
 
@@ -831,35 +852,50 @@
     // ==========================================
     // NAVEGAÇÃO COM ENTER E FUNÇÃO DE PRIVACIDADE
     // ==========================================
+// ==========================================
+    // NAVEGAÇÃO COM ENTER E FUNÇÃO DE PRIVACIDADE
+    // ==========================================
     const navInputs = document.querySelectorAll('.nav-input');
     navInputs.forEach((input, index) => {
         input.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
+            // Pega tanto o Enter do PC quanto o Enter/Ir do teclado mobile
+            if (e.key === 'Enter' || e.keyCode === 13) {
                 e.preventDefault(); 
-                if(['dataFim', 'filtroRelBairro', 'filtroRg'].includes(this.id)) { if(typeof generateReport === 'function') generateReport(); return; }
                 
-                // Se estiver no campo observação, foca o botão de salvar
-                if(this.id === 'observacao') {
-                    document.getElementById('btnSalvarCadastro').focus();
-                    return;
+                // Ignora se estiver na tela de relatórios preenchendo filtros
+                if(['dataFim', 'filtroRelBairro', 'filtroRg', 'filtroNome'].includes(this.id)) { 
+                    if(typeof generateReport === 'function') generateReport(); 
+                    return; 
                 }
 
-                this.setSelectionRange(this.value.length, this.value.length);
-                let achouProximo = false;
-                for(let i = index + 1; i < navInputs.length; i++) { 
-                    if(!navInputs[i].closest('.hidden') && navInputs[i].offsetParent !== null) { 
-                        navInputs[i].focus(); 
-                        achouProximo = true;
-                        break; 
-                    } 
+                // Procura o próximo input que esteja visível na tela
+                let proximoInput = null;
+                for (let i = index + 1; i < navInputs.length; i++) {
+                    // Verifica se a div pai não tem a classe 'hidden' e se o elemento não está oculto (offsetParent)
+                    if (!navInputs[i].closest('.hidden') && navInputs[i].offsetParent !== null) {
+                        proximoInput = navInputs[i];
+                        break;
+                    }
                 }
-                // Se não houver próximo campo visível, vai direto para o botão Salvar
-                if(!achouProximo) document.getElementById('btnSalvarCadastro').focus();
+
+                // Se achou um próximo campo (e não é o campo de observação finalizando), foca nele
+                if (proximoInput && this.id !== 'observacao') {
+                    proximoInput.focus();
+                } else {
+                    // Se não achou próximo campo ou se apertou Enter no campo de Observação, vai pro botão Salvar
+                    const btnSalvar = document.getElementById('btnSalvarCadastro');
+                    if (btnSalvar) {
+                        this.blur(); // Tira o teclado da tela no celular
+                        btnSalvar.focus(); // Coloca o foco no botão Salvar
+                        // Descomente a linha abaixo se quiser que o Enter já clique em salvar direto:
+                        // btnSalvar.click(); 
+                    }
+                }
             }
         });
     });
 
-    // Função auxiliar para aplicar a máscara de privacidade nos dados
+    // Função auxiliar para aplicar a máscara de privacidade nos dados (Mantida do ajuste anterior)
     function aplicarPrivacidade(r) {
         let temPermissao = (currentUserNivel === 'admin' || currentUserNivel === 'supervisor' || r.emailCriador === currentUserEmail);
         return {
@@ -1383,8 +1419,24 @@
     // ==========================================
     // RELATÓRIOS INTELIGENTES E FORMATADOS
     // ==========================================
-    function showReport() { document.getElementById('formSection').classList.add('hidden'); document.getElementById('reportSection').classList.remove('hidden'); generateReport(); }
-    function showForm() { document.getElementById('reportSection').classList.add('hidden'); document.getElementById('formSection').classList.remove('hidden'); }
+    function showReport() { 
+        document.getElementById('formSection').classList.add('hidden'); 
+        document.getElementById('reportSection').classList.remove('hidden'); 
+        generateReport(); 
+        
+        // Cria um histórico "falso" para o botão voltar do celular funcionar
+        history.pushState({tela: "relatorio"}, "Relatórios", "#relatorios");
+    }
+    
+    function showForm() { 
+        document.getElementById('reportSection').classList.add('hidden'); 
+        document.getElementById('formSection').classList.remove('hidden'); 
+        
+        // Limpa o link para não bugar se o usuário avançar de novo
+        if (window.location.hash === '#relatorios') {
+            history.replaceState(null, "", window.location.pathname);
+        }
+    }
     function updateReportToggle() { document.querySelectorAll('.report-toggle').forEach(l => { if(l.querySelector('input').checked) l.classList.add('active'); else l.classList.remove('active'); }); }
 
     function buildResumoBairrosHTML(arr) {
