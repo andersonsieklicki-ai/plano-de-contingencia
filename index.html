@@ -1866,13 +1866,8 @@
         await registrarLog("LIMPEZA", `Base resetada completamente. Motivo: ${motivo}`); alert('Apagado e Limpo!'); if(btnSync) btnSync.innerText = "☁️ Nuvem OK"; showForm(); carregarPainelDespacho();
     }
 
-    function openTab(t) { 
-        document.querySelectorAll('.tab-content, .tab-btn').forEach(e => e.classList.remove('active')); 
-        document.getElementById('tab-'+t).classList.add('active'); 
-        if(document.getElementById('tab-btn-'+t)) document.getElementById('tab-btn-'+t).classList.add('active'); 
-        if (t==='log') { renderPainelAuditoria(); } 
-        if (t==='estoque') { renderPainelEstoque(); } 
-    }('DOMContentLoaded', () => { setTimeout(carregarPainelDespacho, 1000); });
+    function openTab(t) { document.querySelectorAll('.tab-content, .tab-btn').forEach(e => e.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); document.getElementById('tab-btn-'+t).classList.add('active'); if (t==='log') { renderPainelAuditoria(); } }
+    window.addEventListener('DOMContentLoaded', () => { setTimeout(carregarPainelDespacho, 1000); });
 </script>
 </body>
 </html>
