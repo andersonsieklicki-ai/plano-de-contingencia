@@ -229,9 +229,10 @@
 <div class="container" id="formSection">
     <div class="cloud-panel no-print">
         <div class="status-indicator"><span class="dot" id="networkStatusDot"></span><span id="networkStatusText">Aguarde...</span><span id="realtimeClock" style="margin-left: 10px; font-weight: normal; color: #555;"></span></div>
-        <div class="cloud-btns">
+       <div class="cloud-btns">
             <button class="btn-small" id="btnEquipe" style="background:#8e44ad; display:none;" onclick="abrirModalEquipe()">👥 Equipe</button>
             <button class="btn-small btn-login" id="btnLogin" onclick="loginGoogle()">Logar Google</button>
+            <button class="btn-small" id="btnLogout" style="background:var(--danger-color); display:none;" onclick="logoutGoogle()">Sair</button>
             <button class="btn-small btn-sync" id="btnSync" onclick="sincronizarFirebaseAutomatica()">☁️ Sync</button>
         </div>
     </div>
@@ -592,7 +593,7 @@
     window.addEventListener('online', updateOnlineStatus); 
     window.addEventListener('offline', updateOnlineStatus);
 
-    if(auth) {
+   if(auth) {
         auth.onAuthStateChanged(async (user) => {
             if (user) {
                 try {
@@ -605,6 +606,9 @@
                         
                         const nomeExibicao = user.displayName ? user.displayName.split(" ")[0] : (user.email ? user.email.split('@')[0] : 'Agente');
                         if(btnLogin) { btnLogin.innerText = nomeExibicao; btnLogin.style.backgroundColor = "#555"; }
+                        
+                        // MOSTRA O BOTÃO SAIR
+                        if(document.getElementById('btnLogout')) document.getElementById('btnLogout').style.display = "inline-block";
                         if(btnSync) btnSync.style.display = "inline-block";
                         
                         if(typeof carregarConfigZap === 'function') carregarConfigZap();
@@ -612,10 +616,9 @@
                         if(typeof sincronizarLogsOffline === 'function') sincronizarLogsOffline(); 
                         if(typeof iniciarEscutaNuvem === 'function') iniciarEscutaNuvem();
                         if(typeof iniciarEscutaLogsNuvem === 'function') iniciarEscutaLogsNuvem(); 
-						// INICIA O ESTOQUE QUANDO LOGAR
                         if(typeof iniciarEscutaEstoque === 'function') iniciarEscutaEstoque();
                         if(typeof carregarPainelDespacho === 'function') carregarPainelDespacho();
-						
+                        
                     } else { 
                         if(unsubscribeSnapshot) unsubscribeSnapshot(); 
                         if(unsubscribeLogs) unsubscribeLogs(); 
@@ -624,7 +627,11 @@
             } else {
                 currentUserStatus = 'deslogado'; currentUserEmail = ''; currentUserNivel = 'padrao'; 
                 if(btnLogin) { btnLogin.innerText = "Logar Google"; btnLogin.style.backgroundColor = "#4285F4"; }
+                
+                // ESCONDE O BOTÃO SAIR
+                if(document.getElementById('btnLogout')) document.getElementById('btnLogout').style.display = "none";
                 if(btnSync) btnSync.style.display = "none";
+                
                 if(unsubscribeSnapshot) unsubscribeSnapshot(); 
                 if(unsubscribeLogs) unsubscribeLogs(); 
                 verificarAcesso();
@@ -647,10 +654,16 @@
         });
     }
 
+   // Cria uma memória (Cache) para a busca não travar o banco de dados
+    let allUsersCache = [];
+
     function escutarUsuariosOnline() {
         rtdb.ref('/status/').on('value', (snapshot) => {
             onlineUsersMap = snapshot.val() || {};
-            if(document.getElementById('equipeModal') && document.getElementById('equipeModal').style.display === 'flex') { carregarListaUsuarios(); }
+            // Ao invés de recarregar tudo, apenas atualiza a tabela visual
+            if(document.getElementById('equipeModal') && document.getElementById('equipeModal').style.display === 'flex') { 
+                if (typeof renderTabelaUsuarios === 'function') renderTabelaUsuarios(); 
+            }
         });
     }
 
@@ -685,34 +698,79 @@
                 </select>
                 <button onclick="adicionarUsuarioManual()" style="background: var(--success-color); color: white; border: none; border-radius: 3px; font-weight: bold; cursor: pointer; padding: 0 15px;">Salvar</button>
             </div>
-        </div>`;
+        </div>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; background: #f8f9fa; padding: 10px; border-radius: 4px; border: 1px solid #ddd;">
+            <div style="flex: 2; min-width: 150px;">
+                <label style="font-size: 0.8rem; color: #555; font-weight: bold;">🔍 Buscar E-mail ou Nome:</label>
+                <input type="text" id="filtroEquipe" placeholder="Digite para filtrar instantaneamente..." oninput="renderTabelaUsuarios()" style="width: 100%; height: 32px; padding: 4px 8px; border: 1px solid #ccc; border-radius: 3px; margin-top:4px;">
+            </div>
+            <div style="flex: 1; min-width: 130px;">
+                <label style="font-size: 0.8rem; color: #555; font-weight: bold;">↕️ Organizar por:</label>
+                <select id="ordenarEquipe" onchange="renderTabelaUsuarios()" style="width: 100%; height: 32px; padding: 4px; border: 1px solid #ccc; border-radius: 3px; margin-top:4px;">
+                    <option value="nome">Nome (A - Z)</option>
+                    <option value="status">Status (Online Primeiro)</option>
+                </select>
+            </div>
+        </div>
+        <div id="tabelaEquipeContainer">Buscando agentes na base de dados...</div>`;
+        
+        container.innerHTML = htmlForm;
         
         try {
-            const snapshot = await db.collection('usuarios_capanema').get(); let usuarios = []; 
-            snapshot.forEach(doc => { let d = doc.data(); if(!usuarios.find(x => x.email === d.email)) usuarios.push(d); });
-            
-            let htmlTabela = `<div class="table-responsive"><table class="report-table" style="font-size: 0.8rem; width: 100%; min-width: 400px;"><thead><tr style="background-color: var(--primary-color); color: white;"><th>Nome/Email</th><th>Nível</th><th>Status / Último Acesso</th><th>Ações</th></tr></thead><tbody>`;
-            
-            if(usuarios.length === 0) { htmlTabela += `<tr><td colspan="4" style="text-align:center;">Nenhum usuário.</td></tr>`; } else {
-                usuarios.forEach(u => {
-                    let isOnline = false; let lastSeenText = '<br><span style="font-size: 0.7rem; color: #999;">Sem registro de acesso</span>';
-                    Object.values(onlineUsersMap).forEach(ou => { if(ou.email === u.email) { if (ou.state === 'online') { isOnline = true; } else if (ou.last_changed) { lastSeenText = `<br><span style="font-size: 0.75rem; color: #555;">Visto em: <strong>${formatarDataHora(ou.last_changed)}</strong></span>`; } } });
-                    
-                    let statusLigacao = isOnline ? `<span style="color:var(--success-color); font-weight:bold;">🟢 Online Agora</span>` : `<span style="color:#777;">⚪ Offline</span>${lastSeenText}`;
-                    let selectNivel = `<select onchange="alterarNivelUsuario('${u.email}', this.value)" style="width:100%; padding:2px; font-size:0.75rem;"><option value="padrao" ${u.nivel === 'padrao' || !u.nivel ? 'selected' : ''}>Padrão</option><option value="agente" ${u.nivel === 'agente' ? 'selected' : ''}>Agente</option><option value="supervisor" ${u.nivel === 'supervisor' ? 'selected' : ''}>Supervisor</option><option value="admin" ${u.nivel === 'admin' || ADMIN_EMAILS.includes(u.email) ? 'selected' : ''}>Admin</option></select>`;
-                    if (ADMIN_EMAILS.includes(u.email)) selectNivel = `<strong>Administrador</strong>`; 
-                    
-                    let botoes = `<div style="display: flex; flex-direction:column; gap: 4px; margin-top:4px;">`;
-                    if (u.status === 'bloqueado') { botoes += `<button class="btn-small" style="background-color: var(--success-color); width: 100%; padding: 4px;" onclick="alterarStatusUsuario('${u.email}', 'aprovado')">✅ Desbloquear</button>`; }
-                    if (u.status === 'aprovado' && !ADMIN_EMAILS.includes(u.email)) { botoes += `<button class="btn-small" style="background-color: #f0ad4e; width: 100%; padding: 4px;" onclick="alterarStatusUsuario('${u.email}', 'bloqueado')">🚫 Suspender</button>`; }
-                    if (!ADMIN_EMAILS.includes(u.email)) { botoes += `<button class="btn-small" style="background-color: var(--danger-color); width: 100%; padding: 4px;" onclick="excluirUsuarioDefinitivo('${u.email}')">🗑️ Excluir Agente</button>`; }
-                    botoes += `</div>`; 
-                    
-                    htmlTabela += `<tr><td><strong>${u.nome}</strong><br><span style="word-break: break-all; font-size: 0.7rem; color: #555;">${u.email}</span></td><td>${selectNivel}</td><td>${statusLigacao}</td><td>${botoes}</td></tr>`;
-                });
-            }
-            htmlTabela += `</tbody></table></div>`; container.innerHTML = htmlForm + htmlTabela;
-        } catch (e) { container.innerHTML = `<p style="text-align:center; color:red;">Erro ao carregar usuários.</p>`; }
+            const snapshot = await db.collection('usuarios_capanema').get(); 
+            allUsersCache = []; // Limpa o cache antigo
+            snapshot.forEach(doc => { let d = doc.data(); if(!allUsersCache.find(x => x.email === d.email)) allUsersCache.push(d); });
+            renderTabelaUsuarios(); // Desenha a tabela com filtros
+        } catch (e) { document.getElementById('tabelaEquipeContainer').innerHTML = `<p style="text-align:center; color:red;">Erro ao carregar usuários da nuvem.</p>`; }
+    }
+
+    // Função separada apenas para desenhar e filtrar a tabela sem piscar a tela
+    function renderTabelaUsuarios() {
+        const container = document.getElementById('tabelaEquipeContainer'); if(!container) return;
+        
+        let termo = document.getElementById('filtroEquipe') ? document.getElementById('filtroEquipe').value.toLowerCase().trim() : '';
+        let ordenacao = document.getElementById('ordenarEquipe') ? document.getElementById('ordenarEquipe').value : 'nome';
+
+        // 1. Filtra pela Lupa
+        let filtrados = allUsersCache.filter(u => (u.nome && u.nome.toLowerCase().includes(termo)) || (u.email && u.email.toLowerCase().includes(termo)));
+
+        // 2. Anexa o Status Online para ajudar na Ordenação
+        filtrados.forEach(u => {
+            u.isOnline = false;
+            Object.values(onlineUsersMap).forEach(ou => { if(ou.email === u.email && ou.state === 'online') u.isOnline = true; });
+        });
+
+        // 3. Organiza a lista conforme selecionado
+        if (ordenacao === 'nome') {
+            filtrados.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+        } else {
+            // Se for igual o status, mantém por ordem alfabética. Se não, joga o Online pra cima (-1)
+            filtrados.sort((a, b) => (a.isOnline === b.isOnline) ? (a.nome || '').localeCompare(b.nome || '') : (a.isOnline ? -1 : 1));
+        }
+
+        let htmlTabela = `<div class="table-responsive"><table class="report-table" style="font-size: 0.8rem; width: 100%; min-width: 400px;"><thead><tr style="background-color: var(--primary-color); color: white;"><th>Nome/Email</th><th>Nível</th><th>Status / Último Acesso</th><th>Ações</th></tr></thead><tbody>`;
+        
+        if(filtrados.length === 0) { htmlTabela += `<tr><td colspan="4" style="text-align:center;">Nenhum usuário localizado.</td></tr>`; } else {
+            filtrados.forEach(u => {
+                let lastSeenText = '<br><span style="font-size: 0.7rem; color: #999;">Sem registro de acesso</span>';
+                Object.values(onlineUsersMap).forEach(ou => { if(ou.email === u.email) { if (!u.isOnline && ou.last_changed) { lastSeenText = `<br><span style="font-size: 0.75rem; color: #555;">Visto em: <strong>${formatarDataHora(ou.last_changed)}</strong></span>`; } } });
+                
+                let statusLigacao = u.isOnline ? `<span style="color:var(--success-color); font-weight:bold;">🟢 Online Agora</span>` : `<span style="color:#777;">⚪ Offline</span>${lastSeenText}`;
+                let selectNivel = `<select onchange="alterarNivelUsuario('${u.email}', this.value)" style="width:100%; padding:2px; font-size:0.75rem;"><option value="padrao" ${u.nivel === 'padrao' || !u.nivel ? 'selected' : ''}>Padrão</option><option value="agente" ${u.nivel === 'agente' ? 'selected' : ''}>Agente</option><option value="supervisor" ${u.nivel === 'supervisor' ? 'selected' : ''}>Supervisor</option><option value="admin" ${u.nivel === 'admin' || ADMIN_EMAILS.includes(u.email) ? 'selected' : ''}>Admin</option></select>`;
+                if (ADMIN_EMAILS.includes(u.email)) selectNivel = `<strong>Administrador</strong>`; 
+                
+                let botoes = `<div style="display: flex; flex-direction:column; gap: 4px; margin-top:4px;">`;
+                if (u.status === 'bloqueado') { botoes += `<button class="btn-small" style="background-color: var(--success-color); width: 100%; padding: 4px;" onclick="alterarStatusUsuario('${u.email}', 'aprovado')">✅ Desbloquear</button>`; }
+                if (u.status === 'aprovado' && !ADMIN_EMAILS.includes(u.email)) { botoes += `<button class="btn-small" style="background-color: #f0ad4e; width: 100%; padding: 4px;" onclick="alterarStatusUsuario('${u.email}', 'bloqueado')">🚫 Suspender</button>`; }
+                if (!ADMIN_EMAILS.includes(u.email)) { botoes += `<button class="btn-small" style="background-color: var(--danger-color); width: 100%; padding: 4px;" onclick="excluirUsuarioDefinitivo('${u.email}')">🗑️ Excluir Agente</button>`; }
+                botoes += `</div>`; 
+                
+                htmlTabela += `<tr><td><strong>${u.nome}</strong><br><span style="word-break: break-all; font-size: 0.7rem; color: #555;">${u.email}</span></td><td>${selectNivel}</td><td>${statusLigacao}</td><td>${botoes}</td></tr>`;
+            });
+        }
+        htmlTabela += `</tbody></table></div>`; 
+        container.innerHTML = htmlTabela;
     }
 
     async function alterarStatusUsuario(email, novoStatus) { if(!confirm(`Mudar o acesso de ${email} para ${novoStatus.toUpperCase()}?`)) return; try { await db.collection('usuarios_capanema').doc(email).update({ status: novoStatus }); carregarListaUsuarios(); } catch (e) { alert("Erro."); } }
@@ -1416,7 +1474,7 @@
         } catch (e) { alert("⚠️ Erro:\n" + e.message); bs.disabled = false; bs.innerText = "Salvar Lançamento"; }
     }
 
-    async function deleteRecord(id) {
+   async function deleteRecord(id) {
         const r = records.find(x => x.id === id); if(!r) return;
         if(currentUserNivel !== 'admin') { alert("Apenas Administradores."); return; }
         
@@ -1424,6 +1482,16 @@
         if(!motivo || motivo.trim().length < 5) { alert("Exclusão cancelada. Motivo inválido ou muito curto!"); return; }
         if(!confirm("⚠️ Confirmar exclusão permanente?")) return;
         
+        // DEVOLVE AO ESTOQUE O QUE FOI EXCLUÍDO MANUALMENTE
+        let dL = r.qtdLona || 0; let dT = r.qtdTelha || 0; let dC = r.qtdCesta || 0;
+        if (navigator.onLine && typeof db !== 'undefined' && (dL>0 || dT>0 || dC>0)) {
+            db.collection('configuracoes_capanema').doc('estoque').set({
+                lona: firebase.firestore.FieldValue.increment(dL),
+                telha: firebase.firestore.FieldValue.increment(dT),
+                cesta: firebase.firestore.FieldValue.increment(dC)
+            }, { merge: true }).catch(e=>{});
+        }
+
         records = records.filter(x => x.id !== id); localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
         if (navigator.onLine && db) { try { await db.collection("doacoes_capanema").doc(id.toString()).delete(); } catch(e){} }
         await registrarLog("EXCLUSÃO", `Apagou Cód: [${r.codigo}]. Motivo: ${motivo}`); generateReport(); carregarPainelDespacho();
