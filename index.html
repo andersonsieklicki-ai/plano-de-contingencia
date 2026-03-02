@@ -828,18 +828,52 @@
     function prepararImpressao() { setTimeout(function() { window.print(); }, 300); }
     function togglePrintPhotos() { document.body.classList.toggle('print-photos', document.getElementById('chkPrintPhotos').checked); }
 
+    // ==========================================
+    // NAVEGAÇÃO COM ENTER E FUNÇÃO DE PRIVACIDADE
+    // ==========================================
     const navInputs = document.querySelectorAll('.nav-input');
     navInputs.forEach((input, index) => {
         input.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault(); 
                 if(['dataFim', 'filtroRelBairro', 'filtroRg'].includes(this.id)) { if(typeof generateReport === 'function') generateReport(); return; }
+                
+                // Se estiver no campo observação, foca o botão de salvar
+                if(this.id === 'observacao') {
+                    document.getElementById('btnSalvarCadastro').focus();
+                    return;
+                }
+
                 this.setSelectionRange(this.value.length, this.value.length);
-                for(let i = index + 1; i < navInputs.length; i++) { if(!navInputs[i].closest('.hidden') && navInputs[i].offsetParent !== null) { navInputs[i].focus(); return; } }
-                input.blur();
+                let achouProximo = false;
+                for(let i = index + 1; i < navInputs.length; i++) { 
+                    if(!navInputs[i].closest('.hidden') && navInputs[i].offsetParent !== null) { 
+                        navInputs[i].focus(); 
+                        achouProximo = true;
+                        break; 
+                    } 
+                }
+                // Se não houver próximo campo visível, vai direto para o botão Salvar
+                if(!achouProximo) document.getElementById('btnSalvarCadastro').focus();
             }
         });
     });
+
+    // Função auxiliar para aplicar a máscara de privacidade nos dados
+    function aplicarPrivacidade(r) {
+        let temPermissao = (currentUserNivel === 'admin' || currentUserNivel === 'supervisor' || r.emailCriador === currentUserEmail);
+        return {
+            nome: temPermissao ? r.nome : (r.nome ? r.nome.split(' ')[0] + ' ***' : '***'),
+            rg: temPermissao ? (r.rg || 'N/I') : '***',
+            telefone: temPermissao ? (r.telefone || 'N/I') : '***',
+            bairro: temPermissao ? (r.bairro || 'N/I') : '***',
+            rua: temPermissao ? r.rua : '***',
+            numero: temPermissao ? r.numero : '***',
+            localizacaoAgua: temPermissao ? r.localizacaoAgua : '***',
+            referenciaAgua: temPermissao ? r.referenciaAgua : '***',
+            temPermissao: temPermissao
+        };
+    }
 
     // ==========================================
     // FOTOS E ASSINATURA DIGITAL CANVAS E ROTAS
@@ -1191,7 +1225,7 @@
         sincronizarFirebaseAutomatica(); carregarPainelDespacho(); 
     }
 
-    function carregarPainelDespacho() {
+   function carregarPainelDespacho() {
         const btnAlerta = document.getElementById('btnLogisticaAlerta'); const container = document.getElementById('listaDespachoContainer'); 
         if(!container) return; let pendentes = records.filter(r => (r.qtdAgua > (r.qtdAguaEntregue || 0)) || (r.telhaRequerEntrega && !r.telhaEntregue));
         
@@ -1200,6 +1234,8 @@
         } else {
             if(btnAlerta) btnAlerta.classList.remove('hidden'); let h = '';
             pendentes.sort((a,b) => new Date(a.dataISO) - new Date(b.dataISO)).forEach(r => {
+                let pData = aplicarPrivacidade(r); // Aplica regra de privacidade
+                
                 let isAgua = r.qtdAgua > (r.qtdAguaEntregue || 0); let faltaAgua = isAgua ? (r.qtdAgua - (r.qtdAguaEntregue || 0)) : 0;
                 let classeCard = isAgua ? '' : 'telha'; let icone = isAgua ? '💧' : '🏠';
                 let isPausado = r.logisticaPausada === true; let estiloCard = isPausado ? `style="border-left-color: #f0ad4e; background-color: #fff3cd;"` : ``;
@@ -1213,13 +1249,22 @@
                     btnHtml += `<button class="btn-small" style="background:#e67e22; color:white; width:100%; text-align:center; margin-bottom: 4px; height: 34px;" onclick="pausarEntrega(${r.id})">⚠️ Relatar Problema</button>`;
                 }
                     
-                let temCesta = r.qtdCesta > 0; let mapsBtn = `<button class="btn-small" style="background:#25D366; color:white; width:100%; text-align:center; margin-top:2px; font-size: 1rem; height: 36px;" onclick="reenviarZapMotorista('${r.nome}', '${r.bairro}', '${r.localizacaoAgua||''}', '${r.rua||''}', '${r.numero||''}', '${r.referenciaAgua||''}', '${r.observacao||''}', '${r.telefone}', '${isAgua ? r.qtdAgua : r.qtdTelha}', '${isAgua ? 'agua' : 'telha'}', ${temCesta})">💬 Rota WhatsApp</button>`;
-                let endCompleto = `📍 ${r.bairro}`; if(r.localizacaoAgua) endCompleto += ` - ${r.localizacaoAgua}`; if(r.rua) endCompleto += ` - ${r.rua}, ${r.numero||'S/N'}`;
+                let temCesta = r.qtdCesta > 0; 
+                // Botão de WhatsApp usa dados originais caso o usuário tenha permissão, senão passa sem dados sensíveis
+                let mapsBtn = `<button class="btn-small" style="background:#25D366; color:white; width:100%; text-align:center; margin-top:2px; font-size: 1rem; height: 36px;" onclick="reenviarZapMotorista('${pData.temPermissao?r.nome:pData.nome}', '${pData.temPermissao?r.bairro:pData.bairro}', '${pData.temPermissao?r.localizacaoAgua||'':''}', '${pData.temPermissao?r.rua||'':''}', '${pData.temPermissao?r.numero||'':''}', '${pData.temPermissao?r.referenciaAgua||'':''}', '${r.observacao||''}', '${pData.temPermissao?r.telefone:''}', '${isAgua ? r.qtdAgua : r.qtdTelha}', '${isAgua ? 'agua' : 'telha'}', ${temCesta})">💬 Rota WhatsApp</button>`;
+                
+                let endCompleto = `📍 ${pData.bairro}`; 
+                if(pData.temPermissao) {
+                    if(r.localizacaoAgua) endCompleto += ` - ${r.localizacaoAgua}`; 
+                    if(r.rua) endCompleto += ` - ${r.rua}, ${r.numero||'S/N'}`;
+                } else {
+                    if(r.localizacaoAgua || r.rua) endCompleto += ` - ***`;
+                }
 
                 let emailCriadorFormatado = r.emailCriador || "Desconhecido";
                 if (ADMIN_EMAILS.includes(emailCriadorFormatado.toLowerCase())) emailCriadorFormatado = "Administrador"; else if (emailCriadorFormatado.includes('@')) emailCriadorFormatado = emailCriadorFormatado.split('@')[0];
 
-                h += `<div class="dispatch-card ${classeCard}" ${estiloCard}><div class="dispatch-info"><strong>${icone} ${r.nome}</strong><p>${endCompleto}</p><p>${mat}</p>${statusPausa}<div style="font-size:0.75rem; color:#888; margin-top: 8px; border-top: 1px dashed #ccc; padding-top: 6px; line-height: 1.3;"><strong>Cód:</strong> ${r.codigo}<br><strong>Lançado por:</strong> <span style="color:var(--primary-color); font-weight:bold;">${emailCriadorFormatado}</span><br><span style="font-size: 0.65rem;">Data: ${r.dataHoraFormatada}</span></div></div><div class="dispatch-actions" style="min-width: 120px;">${btnHtml}${mapsBtn}</div></div>`;
+                h += `<div class="dispatch-card ${classeCard}" ${estiloCard}><div class="dispatch-info"><strong>${icone} ${pData.nome}</strong><p>${endCompleto}</p><p>${mat}</p>${statusPausa}<div style="font-size:0.75rem; color:#888; margin-top: 8px; border-top: 1px dashed #ccc; padding-top: 6px; line-height: 1.3;"><strong>Cód:</strong> ${r.codigo}<br><strong>Lançado por:</strong> <span style="color:var(--primary-color); font-weight:bold;">${emailCriadorFormatado}</span><br><span style="font-size: 0.65rem;">Data: ${r.dataHoraFormatada}</span></div></div><div class="dispatch-actions" style="min-width: 120px;">${btnHtml}${mapsBtn}</div></div>`;
             });
             container.innerHTML = h;
         }
@@ -1364,9 +1409,19 @@
         let p = {}; let grandTotalSol = 0; let grandTotalEmp = 0;
 
         filt.forEach(r => { 
-            let k = `${r.nome.toUpperCase()}_${r.rg}`; 
-            if(!p[k]) p[k] = {n:r.nome, rg:r.rg, locais: {}, t:0, em:r.emailCriador, tel:r.telefone, ae:0, entregasBrutas: []}; 
-            let endArr = []; if(r.bairro) endArr.push(r.bairro); if(r.rua) endArr.push(`${r.rua}, ${r.numero||'S/N'}`); if(r.localizacaoAgua) endArr.push(r.localizacaoAgua);
+            let pData = aplicarPrivacidade(r);
+            // Novo modelo de agrupamento: junta sempre pelo nome para evitar separação por erro de RG
+            let k = r.nome.toUpperCase().trim(); 
+            
+            if(!p[k]) p[k] = {n: pData.nome, rg: pData.rg, locais: {}, t:0, ae:0, entregasBrutas: []}; 
+            
+            let endArr = []; 
+            if(pData.temPermissao) {
+                if(r.bairro) endArr.push(r.bairro); if(r.rua) endArr.push(`${r.rua}, ${r.numero||'S/N'}`); if(r.localizacaoAgua) endArr.push(r.localizacaoAgua);
+            } else {
+                if(r.bairro) endArr.push(r.bairro);
+                if(r.rua || r.localizacaoAgua) endArr.push('***');
+            }
             let nomeLocal = endArr.length > 0 ? endArr.join(' - ') : 'Local Não Informado';
 
             if(!p[k].locais[nomeLocal]) p[k].locais[nomeLocal] = { t: 0, ae: 0 };
@@ -1385,8 +1440,8 @@
         
         let h = `<div class="report-summary"><strong>Relatório Individual: ${nomeMat}</strong></div><table class="report-table"><tbody>`;
         
+        // A ordenação b.t - a.t já garante a classificação decrescente das quantidades
         Object.values(p).sort((a, b) => b.t - a.t).forEach(i => { 
-            let priv = (currentUserNivel==='admin' || currentUserNivel==='supervisor' || i.em === currentUserEmail); let rgD = priv ? i.rg||'N/I' : '***'; 
             let locaisHtml = '';
             Object.keys(i.locais).forEach(loc => {
                 let locSol = i.locais[loc].t; let locEmp = i.locais[loc].ae;
@@ -1416,7 +1471,7 @@
                 }); 
             } else { ih = `<div style="font-size:0.8rem; color:#777;">Nenhuma entrega registrada.</div>`; }
 
-            h += `<tr style="background-color: #e2e8f0; border-top: 2px solid #aaa;"><td colspan="2" style="padding: 6px 10px;"><div style="display:flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px;"><span style="font-size: 1.05rem; color: var(--primary-color);">👤 <strong>${i.n}</strong> <small style="color:#555;">(RG: ${rgD})</small></span><span style="font-size: 0.95rem; background: #fff; padding: 3px 8px; border-radius: 4px; border: 1px solid #cbd5e1;">${statusTotal}</span></div></td></tr><tr><td style="width: 50%; vertical-align: top; padding: 8px;"><div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">📍 Endereços de Destino</div>${locaisHtml}</td><td style="width: 50%; vertical-align: top; padding: 8px; background: #fafafa;"><div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">🚛 Histórico de Entregas</div>${ih}</td></tr>`; 
+            h += `<tr style="background-color: #e2e8f0; border-top: 2px solid #aaa;"><td colspan="2" style="padding: 6px 10px;"><div style="display:flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px;"><span style="font-size: 1.05rem; color: var(--primary-color);">👤 <strong>${i.n}</strong> <small style="color:#555;">(RG: ${i.rg})</small></span><span style="font-size: 0.95rem; background: #fff; padding: 3px 8px; border-radius: 4px; border: 1px solid #cbd5e1;">${statusTotal}</span></div></td></tr><tr><td style="width: 50%; vertical-align: top; padding: 8px;"><div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">📍 Endereços de Destino</div>${locaisHtml}</td><td style="width: 50%; vertical-align: top; padding: 8px; background: #fafafa;"><div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">🚛 Histórico de Entregas</div>${ih}</td></tr>`; 
         }); 
 
         let vdTotal = isA ? `Solicitado: ${Number(grandTotalSol.toFixed(2))}${u}   |   <span style="color:white; background:green; padding:3px 8px; border-radius:4px;">Entregue: ${Number(grandTotalEmp.toFixed(2))}${u}</span>` : `${Number(grandTotalSol.toFixed(2))}${u}`;
@@ -1434,13 +1489,18 @@
         Object.keys(bMap).sort().forEach(b => {
             h += `<div class="bairro-section"><div class="bairro-header">📍 ${b}</div><table class="report-table"><thead><tr><th width="5%"></th><th width="15%">Data</th><th>Beneficiário / Contato / Endereço</th><th width="35%">Materiais (Solicitado / Status)</th></tr></thead><tbody>`;
             bMap[b].reverse().forEach(r => {
-                let pv = (currentUserNivel==='admin' || r.emailCriador === currentUserEmail); let ps = (currentUserNivel==='supervisor' || pv); 
+                let pData = aplicarPrivacidade(r); // Aplica regras de privacidade
                 let cbh = currentUserNivel === 'admin' ? `<input type="checkbox" class="bulk-checkbox no-print" value="${r.id}" onchange="checkBulkDelete()">` : ``;
                 
                 let detEnd = ''; let eArr = [];
-                if(r.rua) eArr.push(`Rua: ${r.rua}, Nº ${r.numero||'S/N'}`); if(r.localizacaoAgua) eArr.push(`Loc: ${r.localizacaoAgua}`);
+                if(pData.temPermissao) {
+                    if(r.rua) eArr.push(`Rua: ${r.rua}, Nº ${r.numero||'S/N'}`); if(r.localizacaoAgua) eArr.push(`Loc: ${r.localizacaoAgua}`);
+                } else {
+                    if(r.rua || r.localizacaoAgua) eArr.push(`Endereço: ***`);
+                }
+                
                 if(eArr.length > 0) detEnd += eArr.join(' | ') + `<br>`;
-                if(r.telefone) detEnd += `📞 ${r.telefone}<br>`;
+                detEnd += `📞 ${pData.telefone}<br>`;
                 if(r.codigo) detEnd += `🏷️ <strong>Cód:</strong> ${r.codigo}<br>`;
                 if(r.observacao) detEnd += `<span style="color:var(--danger-color); font-weight:bold;">Obs: ${r.observacao}</span><br>`;
 
@@ -1456,10 +1516,10 @@
                 }
                 let mats = mArr.join('  |  ');
 
-                let act = ps ? `<button class="btn-edit no-print" onclick="editRecord(${r.id})" style="display:inline-block; width:auto; margin-right:4px;">✏️ Editar</button>` : ''; 
+                let act = pData.temPermissao ? `<button class="btn-edit no-print" onclick="editRecord(${r.id})" style="display:inline-block; width:auto; margin-right:4px;">✏️ Editar</button>` : ''; 
                 if (currentUserNivel === 'admin') { act += `<button class="btn-small no-print" style="background-color: var(--danger-color); padding: 3px 6px; font-size: 0.7rem; display:inline-block; width:auto;" onclick="deleteRecord(${r.id})">🗑️ Excluir</button>`; }
                 
-                h+=`<tr><td style="text-align:center;">${cbh}</td><td><small>${r.dataHoraFormatada.split(' ')[0]}<br>${r.dataHoraFormatada.split(' ')[1]}</small></td><td><strong>${r.nome}</strong> <small style="color:#666;">(RG: ${ps?r.rg||'N/I':'***'})</small><br><div style="font-size:0.8rem; color:#444; margin:4px 0; line-height:1.4;">${detEnd}</div><div class="no-print" style="margin-top:4px;">${act}</div></td><td style="vertical-align:middle; line-height:1.5;">${mats}</td></tr>`;
+                h+=`<tr><td style="text-align:center;">${cbh}</td><td><small>${r.dataHoraFormatada.split(' ')[0]}<br>${r.dataHoraFormatada.split(' ')[1]}</small></td><td><strong>${pData.nome}</strong> <small style="color:#666;">(RG: ${pData.rg})</small><br><div style="font-size:0.8rem; color:#444; margin:4px 0; line-height:1.4;">${detEnd}</div><div class="no-print" style="margin-top:4px;">${act}</div></td><td style="vertical-align:middle; line-height:1.5;">${mats}</td></tr>`;
             }); h += `</tbody></table></div>`;
         }); return h;
     }
