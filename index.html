@@ -802,27 +802,49 @@
     let editandoId = null; 
     let records = JSON.parse(localStorage.getItem('defesaCivilRecords')) || [];
 
-    function buscarCadastroExistente(campo) {
+ function buscarCadastroExistente(campo) {
         if(editandoId || typeof records === 'undefined' || records.length === 0) return; 
         
-        let valor = document.getElementById(campo).value.trim().toLowerCase();
+        let rawValue = document.getElementById(campo).value;
+        if (!rawValue) return;
+
+        let valor = rawValue.trim().toLowerCase();
+        
+        // Remove acentos e transforma espaços duplos em simples para não falhar a busca se você digitar rápido
+        let valorSemAcento = valor.normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, ' ');
+        
         if(valor.length < 4) return; 
 
         let match = [...records].reverse().find(r => {
-            if(campo === 'nome' && r.nome && r.nome.toLowerCase() === valor) return true;
-            if(campo === 'rg' && r.rg && r.rg === valor) return true;
+            // Busca pelo NOME COMPLETO: compara o que foi digitado com o banco, ignorando acentos e espaços a mais
+            if(campo === 'nome' && r.nome) {
+                let nomeDB = r.nome.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, ' ');
+                if (nomeDB === valorSemAcento) return true;
+            }
+            // Busca exata pelo RG/CPF
+            if(campo === 'rg' && r.rg && r.rg.trim() === valor) return true;
+            // Busca pelo Telefone (ignora se colocou parênteses ou traços diferentes)
             if(campo === 'telefone' && r.telefone && r.telefone.replace(/\D/g,'') === valor.replace(/\D/g,'')) return true;
+            
             return false;
         });
 
         if(match) {
             let preencheuAlgo = false;
+            
+            // Reescreve o nome com a formatação bonitinha e com acentos salva no banco
+            if(campo === 'nome' && document.getElementById('nome').value !== match.nome) {
+                document.getElementById('nome').value = match.nome;
+                preencheuAlgo = true;
+            }
+
             if(!document.getElementById('telefone').value && match.telefone) { document.getElementById('telefone').value = match.telefone; preencheuAlgo = true; }
             if(!document.getElementById('bairro').value && match.bairro) { document.getElementById('bairro').value = match.bairro; preencheuAlgo = true; }
             if(!document.getElementById('rua').value && match.rua) { document.getElementById('rua').value = match.rua; preencheuAlgo = true; }
             if(!document.getElementById('numero').value && match.numero) { document.getElementById('numero').value = match.numero; preencheuAlgo = true; }
             if(!document.getElementById('localizacaoAgua').value && match.localizacaoAgua) { document.getElementById('localizacaoAgua').value = match.localizacaoAgua; preencheuAlgo = true; }
             if(!document.getElementById('referenciaAgua').value && match.referenciaAgua) { document.getElementById('referenciaAgua').value = match.referenciaAgua; preencheuAlgo = true; }
+            
             if(campo !== 'nome' && !document.getElementById('nome').value && match.nome) { document.getElementById('nome').value = match.nome; preencheuAlgo = true; }
             if(campo !== 'rg' && !document.getElementById('rg').value && match.rg) { document.getElementById('rg').value = match.rg; preencheuAlgo = true; }
             
@@ -855,47 +877,50 @@
 // ==========================================
     // NAVEGAÇÃO COM ENTER E FUNÇÃO DE PRIVACIDADE
     // ==========================================
+  // ==========================================
+    // NAVEGAÇÃO COM ENTER E FUNÇÃO DE PRIVACIDADE
+    // ==========================================
     const navInputs = document.querySelectorAll('.nav-input');
     navInputs.forEach((input, index) => {
         input.addEventListener('keydown', function(e) {
-            // Pega tanto o Enter do PC quanto o Enter/Ir do teclado mobile
             if (e.key === 'Enter' || e.keyCode === 13) {
                 e.preventDefault(); 
                 
-                // Ignora se estiver na tela de relatórios preenchendo filtros
                 if(['dataFim', 'filtroRelBairro', 'filtroRg', 'filtroNome'].includes(this.id)) { 
                     if(typeof generateReport === 'function') generateReport(); 
                     return; 
                 }
 
-                // Procura o próximo input que esteja visível na tela
+                // 1. FORÇA A FORMATAÇÃO E A BUSCA IMEDIATA (Resolve o atraso do Computador)
+                if (['nome', 'bairro', 'rua', 'localizacaoAgua', 'referenciaAgua'].includes(this.id)) {
+                    if (typeof formatarNomeProprio === 'function') this.value = formatarNomeProprio(this.value);
+                }
+                if (typeof buscarCadastroExistente === 'function') {
+                    buscarCadastroExistente(this.id);
+                }
+
                 let proximoInput = null;
                 for (let i = index + 1; i < navInputs.length; i++) {
-                    // Verifica se a div pai não tem a classe 'hidden' e se o elemento não está oculto (offsetParent)
                     if (!navInputs[i].closest('.hidden') && navInputs[i].offsetParent !== null) {
                         proximoInput = navInputs[i];
                         break;
                     }
                 }
 
-                // Se achou um próximo campo (e não é o campo de observação finalizando), foca nele
                 if (proximoInput && this.id !== 'observacao') {
                     proximoInput.focus();
                 } else {
-                    // Se não achou próximo campo ou se apertou Enter no campo de Observação, vai pro botão Salvar
                     const btnSalvar = document.getElementById('btnSalvarCadastro');
                     if (btnSalvar) {
-                        this.blur(); // Tira o teclado da tela no celular
-                        btnSalvar.focus(); // Coloca o foco no botão Salvar
-                        // Descomente a linha abaixo se quiser que o Enter já clique em salvar direto:
-                        // btnSalvar.click(); 
+                        this.blur(); 
+                        btnSalvar.focus(); 
                     }
                 }
             }
         });
     });
 
-    // Função auxiliar para aplicar a máscara de privacidade nos dados (Mantida do ajuste anterior)
+    // Função auxiliar para aplicar a máscara de privacidade nos dados
     function aplicarPrivacidade(r) {
         let temPermissao = (currentUserNivel === 'admin' || currentUserNivel === 'supervisor' || r.emailCriador === currentUserEmail);
         return {
