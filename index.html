@@ -1672,58 +1672,84 @@
     // ==========================================
     // CONFIGS E LIMPEZA ANTI-SPAM
     // ==========================================
-    function renderPainelAuditoria() {
+   function renderPainelAuditoria() {
         let h = '';
         if(currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
-            h += `<div class="admin-card" style="background:#e8f5e9; border:1px solid #81c784; padding:10px; border-radius:5px; margin-bottom:15px;"><p style="margin-top:0; color:#2e7d32; font-weight:bold; font-size:1.1rem; border-bottom:1px solid #c8e6c9; padding-bottom:5px;">📱 Automação WhatsApp</p><div class="form-row"><div class="form-col" style="flex:1"><label>E-mail SOLICITANTES (Separe por vírgula):</label><input type="text" id="configZapEmail" value="${configZap.emailSolicitante || ''}" placeholder="email1@..., email2@..."></div></div><div class="form-row"><div class="form-col" style="flex:1"><label>Zap Motorista ÁGUA:</label><input type="tel" id="configZapTelPipa" value="${configZap.telefonePipa || ''}" placeholder="55469..."></div><div class="form-col" style="flex:1"><label>Zap Social TELHAS:</label><input type="tel" id="configZapTelSocial" value="${configZap.telefoneSocial || ''}" placeholder="55469..."></div></div><div class="form-row" style="justify-content:flex-end; margin-top:10px;"><button class="btn-small" style="background:var(--success-color); height:36px; padding: 0 20px;" onclick="salvarConfigZap()">💾 Salvar</button></div></div>`;
+            // Automação WhatsApp (Fechado por padrão)
+            h += `<details class="admin-card" style="background:#e8f5e9; border:1px solid #81c784; padding:10px; border-radius:5px; margin-bottom:15px;">
+                    <summary style="cursor:pointer; outline:none; color:#2e7d32; font-weight:bold; font-size:1.1rem; border-bottom:1px solid #c8e6c9; padding-bottom:5px; list-style-position: inside;">📱 Automação WhatsApp <small style="font-weight:normal; font-size:0.8rem;">(Clique para expandir)</small></summary>
+                    <div style="margin-top:15px;">
+                        <div class="form-row"><div class="form-col" style="flex:1"><label>E-mail SOLICITANTES (Separe por vírgula):</label><input type="text" id="configZapEmail" value="${configZap.emailSolicitante || ''}" placeholder="email1@..., email2@..."></div></div>
+                        <div class="form-row"><div class="form-col" style="flex:1"><label>Zap Motorista ÁGUA:</label><input type="tel" id="configZapTelPipa" value="${configZap.telefonePipa || ''}" placeholder="55469..."></div><div class="form-col" style="flex:1"><label>Zap Social TELHAS:</label><input type="tel" id="configZapTelSocial" value="${configZap.telefoneSocial || ''}" placeholder="55469..."></div></div>
+                        <div class="form-row" style="justify-content:flex-end; margin-top:10px;"><button class="btn-small" style="background:var(--success-color); height:36px; padding: 0 20px;" onclick="salvarConfigZap()">💾 Salvar</button></div>
+                    </div>
+                  </details>`;
         }
         
+        // Botões de Backup ficam visíveis sempre
         let btnBackup = currentUserNivel === 'admin' ? `<div style="display:flex; gap:10px; margin-bottom:15px;"><button onclick="exportarBackup()" style="flex:1; background:#007bff; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; cursor:pointer;">💾 Salvar Backup da Base</button><button onclick="document.getElementById('importBackupFile').click()" style="flex:1; background:#17a2b8; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; cursor:pointer;">📂 Importar Backup</button></div>` : ``;
 
-        h += `${btnBackup}<div class="admin-card" style="background:#fff; border:1px solid #ccc; padding:10px; border-radius:5px; margin-bottom:15px;"><p style="margin-top:0; color:var(--primary-color); font-weight:bold; font-size:1.1rem; border-bottom:1px solid #ccc; padding-bottom:5px;">🔍 Auditoria Ao Vivo</p><div class="filter-group" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"><label><input type="checkbox" class="fLogAcaoCb" value="NOVO CADASTRO" checked onchange="filtrarTabelaAuditoria()"> Novo</label><label><input type="checkbox" class="fLogAcaoCb" value="EDIÇÃO" checked onchange="filtrarTabelaAuditoria()"> Edição</label><label><input type="checkbox" class="fLogAcaoCb" value="ENTREGA ÁGUA" checked onchange="filtrarTabelaAuditoria()"> Água</label><label><input type="checkbox" class="fLogAcaoCb" value="ENTREGA TELHA" checked onchange="filtrarTabelaAuditoria()"> Telha</label><label><input type="checkbox" class="fLogAcaoCb" value="ENTREGA LONA" checked onchange="filtrarTabelaAuditoria()"> Lona</label><label><input type="checkbox" class="fLogAcaoCb" value="ENTREGA CESTA" checked onchange="filtrarTabelaAuditoria()"> Cesta</label><label><input type="checkbox" class="fLogAcaoCb" value="EXCLUSÃO" checked onchange="filtrarTabelaAuditoria()"> Exclusão</label></div><input type="text" id="fLogAge" placeholder="Filtrar Agente..." onkeyup="filtrarTabelaAuditoria()" style="width:100%; margin-bottom:10px;"><div id="logTableContainer"></div></div>`;
+        // Auditoria Ao Vivo (Aberto por padrão com a tag "open")
+        h += `${btnBackup}
+              <details class="admin-card" open style="background:#fff; border:1px solid #ccc; padding:10px; border-radius:5px; margin-bottom:15px;">
+                <summary style="cursor:pointer; outline:none; color:var(--primary-color); font-weight:bold; font-size:1.1rem; border-bottom:1px solid #ccc; padding-bottom:5px; list-style-position: inside;">🔍 Auditoria Ao Vivo <small style="font-weight:normal; font-size:0.8rem;">(Clique para encolher)</small></summary>
+                <div style="margin-top:15px;">
+                    <div class="filter-group" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"><label><input type="checkbox" class="fLogAcaoCb" value="NOVO CADASTRO" checked onchange="filtrarTabelaAuditoria()"> Novo</label><label><input type="checkbox" class="fLogAcaoCb" value="EDIÇÃO" checked onchange="filtrarTabelaAuditoria()"> Edição</label><label><input type="checkbox" class="fLogAcaoCb" value="ENTREGA ÁGUA" checked onchange="filtrarTabelaAuditoria()"> Água</label><label><input type="checkbox" class="fLogAcaoCb" value="ENTREGA TELHA" checked onchange="filtrarTabelaAuditoria()"> Telha</label><label><input type="checkbox" class="fLogAcaoCb" value="ENTREGA LONA" checked onchange="filtrarTabelaAuditoria()"> Lona</label><label><input type="checkbox" class="fLogAcaoCb" value="ENTREGA CESTA" checked onchange="filtrarTabelaAuditoria()"> Cesta</label><label><input type="checkbox" class="fLogAcaoCb" value="EXCLUSÃO" checked onchange="filtrarTabelaAuditoria()"> Exclusão</label></div><input type="text" id="fLogAge" placeholder="Filtrar Agente..." onkeyup="filtrarTabelaAuditoria()" style="width:100%; margin-bottom:10px;"><div id="logTableContainer"></div>
+                </div>
+              </details>`;
         
+        // Zona de Risco (Fechado por padrão, mais segurança)
         if(currentUserNivel === 'admin') { 
-            h += `<div class="admin-card danger-zone" style="background:#ffebee; border:1px solid var(--danger-color); padding:10px; border-radius:5px; margin-bottom:15px;">
-                    <p style="margin-top:0; color:var(--danger-color); font-weight:bold; font-size:1.1rem; border-bottom:1px solid #ffcdd2; padding-bottom:5px;">⚠️ ZONA DE RISCO</p>
-                    <label style="font-size:0.9rem; color:#b71c1c; font-weight:bold; display:block; margin-top:5px;">Apagar TODOS os cadastros de um E-mail (Anti-Spam):</label>
-                    <div style="display:flex; gap:5px; margin-bottom: 15px; margin-top: 5px;">
-                        <input type="text" id="emailSpamDelete" placeholder="Digite apenas o nome (Ex: andersonsieklicki)" style="flex:2; padding:8px; border:1px solid #ef9a9a; border-radius:4px;">
-                        <button onclick="apagarCadastrosPorEmail()" style="flex:1; background:var(--danger-color); color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">🗑️ Nuke E-mail</button>
+            h += `<details class="admin-card danger-zone" style="background:#ffebee; border:1px solid var(--danger-color); padding:10px; border-radius:5px; margin-bottom:15px;">
+                    <summary style="cursor:pointer; outline:none; color:var(--danger-color); font-weight:bold; font-size:1.1rem; border-bottom:1px solid #ffcdd2; padding-bottom:5px; list-style-position: inside;">⚠️ ZONA DE RISCO <small style="font-weight:normal; font-size:0.8rem;">(Clique para expandir)</small></summary>
+                    <div style="margin-top:15px;">
+                        <label style="font-size:0.9rem; color:#b71c1c; font-weight:bold; display:block; margin-top:5px;">Apagar TODOS os cadastros de um E-mail (Anti-Spam):</label>
+                        <div style="display:flex; gap:5px; margin-bottom: 15px; margin-top: 5px;">
+                            <input type="text" id="emailSpamDelete" placeholder="Digite apenas o nome (Ex: andersonsieklicki)" style="flex:2; padding:8px; border:1px solid #ef9a9a; border-radius:4px;">
+                            <button onclick="apagarCadastrosPorEmail()" style="flex:1; background:var(--danger-color); color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">🗑️ Nuke E-mail</button>
+                        </div>
+                        <label style="font-size:0.9rem; color:#b71c1c; font-weight:bold; display:block; border-top:1px solid #ffcdd2; padding-top:10px;">Reset Completo do Sistema:</label>
+                        <button class="btn-print" style="background:var(--danger-color); width:100%; margin-top: 5px;" onclick="limparBancoDeDados()">🚨 LIMPAR BASE INTEIRA (CADASTROS E LOGS)</button>
                     </div>
-                    <label style="font-size:0.9rem; color:#b71c1c; font-weight:bold; display:block; border-top:1px solid #ffcdd2; padding-top:10px;">Reset Completo do Sistema:</label>
-                    <button class="btn-print" style="background:var(--danger-color); width:100%; margin-top: 5px;" onclick="limparBancoDeDados()">🚨 LIMPAR BASE INTEIRA (CADASTROS E LOGS)</button>
-                  </div>`; 
+                  </details>`; 
         }
         document.getElementById('tab-log').innerHTML = h; filtrarTabelaAuditoria();
     }
 
-    async function apagarCadastrosPorEmail() {
+async function apagarCadastrosPorEmail() {
         let emailDigitado = document.getElementById('emailSpamDelete').value.trim().toLowerCase();
         if(!emailDigitado) { alert("Digite o e-mail (ou começo dele) do usuário spammer."); return; }
         if(currentUserNivel !== 'admin') return;
 
-        // Pega apenas a primeira parte do e-mail, ignorando o @gmail.com se a pessoa digitar
+        // Pega apenas a primeira parte do e-mail exata (o prefixo antes do @)
         let prefixoSpam = emailDigitado.split('@')[0];
 
-        // Busca os cadastros onde o email do criador comece com o prefixo digitado
+        // 1. Busca nos CADASTROS (usando emailCriador ou o campo agente legado)
         let cadastrosAlvo = records.filter(r => {
-            let emailCriador = (r.emailCriador || "").toLowerCase();
-            return emailCriador.startsWith(prefixoSpam);
+            let email = (r.emailCriador || "").toLowerCase().split('@')[0];
+            let agente = (r.agente || "").toLowerCase().split('@')[0];
+            return email === prefixoSpam || agente === prefixoSpam;
         });
 
-        if(cadastrosAlvo.length === 0) { 
-            alert(`Nenhum cadastro encontrado para o usuário: ${prefixoSpam}`); 
+        // 2. Busca nos LOGS DE AUDITORIA (para limpar a sujeira visual que sobrou)
+        let logsAlvo = auditLogs.filter(l => {
+            let agenteLog = (l.agente || "").toLowerCase().split('@')[0];
+            return agenteLog === prefixoSpam;
+        });
+
+        if(cadastrosAlvo.length === 0 && logsAlvo.length === 0) { 
+            alert(`Nenhum cadastro ou log encontrado para o usuário: ${prefixoSpam}`); 
             return; 
         }
         
         let motivo = prompt("⚠️ Informe o motivo do bloqueio e exclusão de massa (Mín. 5 letras):");
         if(!motivo || motivo.trim().length < 5) { alert("Operação Cancelada. Motivo inválido!"); return; }
 
-        if(!confirm(`🚨 ATENÇÃO EXTREMA!\nDeseja excluir TODOS OS ${cadastrosAlvo.length} CADASTROS feitos por "${prefixoSpam}"?\nO estoque será devolvido automaticamente.`)) return;
+        if(!confirm(`🚨 ATENÇÃO EXTREMA!\nDeseja excluir TODOS OS ${cadastrosAlvo.length} CADASTROS e ${logsAlvo.length} LOGS feitos por "${prefixoSpam}"?\nO estoque será devolvido automaticamente.`)) return;
 
         document.getElementById('emailSpamDelete').value = 'Apagando...';
         
-        // Variáveis para somar o estoque a ser devolvido
+        // Contadores para devolução de estoque
         let dL = 0, dT = 0, dC = 0;
 
         let idsAlvo = cadastrosAlvo.map(r => {
@@ -1732,14 +1758,20 @@
             dC += (r.qtdCesta || 0);
             return r.id;
         }); 
+        
+        let idsLogs = logsAlvo.map(l => l.id);
 
-        // Remove os registros da base local para sumir do relatório na hora
+        // Remove os registros da base local
         records = records.filter(r => !idsAlvo.includes(r.id)); 
         localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
 
+        // Remove os logs da base local para limpar a tela de Auditoria
+        auditLogs = auditLogs.filter(l => !idsLogs.includes(l.id));
+        localStorage.setItem('defesaCivilLogs', JSON.stringify(auditLogs));
+
         // Remove da Nuvem (Firestore) e Devolve o Estoque
         if (navigator.onLine && db) { 
-            // 1. Devolve os itens ao estoque central
+            // Devolve pro estoque
             if (dL > 0 || dT > 0 || dC > 0) {
                 db.collection('configuracoes_capanema').doc('estoque').set({
                     lona: firebase.firestore.FieldValue.increment(dL),
@@ -1748,30 +1780,37 @@
                 }, { merge: true }).catch(e => console.error("Erro ao devolver estoque", e));
             }
 
-            // 2. Apaga os documentos do spammer em lotes (Para não travar o banco)
             let batch = db.batch(); 
             let c = 0; 
+            
+            // Apaga as doações do banco
             for (let id of idsAlvo) { 
                 let ref = db.collection("doacoes_capanema").doc(id.toString()); 
                 batch.delete(ref); 
                 c++; 
-                if(c === 490) { 
-                    await batch.commit(); 
-                    batch = db.batch(); 
-                    c = 0; 
-                } 
+                if(c === 490) { await batch.commit(); batch = db.batch(); c = 0; } 
             } 
+            
+            // Apaga os logs do banco
+            for (let id of idsLogs) {
+                let ref = db.collection("logs_capanema").doc(id.toString()); 
+                batch.delete(ref); 
+                c++; 
+                if(c === 490) { await batch.commit(); batch = db.batch(); c = 0; } 
+            }
+
             if(c > 0) await batch.commit(); 
         }
         
-        await registrarLog("EXCLUSÃO SPAM (NUKE)", `Apagou ${idsAlvo.length} cadastros de: ${prefixoSpam}. Devolveu: ${dL} Lona, ${dT} Telha, ${dC} Cesta. Motivo: ${motivo}`); 
+        await registrarLog("EXCLUSÃO SPAM (NUKE)", `Apagou ${idsAlvo.length} cadastros e ${idsLogs.length} logs de: ${prefixoSpam}. Devolveu: ${dL} Lona, ${dT} Telha, ${dC} Cesta. Motivo: ${motivo}`); 
         
-        alert(`SUCESSO!\n${idsAlvo.length} cadastros apagados.\nEstoque devolvido: ${dL} Lonas, ${dT} Telhas, ${dC} Cestas.`);
+        alert(`SUCESSO!\n${idsAlvo.length} cadastros e ${idsLogs.length} logs apagados.\nEstoque devolvido: ${dL} Lonas, ${dT} Telhas, ${dC} Cestas.`);
         document.getElementById('emailSpamDelete').value = ''; 
         
-        // Atualiza as telas e relatórios imediatamente
+        // Atualiza as telas na hora
         generateReport(); 
         carregarPainelDespacho();
+        filtrarTabelaAuditoria(); 
     }
 
     function filtrarTabelaAuditoria() {
