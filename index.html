@@ -1341,15 +1341,23 @@
             const cC = document.getElementById('checkCesta').checked; const cA = document.getElementById('checkAgua').checked;
             if(!cL && !cT && !cC && !cA) { alert('Selecione material/água!'); return; }
             
-           let bai = document.getElementById('bairro').value.trim().toUpperCase(); 
-            let fo = document.getElementById('rgPhotoBase64').value; 
-            let ob = document.getElementById('observacao').value.trim(); let rEnt = document.getElementById('checkTelhaEntrega').checked;
+            // AS VARIÁVEIS QUE HAVIAM SUMIDO FORAM RESTAURADAS AQUI:
+            let nm = formatarNomeProprio(document.getElementById('nome').value.trim()); 
+            if(nm.split(' ').length < 2) { alert('NOME COMPLETO obrigatório.'); document.getElementById('nome').focus(); return; }
+            let rg = document.getElementById('rg').value.trim(); 
+            let tel = document.getElementById('telefone').value.trim(); 
             
-            // CORREÇÃO: Só captura rua/numero se for Lona, Telha ou Cesta. Só captura Localização Água se for Água.
+            // CAPTURA DE BAIRRO, FOTO E OBSERVAÇÃO
+            let bai = document.getElementById('bairro').value.trim().toUpperCase(); 
+            let fo = document.getElementById('rgPhotoBase64').value; 
+            let ob = document.getElementById('observacao').value.trim(); 
+            let rEnt = document.getElementById('checkTelhaEntrega').checked;
+            
+            // CORREÇÃO DO ENDEREÇO DUPLICADO: Separa o que é de Telha/Lona/Cesta do que é Água
             let ru = (cL || cT || cC) ? document.getElementById('rua').value.trim().toUpperCase() : ''; 
             let nu = (cL || cT || cC) ? document.getElementById('numero').value.trim() : ''; 
             let lAg = cA ? document.getElementById('localizacaoAgua').value.trim() : ''; 
-            let rAg = cA ? document.getElementById('referenciaAgua').value.trim() : '';
+            let rAg = cA ? document.getElementById('referenciaAgua').value.trim() : ''; 
             
             if (cT || cC) { if(!nm || !bai || (!ru && !rEnt)) { alert('Nome, Bairro e Rua são obrigatórios.'); return; } if(isCanvasBlank(canvas)) { alert('Assinatura OBRIGATÓRIA.'); return; } } 
             else { if(!nm || !bai) { alert('Nome e Bairro obrigatórios.'); return; } }
