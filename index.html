@@ -1687,7 +1687,7 @@
                     <p style="margin-top:0; color:var(--danger-color); font-weight:bold; font-size:1.1rem; border-bottom:1px solid #ffcdd2; padding-bottom:5px;">⚠️ ZONA DE RISCO</p>
                     <label style="font-size:0.9rem; color:#b71c1c; font-weight:bold; display:block; margin-top:5px;">Apagar TODOS os cadastros de um E-mail (Anti-Spam):</label>
                     <div style="display:flex; gap:5px; margin-bottom: 15px; margin-top: 5px;">
-                        <input type="email" id="emailSpamDelete" placeholder="email.do.engracadinho@gmail.com" style="flex:2; padding:8px; border:1px solid #ef9a9a; border-radius:4px;">
+                        <input type="text" id="emailSpamDelete" placeholder="Digite apenas o nome (Ex: andersonsieklicki)" style="flex:2; padding:8px; border:1px solid #ef9a9a; border-radius:4px;">
                         <button onclick="apagarCadastrosPorEmail()" style="flex:1; background:var(--danger-color); color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">🗑️ Nuke E-mail</button>
                     </div>
                     <label style="font-size:0.9rem; color:#b71c1c; font-weight:bold; display:block; border-top:1px solid #ffcdd2; padding-top:10px;">Reset Completo do Sistema:</label>
@@ -1698,31 +1698,80 @@
     }
 
     async function apagarCadastrosPorEmail() {
-        const emailSpam = document.getElementById('emailSpamDelete').value.trim().toLowerCase();
-        if(!emailSpam) { alert("Digite o e-mail do usuário spammer."); return; }
+        let emailDigitado = document.getElementById('emailSpamDelete').value.trim().toLowerCase();
+        if(!emailDigitado) { alert("Digite o e-mail (ou começo dele) do usuário spammer."); return; }
         if(currentUserNivel !== 'admin') return;
 
-        let cadastrosAlvo = records.filter(r => (r.emailCriador || "").toLowerCase() === emailSpam);
-        if(cadastrosAlvo.length === 0) { alert(`Nenhum cadastro encontrado para:\n${emailSpam}`); return; }
+        // Pega apenas a primeira parte do e-mail, ignorando o @gmail.com se a pessoa digitar
+        let prefixoSpam = emailDigitado.split('@')[0];
+
+        // Busca os cadastros onde o email do criador comece com o prefixo digitado
+        let cadastrosAlvo = records.filter(r => {
+            let emailCriador = (r.emailCriador || "").toLowerCase();
+            return emailCriador.startsWith(prefixoSpam);
+        });
+
+        if(cadastrosAlvo.length === 0) { 
+            alert(`Nenhum cadastro encontrado para o usuário: ${prefixoSpam}`); 
+            return; 
+        }
         
         let motivo = prompt("⚠️ Informe o motivo do bloqueio e exclusão de massa (Mín. 5 letras):");
         if(!motivo || motivo.trim().length < 5) { alert("Operação Cancelada. Motivo inválido!"); return; }
 
-        if(!confirm(`🚨 ATENÇÃO EXTREMA!\nDeseja excluir TODOS OS ${cadastrosAlvo.length} CADASTROS feitos por "${emailSpam}"?`)) return;
+        if(!confirm(`🚨 ATENÇÃO EXTREMA!\nDeseja excluir TODOS OS ${cadastrosAlvo.length} CADASTROS feitos por "${prefixoSpam}"?\nO estoque será devolvido automaticamente.`)) return;
 
         document.getElementById('emailSpamDelete').value = 'Apagando...';
         
-        let idsAlvo = cadastrosAlvo.map(r => r.id); records = records.filter(r => !idsAlvo.includes(r.id)); localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
+        // Variáveis para somar o estoque a ser devolvido
+        let dL = 0, dT = 0, dC = 0;
 
+        let idsAlvo = cadastrosAlvo.map(r => {
+            dL += (r.qtdLona || 0);
+            dT += (r.qtdTelha || 0);
+            dC += (r.qtdCesta || 0);
+            return r.id;
+        }); 
+
+        // Remove os registros da base local para sumir do relatório na hora
+        records = records.filter(r => !idsAlvo.includes(r.id)); 
+        localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
+
+        // Remove da Nuvem (Firestore) e Devolve o Estoque
         if (navigator.onLine && db) { 
-            let batch = db.batch(); let c = 0; 
-            for (let id of idsAlvo) { let ref = db.collection("doacoes_capanema").doc(id.toString()); batch.delete(ref); c++; if(c === 490) { await batch.commit(); batch = db.batch(); c = 0; } } 
+            // 1. Devolve os itens ao estoque central
+            if (dL > 0 || dT > 0 || dC > 0) {
+                db.collection('configuracoes_capanema').doc('estoque').set({
+                    lona: firebase.firestore.FieldValue.increment(dL),
+                    telha: firebase.firestore.FieldValue.increment(dT),
+                    cesta: firebase.firestore.FieldValue.increment(dC)
+                }, { merge: true }).catch(e => console.error("Erro ao devolver estoque", e));
+            }
+
+            // 2. Apaga os documentos do spammer em lotes (Para não travar o banco)
+            let batch = db.batch(); 
+            let c = 0; 
+            for (let id of idsAlvo) { 
+                let ref = db.collection("doacoes_capanema").doc(id.toString()); 
+                batch.delete(ref); 
+                c++; 
+                if(c === 490) { 
+                    await batch.commit(); 
+                    batch = db.batch(); 
+                    c = 0; 
+                } 
+            } 
             if(c > 0) await batch.commit(); 
         }
         
-        await registrarLog("EXCLUSÃO SPAM (NUKE)", `Apagou ${idsAlvo.length} cadastros de: ${emailSpam}. Motivo: ${motivo}`); 
-        alert(`SUCESSO!\n${idsAlvo.length} cadastros apagados do sistema.`);
-        document.getElementById('emailSpamDelete').value = ''; generateReport(); carregarPainelDespacho();
+        await registrarLog("EXCLUSÃO SPAM (NUKE)", `Apagou ${idsAlvo.length} cadastros de: ${prefixoSpam}. Devolveu: ${dL} Lona, ${dT} Telha, ${dC} Cesta. Motivo: ${motivo}`); 
+        
+        alert(`SUCESSO!\n${idsAlvo.length} cadastros apagados.\nEstoque devolvido: ${dL} Lonas, ${dT} Telhas, ${dC} Cestas.`);
+        document.getElementById('emailSpamDelete').value = ''; 
+        
+        // Atualiza as telas e relatórios imediatamente
+        generateReport(); 
+        carregarPainelDespacho();
     }
 
     function filtrarTabelaAuditoria() {
