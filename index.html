@@ -1339,7 +1339,7 @@
                 let txtPlural = pendentes.length === 1 ? 'ENTREGA PENDENTE' : 'ENTREGAS PENDENTES';
                 btnAlerta.innerHTML = `🚨 ATENÇÃO: 🚚 <span style="font-size: 1.3rem; font-weight: 900; background: rgba(255,255,255,0.3); padding: 0 6px; border-radius: 4px;">${zeroPad}</span> ${txtPlural}`;
 
-            
+			}
             let h = '';
             pendentes.sort((a,b) => new Date(a.dataISO) - new Date(b.dataISO)).forEach(r => {
                 let pData = aplicarPrivacidade(r);
@@ -2155,3 +2155,4 @@ async function apagarCadastrosPorEmail() {
 </body>
 
 </html>
+
