@@ -1545,18 +1545,45 @@
     function updateReportToggle() { document.querySelectorAll('.report-toggle').forEach(l => { if(l.querySelector('input').checked) l.classList.add('active'); else l.classList.remove('active'); }); }
 
     function buildResumoBairrosHTML(arr) {
-        let res = {}; let tF=0, tL=0, tT=0, tC=0, tA=0, tAe=0;
+        let res = {};
+        // Usa um 'Set' para garantir que a mesma pessoa não seja contada duas vezes no total geral
+        let totalFamiliasSet = new Set(); 
+        let tL=0, tT=0, tC=0, tA=0, tAe=0;
+        
         arr.forEach(r => { 
-            let b = (r.bairro||'N/I').toUpperCase(); if(!res[b]) res[b]={f:0,l:0,t:0,c:0,a:0, ae:0}; 
-            res[b].f++; tF++; res[b].l+=r.qtdLona||0; tL+=r.qtdLona||0; res[b].t+=r.qtdTelha||0; tT+=r.qtdTelha||0; res[b].c+=r.qtdCesta||0; tC+=r.qtdCesta||0; res[b].a+=r.qtdAgua||0; tA+=r.qtdAgua||0; res[b].ae+=r.qtdAguaEntregue||0; tAe+=r.qtdAguaEntregue||0;
+            let b = (r.bairro||'N/I').toUpperCase(); 
+            // Inicializa o bairro com um 'Set' para guardar apenas famílias únicas
+            if(!res[b]) res[b] = { familias: new Set(), l:0, t:0, c:0, a:0, ae:0 }; 
+            
+            // Cria um "RG Digital" invisível (Nome + RG) para identificar se é a mesma pessoa
+            let pessoaId = `${(r.nome || 'desconhecido').trim().toLowerCase()}_${(r.rg || '').trim()}`;
+            
+            // Adiciona a pessoa. Se ela já existir, o 'Set' ignora automaticamente, não duplicando a contagem!
+            res[b].familias.add(pessoaId);
+            totalFamiliasSet.add(pessoaId);
+            
+            // Soma os materiais normalmente
+            res[b].l += r.qtdLona||0; tL += r.qtdLona||0; 
+            res[b].t += r.qtdTelha||0; tT += r.qtdTelha||0; 
+            res[b].c += r.qtdCesta||0; tC += r.qtdCesta||0; 
+            res[b].a += r.qtdAgua||0; tA += r.qtdAgua||0; 
+            res[b].ae += r.qtdAguaEntregue||0; tAe += r.qtdAguaEntregue||0;
         });
-        let h = `<div class="report-summary"><strong>Resumo por Bairros 📊</strong></div><table class="report-table"><thead><tr><th>Bairro</th><th>Famílias</th><th>Água (Sol / <span style="color:white; background:green; padding:1px 3px; border-radius:3px;">Entregue</span>)</th><th>Lona</th><th>Telha</th><th>Cesta</th></tr></thead><tbody>`;
+        
+        // Cabeçalho da tabela limpo, com os emojis novos e a nova escrita da Água
+        let h = `<div class="report-summary"><strong>Resumo por Bairros 📊</strong></div><table class="report-table"><thead><tr><th>Bairro</th><th>Famílias</th><th>💧 Água (Solicitação / Entregue)</th><th>⛺ Lona</th><th>🏠 Telha</th><th>📦 Cesta</th></tr></thead><tbody>`;
+        
         Object.keys(res).sort().forEach(b => { 
-            h+=`<tr><td>${b}</td><td>${res[b].f}</td><td>${Number(res[b].a.toFixed(2))} / <span style="color:white; background:green; padding:1px 4px; border-radius:3px; font-weight:bold">${Number(res[b].ae.toFixed(2))}</span></td><td>${Number(res[b].l.toFixed(2))}</td><td>${res[b].t}</td><td>${res[b].c}</td></tr>`; 
+            // Fundo verde removido. Mantive apenas o número de entregas em negrito suave para facilitar a leitura.
+            h += `<tr><td>${b}</td><td>${res[b].familias.size}</td><td>${Number(res[b].a.toFixed(2))} / <strong>${Number(res[b].ae.toFixed(2))}</strong></td><td>${Number(res[b].l.toFixed(2))}</td><td>${res[b].t}</td><td>${res[b].c}</td></tr>`; 
         }); 
-        h += `<tr style="background-color: var(--primary-color); color: white; font-weight: bold;"><td style="text-align: right;">TOTAL GERAL:</td><td>${tF}</td><td>${Number(tA.toFixed(2))} / <span style="color:white; background:#28a745; padding:1px 4px; border-radius:3px;">${Number(tAe.toFixed(2))}</span></td><td>${Number(tL.toFixed(2))}</td><td>${tT}</td><td>${tC}</td></tr>`;
+        
+        // Linha de total geral também limpa e mostrando o total real de famílias únicas
+        h += `<tr style="background-color: var(--primary-color); color: white; font-weight: bold;"><td style="text-align: right;">TOTAL GERAL:</td><td>${totalFamiliasSet.size}</td><td>${Number(tA.toFixed(2))} / ${Number(tAe.toFixed(2))}</td><td>${Number(tL.toFixed(2))}</td><td>${tT}</td><td>${tC}</td></tr>`;
+        
         return h + `</tbody></table>`;
     }
+
 
    function buildIndividualHTML(arr, tipo) {
         let isA = tipo === 'quantAgua'; let isL = tipo === 'quantLona'; let isT = tipo === 'quantTelha'; let isC = tipo === 'quantCesta'; 
