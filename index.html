@@ -1227,7 +1227,7 @@
     }
 
    // ==========================================
-    // 🟢 PONTE DE COMUNICAÇÃO DIRETA COM O ROBÔ 
+    // 🟢 PONTE DE COMUNICAÇÃO DIRETA COM O ROBÔ DA DEFESA
     // ==========================================
     const appRobo = firebase.initializeApp({
         apiKey: "AIzaSyCGXtcoSinCR6Kn7nDNf4ITWCelYW1PKBQ",
@@ -1253,7 +1253,6 @@
             else { cabecalho = `*Ordem de serviço Assistência Social: Entrega de telhas 🏠*`; textMaterial = `*Material Liberado:* ${vol} Telhas.`; }
         }
 
-        // Arrumado o link do GPS para traçar a rota sem erros
         let enderecoBusca = loc ? loc : (rua ? `${rua}, ${num||'S/N'}` : '');
         let destinoMaps = encodeURIComponent(`${enderecoBusca} ${bairro} Capanema PR`.trim());
         let linkMaps = `https://www.google.com/maps/dir/?api=1&origin=${origemGPS}&destination=${destinoMaps}`;
@@ -1263,13 +1262,10 @@
         
         let msg = `${saudacao}\n\n${cabecalho}\n\n*Nome:* ${nome}\n*Bairro:* ${bairro}\n${textEnd}\n${textRef}*Telefone:* ${tel || 'Não informado'}${textObs}\n${textMaterial}\n\n*🗺️ Rota de Entrega (GPS Oficial):*\n${linkMaps}\n\n*⚠️ ATENÇÃO: Caso o GPS falhe, por favor ligue para o solicitante!*`;
         
-        // 🚀 O SEGREDO: Manda para o Robô enviar!
         try {
-            // Bloqueia a tela rapidinho
             const loadingMsg = document.getElementById("loadingMsg"); const loadingEl = document.getElementById("loading");
             if(loadingMsg && loadingEl) { loadingMsg.innerText = "A encaminhar Ordem de Serviço para o Robô..."; loadingEl.style.display = "flex"; }
             
-            // Grava na gaveta do robô
             await dbRobo.collection('mensagens_externas').add({
                 telefone: numDestino,
                 mensagem: msg,
@@ -2186,5 +2182,6 @@ async function apagarCadastrosPorEmail() {
 </body>
 
 </html>
+
 
 
