@@ -1226,9 +1226,18 @@
         } 
     }
 
-    function reenviarZapMotorista(nome, bairro, loc, rua, num, ref, obs, tel, vol, tipo, temCesta) {
+   // ==========================================
+    // 🟢 PONTE DE COMUNICAÇÃO DIRETA COM O ROBÔ 
+    // ==========================================
+    const appRobo = firebase.initializeApp({
+        apiKey: "AIzaSyCGXtcoSinCR6Kn7nDNf4ITWCelYW1PKBQ",
+        projectId: "sistema-agua-sao-luiz"
+    }, "roboCentralApp");
+    const dbRobo = appRobo.firestore();
+
+    async function reenviarZapMotorista(nome, bairro, loc, rua, num, ref, obs, tel, vol, tipo, temCesta) {
         let numDestino = tipo === 'agua' ? configZap.telefonePipa : configZap.telefoneSocial;
-        if (!numDestino) { alert(`O telefone responsável por ${tipo === 'agua' ? 'ÁGUA' : 'TELHAS'} não está configurado na aba Auditoria.`); return; }
+        if (!numDestino) { alert(`O telefone do motorista responsável não está configurado na aba Auditoria.`); return; }
         
         let horaAtual = new Date().getHours(); let saudacao = "";
         if (horaAtual >= 5 && horaAtual < 12) saudacao = "Bom dia"; else if (horaAtual >= 12 && horaAtual < 18) saudacao = "Boa tarde"; else saudacao = "Boa noite";
@@ -1237,13 +1246,14 @@
 
         if (tipo === 'agua') {
             saudacao = `${saudacao}, Agente da Defesa Civil!`; origemGPS = encodeURIComponent("Corpo de Bombeiros, Capanema - PR");
-            cabecalho = `*Ordem de serviço Defesa Civil entrega de água potável 💧*`; textMaterial = `*Volume Solicitado:* ${Number(vol)} m³ 💧`;
+            cabecalho = `*Ordem de serviço Defesa Civil: Entrega de água potável 💧*`; textMaterial = `*Volume Solicitado:* ${Number(vol)} m³ 💧`;
         } else {
-            saudacao = `${saudacao}, motorista!`; origemGPS = encodeURIComponent("CRAS - Rua Antônio Nieheus, 670, Centro, Capanema - PR");
-            if (temCesta) { cabecalho = `*Ordem de serviço Assistência Social: Entrega de telhas e cesta básica 🏠📦*`; textMaterial = `*Material Liberado:* ${vol} Telhas e Cesta(s) Básica(s).`; } 
+            saudacao = `${saudacao}, Motorista!`; origemGPS = encodeURIComponent("CRAS - Rua Antônio Nieheus, 670, Centro, Capanema - PR");
+            if (temCesta) { cabecalho = `*Ordem de serviço Assistência Social: Entrega de telhas e cesta 🏠📦*`; textMaterial = `*Material Liberado:* ${vol} Telhas e Cesta(s) Básica(s).`; } 
             else { cabecalho = `*Ordem de serviço Assistência Social: Entrega de telhas 🏠*`; textMaterial = `*Material Liberado:* ${vol} Telhas.`; }
         }
 
+        // Arrumado o link do GPS para traçar a rota sem erros
         let enderecoBusca = loc ? loc : (rua ? `${rua}, ${num||'S/N'}` : '');
         let destinoMaps = encodeURIComponent(`${enderecoBusca} ${bairro} Capanema PR`.trim());
         let linkMaps = `https://www.google.com/maps/dir/?api=1&origin=${origemGPS}&destination=${destinoMaps}`;
@@ -1251,8 +1261,29 @@
         let textEnd = loc ? `*Localização:* ${loc}` : ''; if(rua) textEnd += `\n*Rua:* ${rua}, Nº: ${num || 'S/N'}`;
         let textRef = ref ? `*Ref:* ${ref}\n` : ''; let textObs = obs ? `\n*Observação:* ${obs}` : '';
         
-        let msg = `${saudacao}\n\n${cabecalho}\n\n*Nome:* ${nome}\n*Bairro:* ${bairro}\n${textEnd}\n${textRef}*Telefone:* ${tel || 'Não informado'}${textObs}\n${textMaterial}\n\n*🗺️ Rota de Entrega (GPS Oficial):*\n${linkMaps}\n\n*⚠️ ATENÇÃO: Caso o GPS não consiga traçar a rota exata, por favor ligue para o solicitante!*`;
-        window.open(`https://api.whatsapp.com/send?phone=${numDestino}&text=${encodeURIComponent(msg)}`, '_blank');
+        let msg = `${saudacao}\n\n${cabecalho}\n\n*Nome:* ${nome}\n*Bairro:* ${bairro}\n${textEnd}\n${textRef}*Telefone:* ${tel || 'Não informado'}${textObs}\n${textMaterial}\n\n*🗺️ Rota de Entrega (GPS Oficial):*\n${linkMaps}\n\n*⚠️ ATENÇÃO: Caso o GPS falhe, por favor ligue para o solicitante!*`;
+        
+        // 🚀 O SEGREDO: Manda para o Robô enviar!
+        try {
+            // Bloqueia a tela rapidinho
+            const loadingMsg = document.getElementById("loadingMsg"); const loadingEl = document.getElementById("loading");
+            if(loadingMsg && loadingEl) { loadingMsg.innerText = "A encaminhar Ordem de Serviço para o Robô..."; loadingEl.style.display = "flex"; }
+            
+            // Grava na gaveta do robô
+            await dbRobo.collection('mensagens_externas').add({
+                telefone: numDestino,
+                mensagem: msg,
+                status: "pendente",
+                solicitante: currentUserEmail || "Sistema Defesa Civil",
+                data_criacao: new Date().toISOString()
+            });
+            
+            if(loadingEl) loadingEl.style.display = "none";
+            alert(`✅ Ordem de serviço enviada com sucesso! O Robô irá entregar a mensagem ao motorista de forma automática nos próximos segundos.`);
+        } catch (error) {
+            const loadingEl = document.getElementById("loading"); if(loadingEl) loadingEl.style.display = "none";
+            alert("❌ Erro ao comunicar com o Robô Central: " + error.message);
+        }
     }
 
     // ==========================================
@@ -2155,4 +2186,5 @@ async function apagarCadastrosPorEmail() {
 </body>
 
 </html>
+
 
