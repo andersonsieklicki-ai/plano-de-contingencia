@@ -100,7 +100,7 @@
             
             <div class="my-4 flex items-center justify-center w-full">
                 <hr class="w-full border-gray-300">
-                <span class="px-3 text-xs text-gray-400 font-bold uppercase">Ou</span>
+                <span class="px-3 text-xs text-gray-400 font-bold uppercase">Ou Local</span>
                 <hr class="w-full border-gray-300">
             </div>
 
@@ -227,10 +227,16 @@
                             <h3 class="font-black text-lg md:text-xl text-blue-900 mb-2">
                                 <i class="fa-solid fa-user-shield mr-2"></i>Controle de Acessos (Google)
                             </h3>
-                            <p class="text-xs text-slate-600 mb-4 font-medium">Permita que a sua equipe acesse a Defesa Civil com as próprias contas Google.</p>
+                            <p class="text-xs text-slate-600 mb-4 font-medium">Permita que a sua equipe acesse o sistema da Defesa Civil com as próprias contas Google.</p>
                             
                             <div class="flex flex-col sm:flex-row gap-3 mb-6 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
                                 <input type="email" id="novoEmailAuth" placeholder="Digite o E-mail do Google (Gmail)..." class="flex-1 p-3 border border-gray-200 rounded-xl outline-none bg-white focus:border-blue-500 shadow-sm text-sm">
+                                
+                                <select id="novoNivelAuth" class="p-3 border border-gray-200 rounded-xl outline-none bg-white text-sm font-bold text-slate-700 shadow-sm">
+                                    <option value="operador">Operador (Apenas envia e vê as rotas)</option>
+                                    <option value="admin">Administrador (Tem acesso às Configurações)</option>
+                                </select>
+                                
                                 <button onclick="window.adicionarUsuarioAuth()" class="bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-md hover:bg-blue-800 transition">
                                     Conceder Acesso
                                 </button>
@@ -279,7 +285,6 @@
                                 Salvar Nova Senha
                             </button>
                         </div>
-
                     </div>
                 </div>
 
@@ -301,13 +306,14 @@
         import { getFirestore, collection, getDocs, doc, updateDoc, query, onSnapshot, setDoc, getDoc, addDoc, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
-        // CONFIGURAÇÃO OFICIAL (Igual da Água São Luiz, pois dividem a mesma base)
+        // CONFIGURAÇÃO OFICIAL (O banco de dados é partilhado com a Água São Luiz)
         const firebaseConfig = { 
             apiKey: "AIzaSyCGXtcoSinCR6Kn7nDNf4ITWCelYW1PKBQ", 
             authDomain: "sistema-agua-sao-luiz.firebaseapp.com", 
             projectId: "sistema-agua-sao-luiz", 
             storageBucket: "sistema-agua-sao-luiz.appspot.com" 
         };
+        
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
@@ -315,8 +321,10 @@
 
         let unsubDoacoes = null;
         let unsubRoboStatus = null;
+        
         window.nivelAcessoGlobal = null; 
         window.emailLogado = null;
+        window.nomeUsuarioLogado = "Administrador";
 
         window.mostrarLoading = (msg) => { 
             document.getElementById("loadingMsg").innerText = msg; 
@@ -364,7 +372,7 @@
                         bStatus.className = "status-defesa status-online";
                         tStatus.innerText = "Conectado e Operante!";
                         areaQr.classList.add('hidden');
-                        areaBtn.innerHTML = `<button onclick="window.desconectarRoboDefesa()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition">Desconectar Robô</button>`;
+                        areaBtn.innerHTML = `<button onclick="window.desconectarRoboDefesa()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm">Desconectar Robô</button>`;
                     } 
                     else if (data.qrCode && data.qrCode !== "") {
                         bStatus.className = "status-defesa status-aguardando";
@@ -375,7 +383,7 @@
                             if (!err) imgQr.src = url; 
                         });
                         
-                        areaBtn.innerHTML = `<button onclick="window.conectarRoboDefesa()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition"><i class="fa-solid fa-rotate"></i> Gerar Novo QR Code</button>`;
+                        areaBtn.innerHTML = `<button onclick="window.conectarRoboDefesa()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm"><i class="fa-solid fa-rotate"></i> Gerar Novo QR Code</button>`;
                     } 
                     else if (data.status === 'iniciando' || data.comando === 'conectar') {
                         bStatus.className = "status-defesa status-aguardando";
@@ -387,10 +395,10 @@
                         bStatus.className = "status-defesa status-offline";
                         tStatus.innerText = "Motor Desligado";
                         areaQr.classList.add('hidden');
-                        areaBtn.innerHTML = `<button onclick="window.conectarRoboDefesa()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm">Ligar Robô Defesa</button>`;
+                        areaBtn.innerHTML = `<button onclick="window.conectarRoboDefesa()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm"><i class="fa-brands fa-whatsapp"></i> Ligar Robô Defesa</button>`;
                     }
                 } else {
-                    areaBtn.innerHTML = `<button onclick="window.conectarRoboDefesa()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm">Ligar Robô Defesa</button>`;
+                    areaBtn.innerHTML = `<button onclick="window.conectarRoboDefesa()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm"><i class="fa-brands fa-whatsapp"></i> Ligar Robô Defesa</button>`;
                 }
             });
         };
@@ -406,7 +414,7 @@
         };
 
         // ==============================================================================
-        // AUTENTICAÇÃO E GOOGLE AUTH
+        // AUTENTICAÇÃO COM GOOGLE E SENHA (SISTEMA DE HIERARQUIA)
         // ==============================================================================
         
         window.loginGoogle = async () => {
@@ -422,19 +430,22 @@
         };
 
         window.verificarPermissoes = async (user) => {
-            // Usamos uma tabela diferente da Água para não misturar os administradores
+            // Usamos uma coleção exclusiva para não misturar os administradores da Água com a Defesa Civil
             const colRef = collection(db, "usuarios_defesa_civil");
             const q = query(colRef, where("email", "==", user.email));
             const snap = await getDocs(q);
 
             if (!snap.empty) {
                 const dados = snap.docs[0].data();
+                window.nomeUsuarioLogado = user.displayName || "Operador";
                 window.iniciarSessao(user.email, dados.nivel);
             } else {
+                // Se o banco estiver vazio, o primeiro a logar torna-se Administrador de fábrica
                 const allUsers = await getDocs(colRef);
                 if(allUsers.empty) {
                     await addDoc(colRef, { email: user.email, nivel: 'admin', nome: user.displayName });
                     alert("Bem-vindo! O seu email foi registado como o ADMINISTRADOR oficial da Defesa Civil.");
+                    window.nomeUsuarioLogado = user.displayName;
                     window.iniciarSessao(user.email, 'admin');
                 } else {
                     window.esconderLoading();
@@ -453,7 +464,7 @@
             document.getElementById("loginAdmin").style.display = "none";
             document.getElementById("painelAdmin").classList.remove('tela-oculta');
             
-            // Restrições de Acesso
+            // Bloqueio de Segurança para Operadores
             if(nivel !== 'admin') {
                 document.getElementById("nav-config").style.display = 'none';
                 document.getElementById("nav-mob-config").style.display = 'none';
@@ -463,7 +474,11 @@
 
             await window.carregarContatosForm();
             window.iniciarListenerDoacoes();
-            window.iniciarListenerRobo();
+            
+            // Só quem tem nível admin pode controlar o bot no Firebase
+            if(nivel === 'admin') {
+                window.iniciarListenerRobo();
+            }
             
             window.esconderLoading();
         };
@@ -482,7 +497,8 @@
 
                 if(s === sc) {
                     localStorage.setItem("admin_defesa_logado", "sim");
-                    window.iniciarSessao("Acesso Local (Senha)", "admin");
+                    window.nomeUsuarioLogado = "Acesso Local (Sistema)";
+                    window.iniciarSessao("Acesso de Emergência (Senha)", "admin");
                 } else {
                     document.getElementById("erroLogin").innerText = "❌ Senha Incorreta!";
                     document.getElementById("erroLogin").classList.remove('hidden');
@@ -498,6 +514,7 @@
             location.reload();
         };
 
+        // Mantém a pessoa logada se atualizar a página
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 window.mostrarLoading("A restaurar sessão segura...");
@@ -512,7 +529,7 @@
         };
 
         // ==============================================================================
-        // GESTÃO DE ACESSOS (CONFIGURAÇÕES)
+        // GESTÃO DE ACESSOS / CONFIGURAÇÕES E CADASTRAR EMAILS
         // ==============================================================================
         
         window.carregarUsuariosAuth = async () => {
@@ -525,7 +542,7 @@
                         <td class="p-3 font-medium text-gray-800">${d.email}</td>
                         <td class="p-3 text-center font-black uppercase text-[10px] text-blue-700">${d.nivel}</td>
                         <td class="p-3 text-center">
-                            <button onclick="window.removerUsuarioAuth('${doc.id}')" class="text-red-500 bg-red-50 hover:bg-red-500 hover:text-white transition px-3 py-1.5 rounded-lg shadow-sm">
+                            <button onclick="window.removerUsuarioAuth('${doc.id}')" class="text-red-500 bg-red-50 hover:bg-red-500 hover:text-white transition px-3 py-1.5 rounded-lg shadow-sm border border-red-200">
                                 🗑️ Remover
                             </button>
                         </td>
@@ -537,19 +554,19 @@
 
         window.adicionarUsuarioAuth = async () => {
             const email = document.getElementById("novoEmailAuth").value.trim().toLowerCase();
-            const nivel = "operador"; // Na Defesa Civil, quem é adicionado é operador, admin é só o dono.
-            if(!email) return alert("Digite um email válido do Google.");
+            const nivel = document.getElementById("novoNivelAuth").value; 
+            if(!email) return alert("Digite um e-mail válido do Google.");
 
-            window.mostrarLoading("Concedendo acesso...");
+            window.mostrarLoading("Concedendo acesso no sistema...");
             await addDoc(collection(db, "usuarios_defesa_civil"), { email, nivel });
             document.getElementById("novoEmailAuth").value = "";
             window.carregarUsuariosAuth();
             window.esconderLoading();
-            alert(`Acesso concedido para ${email}!`);
+            alert(`✅ Acesso de ${nivel.toUpperCase()} concedido para o e-mail: ${email}`);
         };
 
         window.removerUsuarioAuth = async (id) => {
-            if(confirm("ATENÇÃO: Este e-mail perderá acesso IMEDIATO ao sistema da Defesa Civil. Deseja remover?")) {
+            if(confirm("ATENÇÃO: Este e-mail perderá acesso IMEDIATO ao painel da Defesa Civil. Deseja remover?")) {
                 window.mostrarLoading("Revogando acesso...");
                 await deleteDoc(doc(db, "usuarios_defesa_civil", id));
                 window.carregarUsuariosAuth();
@@ -572,28 +589,28 @@
             const telPipa = document.getElementById("cfgTelPipa").value.replace(/\D/g, '');
             const telSoc = document.getElementById("cfgTelSocial").value.replace(/\D/g, '');
             
-            window.mostrarLoading("A guardar...");
+            window.mostrarLoading("A guardar na base de dados...");
             try {
                 await setDoc(doc(db, "configuracoes_capanema", "whatsapp"), { telefonePipa: telPipa, telefoneSocial: telSoc });
                 window.esconderLoading();
-                alert("✅ Contatos salvos! O Robô usará estes números na próxima rota.");
+                alert("✅ Contatos salvos! O Robô passará a comunicar com estes números nas próximas rotas enviadas.");
             } catch(e) { window.esconderLoading(); }
         };
 
         window.salvarSenhaAdmin = async () => {
             const n = document.getElementById("cfgSenhaAdmin").value;
-            if(n.length < 4) return alert("A senha deve ter no mínimo 4 caracteres.");
+            if(n.length < 4) return alert("A senha mestre deve ter no mínimo 4 caracteres.");
             window.mostrarLoading("A atualizar senha...");
             try {
                 await setDoc(doc(db, "configuracoes_capanema", "admin"), { senha: n });
                 window.esconderLoading();
-                alert("✅ Senha Local da Defesa Civil alterada com sucesso!");
+                alert("✅ Senha Local do Painel da Defesa Civil alterada com sucesso!");
                 document.getElementById("cfgSenhaAdmin").value = "";
             } catch(e) { window.esconderLoading(); }
         };
 
         // ==============================================================================
-        // LÓGICA DE NAVEGAÇÃO DE ABAS
+        // LÓGICA DE ABAS E NAVEGAÇÃO
         // ==============================================================================
         window.mudarAba = (id, el) => {
             document.querySelectorAll('.conteudo-aba').forEach(a => a.classList.add('tela-oculta'));
@@ -618,7 +635,7 @@
         };
 
         // ==============================================================================
-        // SISTEMA LOGÍSTICO DA DEFESA CIVIL (ROTAS)
+        // SISTEMA LOGÍSTICO DA DEFESA CIVIL (FILA E ROTAS)
         // ==============================================================================
         window.iniciarListenerDoacoes = () => {
             if(unsubDoacoes) unsubDoacoes();
@@ -651,26 +668,30 @@
                         if(pendenteTelha) abertasTelhas++;
                         
                         const dtRegistro = new Date(item.dataRegistro).toLocaleString('pt-BR');
-                        const dataUrl = `https://www.google.com/maps/search/?api=1&query=$${encodeURIComponent(item.enderecoCompleto || item.bairro)}`;
                         
-                        let btnClasse = "bg-amber-100 hover:bg-amber-200 text-amber-800";
+                        // O link que gera o Google Maps para o motorista no Whatsapp
+                        const dataUrl = `https://www.google.com/maps/search/?api=1&query=$$${encodeURIComponent(item.enderecoCompleto || item.bairro)}`;
+                        
+                        let btnClasse = "bg-amber-100 hover:bg-amber-200 text-amber-800 border border-amber-200";
                         let btnIcone = "fa-truck-fast";
-                        let btnTexto = "Enviar Rota Motoristas";
+                        let btnTexto = "Enviar Rota ao Motorista";
+                        
+                        // Lógica alterada aqui para enviar ao log o `nomeUsuarioLogado`
                         let btnAcao = `window.enviarRotaMotorista('${item.id}', '${item.nomeContato}', '${item.telefone}', '${item.enderecoCompleto || item.bairro}', '${item.pontoRef}', '${item.necessidadeTexto}', '${dataUrl}')`;
                         
                         if (item.logisticaPausada) {
                             btnClasse = "bg-red-100 hover:bg-red-200 text-red-800 border border-red-300";
                             btnIcone = "fa-triangle-exclamation";
-                            btnTexto = "ALERTA ROTA: Endereço / Contato Errados";
+                            btnTexto = "ALERTA DA ROTA: Marcar como Corrigido";
                             btnAcao = `window.desmarcarErroLogistica('${item.id}')`;
                         }
 
                         html += `
-                        <tr class="border-b hover:bg-slate-50 transition">
+                        <tr class="border-b border-gray-200 hover:bg-slate-50 transition">
                             <td class="p-3 text-[10px] md:text-sm font-mono text-slate-500">${dtRegistro}</td>
                             <td class="p-3">
                                 <div class="font-bold text-slate-800 text-xs md:text-sm">${item.nomeContato || 'Sem Nome'}</div>
-                                <div class="text-[10px] md:text-xs text-slate-500">${item.telefone}</div>
+                                <div class="text-[10px] md:text-xs text-slate-500 font-mono">${item.telefone}</div>
                             </td>
                             <td class="p-3">
                                 <div class="font-bold text-slate-700 text-[10px] md:text-sm line-clamp-1">${item.enderecoCompleto || item.bairro}</div>
@@ -694,7 +715,7 @@
                 document.getElementById("dashPipaAbertas").innerText = abertasPipa;
                 document.getElementById("dashTelhasAbertas").innerText = abertasTelhas;
                 
-                tbody.innerHTML = html || "<tr><td colspan='5' class='p-8 text-center text-slate-400 font-bold'>Nenhuma entrega pendente na logística.</td></tr>";
+                tbody.innerHTML = html || "<tr><td colspan='5' class='p-8 text-center text-slate-400 font-bold'>Nenhuma entrega pendente na logística no momento.</td></tr>";
             });
         };
 
@@ -704,14 +725,16 @@
             }
         };
 
+        // Função responsável por comunicar com o Robô e registar no banco quem acionou o envio (Operador)
         window.enviarRotaMotorista = async (idCadastro, nome, fone, endereco, ref, itens, mapsUrl) => {
             if(!confirm(`Deseja enviar esta rota oficial agora para o WhatsApp dos motoristas disponíveis?`)) return;
-            window.mostrarLoading("A preparar envio da rota para o robô...");
+            window.mostrarLoading("A preparar envio da rota para a fila do robô...");
             
             try {
+                // Vai buscar os números cadastrados na configuração do Admin
                 const docSnap = await getDoc(doc(db, "configuracoes_capanema", "whatsapp"));
                 if(!docSnap.exists()) {
-                    window.esconderLoading(); return alert("Configure os contatos de logística primeiro!");
+                    window.esconderLoading(); return alert("Configure os contatos de logística na aba de Configurações primeiro!");
                 }
                 
                 const contatos = docSnap.data();
@@ -720,24 +743,25 @@
                 if(contatos.telefoneSocial) motoristas.push(contatos.telefoneSocial);
                 
                 if(motoristas.length === 0) {
-                    window.esconderLoading(); return alert("Não existem contatos de motoristas salvos.");
+                    window.esconderLoading(); return alert("Não existem contatos de motoristas salvos no painel.");
                 }
 
-                const msgFormatada = `🚨 *NOVA ROTA DE ENTREGA - DEFESA CIVIL* 🚨\n\n👤 *Nome:* ${nome}\n📞 *Contato:* ${fone}\n\n📍 *Endereço Destino:*\n${endereco}\n*Ref:* ${ref || 'Não informada'}\n\n📦 *Itens para Entrega:*\n${itens}\n\n🗺️ *Abrir no Maps:*\n${mapsUrl}\n\n*(Responda esta mensagem caso não consiga encontrar o endereço).*`;
+                const msgFormatada = `🚨 *NOVA ROTA DE ENTREGA - DEFESA CIVIL* 🚨\n\n👤 *Nome:* ${nome}\n📞 *Contato:* ${fone}\n\n📍 *Endereço Destino:*\n${endereco}\n*Ref:* ${ref || 'Não informada'}\n\n📦 *Itens para Entrega:*\n${itens}\n\n🗺️ *Abrir no Maps:*\n${mapsUrl}\n\n*(Mensagem gerada pelo operador: ${window.nomeUsuarioLogado})*`;
 
                 for(let num of motoristas) {
                     await addDoc(collection(db, "mensagens_externas"), {
                         telefone: num,
                         mensagem: msgFormatada,
                         status: "pendente",
-                        data_criacao: new Date().toISOString()
+                        data_criacao: new Date().toISOString(),
+                        operador_envio: window.nomeUsuarioLogado // GRAVA NO BANCO DE DADOS QUEM ENVIOU
                     });
                 }
                 window.esconderLoading();
                 alert("✅ Sucesso! A rota foi colocada na fila e o Robô da Defesa Civil irá enviá-la para o WhatsApp dos motoristas.");
             } catch(e) {
                 window.esconderLoading();
-                alert("Erro técnico ao gerar rota.");
+                alert("Erro técnico ao gerar rota de entrega.");
             }
         };
     </script>
