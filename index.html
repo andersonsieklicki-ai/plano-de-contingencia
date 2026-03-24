@@ -3,61 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gestão CTG - Sentinela da Fronteira</title>
+    <title>Gestão Defesa Civil - Capanema/PR</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
     <style>
-        /* ==========================================================================
-           ESTILOS GERAIS DA APLICAÇÃO (MODO TELA E CELULAR)
-           ========================================================================== */
         body { 
-            -webkit-user-select: none; 
-            -moz-user-select: none; 
-            -ms-user-select: none; 
-            user-select: none; 
-            -webkit-touch-callout: none; 
             font-family: 'Inter', sans-serif; 
-            background-color: #e5e7eb; 
-            position: relative;
+            background-color: #f3f4f6; 
         }
-
-        body::before {
-            content: ""; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100vw; 
-            height: 100vh;
-            background-image: url('cavalos-1861x1080.jpg'); 
-            background-size: cover; 
-            background-position: center; 
-            opacity: 0.15; 
-            z-index: -1; 
-            pointer-events: none;
+        
+        .tela-oculta { 
+            display: none !important; 
         }
-
-        .card-gaucho {
-            background: rgba(255, 255, 255, 0.94); 
-            backdrop-filter: blur(8px); 
-            -webkit-backdrop-filter: blur(8px);
-            border: 1px solid rgba(21, 128, 61, 0.15);
-        }
-
-        .fundo-login {
-            background: linear-gradient(rgba(27, 59, 36, 0.85), rgba(27, 59, 36, 0.95)), url('cavalos-1861x1080.jpg');
-            background-size: cover; 
-            background-position: center;
-        }
-
-        .cor-mate { background-color: #1b3b24; }
-        .borda-rs { border-bottom: 3px solid #ed1c24; }
-        .tela-oculta { display: none !important; }
-
-        .logo-blend { mix-blend-mode: multiply !important; }
-
+        
         .loading-overlay { 
             display: none; 
             position: fixed; 
@@ -68,94 +29,57 @@
             align-items: center; 
             flex-direction: column; 
         }
-
+        
         .spinner { 
             border: 4px solid #e2e8f0; 
-            border-top: 4px solid #15803d; 
+            border-top: 4px solid #d97706; 
             border-radius: 50%; 
             width: 50px; 
             height: 50px; 
             animation: spin 1s linear infinite; 
         }
-
+        
         @keyframes spin { 
             0% { transform: rotate(0deg); } 
             100% { transform: rotate(360deg); } 
         }
-
-        .scroll-suave::-webkit-scrollbar { height: 6px; width: 6px; }
-        .scroll-suave::-webkit-scrollbar-thumb { background: rgba(21, 128, 61, 0.3); border-radius: 4px; }
         
-        .conteudo-principal { padding-bottom: 100px; display: flex; flex-direction: column; min-height: 100vh; } 
-
-        .modal-fundo { 
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); 
-            z-index: 100; justify-content: center; align-items: center; padding: 1rem; backdrop-filter: blur(3px); 
+        .scroll-suave::-webkit-scrollbar { 
+            height: 6px; 
+            width: 6px; 
         }
         
-        .print-only { display: none; }
+        .scroll-suave::-webkit-scrollbar-thumb { 
+            background: #cbd5e1; 
+            border-radius: 4px; 
+        }
         
-        .linha-turma { background-color: #1b3b24; color: white; text-transform: uppercase; font-weight: 900; letter-spacing: 0.05em; font-size: 0.90rem; }
+        .conteudo-principal { 
+            padding-bottom: 100px; 
+        } 
 
-        /* ==========================================================================
-           MODO DE IMPRESSÃO (PERFEITO PARA TABELAS CONTÍNUAS)
-           ========================================================================== */
-        @media print { 
-            @page { size: A4 portrait; margin: 10mm; }
-            body::before { display: none !important; } 
-            body { background: white !important; } 
-            
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-
-            .print-watermark {
-                display: block !important; position: fixed !important; top: 0 !important; left: 0 !important;
-                width: 100vw !important; height: 100vh !important; z-index: -1 !important; opacity: 0.10 !important; pointer-events: none !important;
-            }
-            .print-watermark img { width: 100%; height: 100%; object-fit: cover; mix-blend-mode: multiply !important; }
-            
-            html, body, #meuBody, #painelAdmin, #mainArea, .conteudo-principal, .print-area, #aba-relatorios {
-                height: auto !important; min-height: 100% !important; max-height: none !important; overflow: visible !important;
-                display: block !important; position: static !important; width: 100% !important; margin: 0 !important; padding: 0 !important;
-            }
-
-            .flex, .flex-1, .overflow-hidden, .overflow-y-auto, .h-screen, .h-full {
-                display: block !important; flex: none !important; height: auto !important; overflow: visible !important;
-            }
-
-            .print-only { display: block !important; }
-            .print-flex { display: flex !important; }
-
-            .card-gaucho { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; }
-            
-            table { width: 100% !important; border-collapse: collapse !important; page-break-inside: auto !important; page-break-after: auto !important;}
-            tr { page-break-inside: avoid !important; page-break-after: auto !important; }
-            thead { display: table-header-group !important; }
-            tfoot { display: table-footer-group !important; }
-            th, td { white-space: normal !important; word-wrap: break-word !important; }
-            
-            tbody tr:not(.linha-turma) td { color: #1e293b !important; }
-            thead tr th { color: #166534 !important; }
-            
-            tr.linha-turma, tr.linha-turma td, tr.linha-turma i, tr.linha-turma th { 
-                background-color: #1b3b24 !important; color: #ffffff !important; font-weight: 900 !important; border: none !important;
-            }
-
-            .page-break-inside-avoid { page-break-inside: avoid !important; }
-
-            .no-print, aside, nav, .md\:hidden, #loginAdmin, #loading, #filtrosFinanceiro, #filtrosAlunos, #cardsFinanceiros, .tela-oculta { 
-                display: none !important; 
-            }
+        .status-defesa {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .status-offline { background-color: #94a3b8; }
+        .status-online { background-color: #10b981; box-shadow: 0 0 8px #10b981; }
+        .status-aguardando { background-color: #f59e0b; animation: pulse 1s infinite; }
+        
+        @keyframes pulse { 
+            0% { opacity: 1; } 
+            50% { opacity: 0.5; } 
+            100% { opacity: 1; } 
         }
     </style>
 </head>
 
-<body id="meuBody" class="text-gray-800 h-screen flex overflow-hidden">
+<body class="text-gray-800 h-screen flex overflow-hidden">
 
-    <div class="print-watermark print-only">
-        <img src="cavalos-1861x1080.jpg" alt="Fundo Cavalos Marca D'água">
-    </div>
-
-    <div id="loading" class="loading-overlay no-print">
+    <div id="loading" class="loading-overlay">
         <div class="spinner"></div>
         <p id="loadingMsg" class="mt-6 font-bold text-slate-700 text-center px-4 text-sm md:text-base"></p>
         <button onclick="window.esconderLoading()" class="mt-8 bg-red-50 text-red-600 border border-red-200 px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest shadow-sm transition active:scale-95">
@@ -163,514 +87,326 @@
         </button>
     </div>
 
-    <div id="loginAdmin" class="fixed inset-0 fundo-login flex justify-center items-center z-50 p-4 no-print">
-        <div class="bg-white/95 backdrop-blur-md p-6 md:p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center border border-green-800/30">
+    <div id="loginAdmin" class="fixed inset-0 bg-slate-900 flex justify-center items-center z-50 p-4">
+        <div class="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
             
-            <img src="LOGO.jpg" class="logo-blend w-28 h-28 mx-auto rounded-full object-contain mb-4 shadow-xl border-4 border-white" onerror="this.onerror=null; this.style.display='none'">
-            <h2 class="text-2xl font-black mb-1 text-slate-800 tracking-tight">CTG Sentinela da Fronteira</h2>
-            <p class="text-xs text-green-700 mb-6 font-bold uppercase tracking-widest">Acesso Restrito / Patronagem</p>
+            <span class="text-5xl mb-2 block">🚨</span>
+            <h2 class="text-2xl font-bold mb-6 text-slate-800">Defesa Civil</h2>
             
-            <button onclick="window.loginGoogle()" class="w-full bg-white border-2 border-gray-200 hover:bg-gray-50 text-gray-700 font-bold py-4 rounded-xl shadow active:scale-95 transition text-lg flex items-center justify-center gap-3">
+            <button onclick="window.loginGoogle()" class="w-full bg-white border-2 border-gray-200 hover:bg-gray-50 text-gray-700 font-bold py-4 rounded-xl shadow active:scale-95 transition text-lg flex items-center justify-center gap-3 mb-4">
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-6 h-6" alt="Google">
                 Entrar com o Google
             </button>
             
-            <p id="erroLogin" class="text-red-500 text-sm font-bold mt-4 hidden bg-red-50 p-2 rounded-lg"></p>
-            
-            <div class="mt-8 pt-4 border-t border-green-800/10 flex flex-col items-center">
-                <span class="text-[10px] text-green-800 font-black uppercase tracking-widest mb-2">© AUTOMATIZA TECH</span>
-                <img src="LOGO.jpg" alt="Automatiza Tech" class="w-28 logo-blend opacity-90" onerror="this.onerror=null; this.style.display='none'">
+            <div class="my-4 flex items-center justify-center w-full">
+                <hr class="w-full border-gray-300">
+                <span class="px-3 text-xs text-gray-400 font-bold uppercase">Ou</span>
+                <hr class="w-full border-gray-300">
             </div>
+
+            <form onsubmit="window.entrarAdmin(event)" class="flex gap-2">
+                <input type="password" id="senhaAdmin" required placeholder="Senha Mestre..." class="flex-1 p-3 border-2 border-gray-200 rounded-xl text-center outline-none focus:border-amber-500 focus:bg-amber-50 transition text-sm">
+                <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 rounded-xl shadow active:scale-95 transition text-sm">
+                    Entrar
+                </button>
+            </form>
             
+            <p id="erroLogin" class="text-red-500 text-xs font-bold mt-4 hidden bg-red-50 p-2 rounded-lg"></p>
         </div>
     </div>
 
     <div id="painelAdmin" class="flex w-full h-full tela-oculta relative">
         
-        <aside class="w-64 cor-mate borda-rs text-white flex-col hidden md:flex shadow-[4px_0_24px_rgba(0,0,0,0.15)] z-30 relative no-print">
-            <div class="p-6 text-center border-b border-green-800/50 pt-8 flex flex-col items-center">
-                <img src="LOGO.jpg" class="logo-blend w-20 h-20 rounded-full bg-white p-1 mb-3 shadow-lg" onerror="this.onerror=null; this.style.display='none'">
-                <h1 class="text-lg font-black leading-tight">Sentinela da<br>Fronteira</h1>
-                <p class="text-[10px] text-green-400 font-bold uppercase tracking-widest mt-2" id="lblUsuarioAtivo">Capanema - PR</p>
+        <aside class="w-64 bg-slate-900 text-white flex-col hidden md:flex shadow-xl z-30 relative">
+            <div class="p-6 text-center border-b border-slate-700 pt-8">
+                <h1 class="text-xl font-bold text-amber-500">🚨 Defesa Civil <span class="text-[10px] text-amber-200 align-top">v1.2</span></h1>
+                <p class="text-[10px] text-gray-400 font-bold uppercase mt-2" id="lblUsuarioAtivo">Acesso</p>
             </div>
             
-            <nav class="flex-1 p-4 space-y-2 overflow-y-auto scroll-suave text-sm text-green-100/70">
-                <button id="nav-alunos" onclick="window.mudarAba('aba-alunos', this)" class="menu-btn w-full flex items-center p-3 rounded-xl bg-green-700 text-white font-bold transition shadow-md">
-                    <i class="fa-solid fa-users w-6 mr-2"></i> Alunos
+            <nav class="flex-1 p-4 space-y-2 overflow-y-auto scroll-suave text-sm text-gray-400">
+                <button onclick="window.mudarAba('aba-dashboard', this)" class="menu-btn w-full flex items-center p-3 rounded-xl bg-amber-600 text-white font-bold transition">
+                    <i class="fa-solid fa-chart-line w-6 mr-2"></i> Monitorização
                 </button>
-                <button id="nav-mensalidades" onclick="window.mudarAba('aba-mensalidades', this)" class="menu-btn w-full flex items-center p-3 rounded-xl hover:bg-green-800 hover:text-white font-bold transition">
-                    <i class="fa-solid fa-file-invoice-dollar w-6 mr-2"></i> Mensalidades
+                <button id="nav-config" onclick="window.mudarAba('aba-config', this)" class="menu-btn w-full flex items-center p-3 rounded-xl hover:bg-slate-800 font-bold transition">
+                    <i class="fa-solid fa-gear w-6 mr-2"></i> Configurações Robô
                 </button>
-                <button id="nav-avulso" onclick="window.mudarAba('aba-avulso', this)" class="menu-btn w-full flex items-center p-3 rounded-xl hover:bg-green-800 hover:text-white font-bold transition">
-                    <i class="fa-solid fa-plus-circle w-6 mr-2"></i> Taxas Avulsas
-                </button>
-                <button id="nav-abertas" onclick="window.mudarAba('aba-abertas', this)" class="menu-btn w-full flex items-center p-3 rounded-xl hover:bg-green-800 font-bold transition text-amber-400 hover:text-amber-300">
-                    <i class="fa-solid fa-hourglass-half w-6 mr-2"></i> Pendentes / Robô
-                </button>
-                <button id="nav-recebimentos" onclick="window.mudarAba('aba-recebimentos', this)" class="menu-btn w-full flex items-center p-3 rounded-xl hover:bg-green-800 hover:text-white font-bold transition">
-                    <i class="fa-solid fa-check-double w-6 mr-2"></i> Recebidos
-                </button>
-                <button id="nav-relatorios" onclick="window.mudarAba('aba-relatorios', this)" class="menu-btn w-full flex items-center p-3 rounded-xl hover:bg-green-800 hover:text-white font-bold transition">
-                    <i class="fa-solid fa-chart-pie w-6 mr-2"></i> Relatórios
-                </button>
-                <button id="nav-config" onclick="window.mudarAba('aba-config', this)" class="menu-btn w-full flex items-center p-3 rounded-xl hover:bg-green-800 hover:text-white font-bold transition">
-                    <i class="fa-solid fa-gear w-6 mr-2"></i> Configurações
-                </button>
+                
+                <div class="pt-6 mt-6 border-t border-slate-700">
+                    <button onclick="window.sairAdmin()" class="w-full flex items-center justify-center p-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold transition">
+                        Sair do Painel
+                    </button>
+                </div>
             </nav>
-            
-            <div class="pt-4 mt-auto border-t border-green-800/50 flex flex-col items-center pb-6">
-                <span class="text-[10px] text-green-400 font-black uppercase tracking-widest mb-2">© AUTOMATIZA TECH</span>
-                <img src="LOGO.jpg" alt="Automatiza Tech" class="w-16 logo-blend mb-2 opacity-90" onerror="this.onerror=null; this.style.display='none'">
-                <button onclick="window.sairAdmin()" class="w-full flex items-center justify-center p-3 rounded-xl bg-red-900/40 hover:bg-red-600 text-white font-bold transition mt-2 mx-4" style="width: calc(100% - 2rem);">
-                    Sair do Sistema
-                </button>
-            </div>
         </aside>
 
-        <main id="mainArea" class="flex-1 overflow-y-auto bg-transparent conteudo-principal w-full">
+        <main class="flex-1 overflow-y-auto bg-gray-100 conteudo-principal w-full">
             
-            <div class="md:hidden cor-mate text-white p-3 text-center sticky top-0 z-40 shadow-md font-bold flex justify-between px-4 items-center relative borda-rs no-print">
-                <a href="https://wa.me/5546984155591" target="_blank" class="absolute top-1 left-2 text-[8px] font-black text-green-400 hover:text-white transition tracking-widest select-none cursor-pointer z-50">
-                    © AUTOMATIZA TECH
-                </a>
-                <div class="flex items-center gap-2 mt-2">
-                    <img src="LOGO.jpg" class="logo-blend w-8 h-8 rounded-full bg-white p-0.5" onerror="this.onerror=null; this.style.display='none'">
-                    <span class="text-sm tracking-wide">CTG Sentinela</span>
-                </div>
-                <button onclick="window.sairAdmin()" class="text-red-300 bg-green-900 px-3 py-1.5 rounded-lg text-xs shadow mt-2">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                </button>
+            <div class="md:hidden bg-slate-900 text-white p-4 text-center sticky top-0 z-40 shadow-md font-bold flex justify-between px-4 items-center relative">
+                <span class="mt-1 ml-4 text-amber-500">🚨 Defesa Civil</span>
+                <button onclick="window.sairAdmin()" class="text-red-400 bg-slate-800 px-3 py-1 rounded-lg text-xs">Sair</button>
             </div>
             
-            <div class="p-2 md:p-8 max-w-7xl mx-auto w-full print-area flex-1">
+            <div class="p-3 md:p-8 max-w-7xl mx-auto w-full">
                 
-                <div id="aba-alunos" class="conteudo-aba">
-                    <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3 no-print">
-                        <h2 class="text-xl md:text-2xl font-black text-[#1b3b24] drop-shadow-sm">👥 Alunos da Invernada</h2>
-                        <button id="btnCadastrarAluno" onclick="window.abrirModalCadastro()" class="w-full sm:w-auto bg-green-700 hover:bg-green-800 text-white px-5 py-3 rounded-xl font-bold shadow-lg transition text-sm border border-green-600">
-                            + Cadastrar Aluno
-                        </button>
-                    </div>
-                    <div class="card-gaucho rounded-2xl shadow-lg overflow-hidden p-2 md:p-4 no-print">
-                        <div class="flex gap-2 mb-2 no-print">
-                            <input type="text" id="buscaAluno" onkeyup="window.filtrarTabela('buscaAluno', 'tabelaAlunos')" placeholder="🔍 Buscar por nome do aluno..." class="w-full p-3 md:p-4 bg-white/80 border border-green-200 rounded-xl outline-none text-sm md:text-base focus:bg-white focus:border-green-500 transition shadow-inner">
-                            <button onclick="window.filtrarTabela('buscaAluno', 'tabelaAlunos')" class="bg-[#1b3b24] hover:bg-green-900 text-white px-4 md:px-8 rounded-xl font-bold shadow-md transition whitespace-nowrap">
-                                <i class="fa-solid fa-magnifying-glass md:mr-2"></i><span class="hidden md:inline">Pesquisar</span>
-                            </button>
+                <div id="aba-dashboard" class="conteudo-aba">
+                    <h2 class="text-xl md:text-2xl font-bold text-slate-800 mb-6">Monitorização de Entregas</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center">
+                            <h3 class="text-gray-500 font-bold uppercase text-xs">Total Assistências</h3>
+                            <p class="text-3xl font-black text-slate-800 mt-2" id="dashTotalAssistencias">0</p>
                         </div>
-                        
-                        <div class="w-full mt-2 border border-green-100 rounded-xl overflow-x-auto scroll-suave">
-                            <table class="w-full text-left text-xs md:text-sm whitespace-nowrap md:whitespace-normal">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-blue-200 text-center">
+                            <h3 class="text-blue-600 font-bold uppercase text-xs">Caminhão Pipa (Água)</h3>
+                            <p class="text-3xl font-black text-blue-700 mt-2" id="dashPipaAbertas">0</p>
+                            <p class="text-xs text-blue-500 font-bold mt-1">Pendentes de Entrega</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-orange-200 text-center">
+                            <h3 class="text-orange-600 font-bold uppercase text-xs">Apoio Telhas (Social)</h3>
+                            <p class="text-3xl font-black text-orange-700 mt-2" id="dashTelhasAbertas">0</p>
+                            <p class="text-xs text-orange-500 font-bold mt-1">Pendentes de Entrega</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-8">
+                        <h3 class="font-bold text-slate-700 mb-4">
+                            <i class="fa-solid fa-list-check mr-2"></i>Lista de Entregas Ativas
+                        </h3>
+                        <div class="overflow-x-auto w-full scroll-suave">
+                            <table class="w-full text-left whitespace-nowrap min-w-[700px]">
                                 <thead>
-                                    <tr class="bg-green-50/80 uppercase font-bold text-green-800 border-b border-green-200">
-                                        <th class="p-2 md:p-3 pl-4">Aluno</th>
-                                        <th class="p-2 md:p-3">Responsável</th>
-                                        <th class="p-2 md:p-3">WhatsApp</th>
-                                        <th class="p-2 md:p-3 text-center no-print acoes-coluna">Ações</th>
+                                    <tr class="bg-slate-50 text-[10px] uppercase font-bold text-slate-500 border-b">
+                                        <th class="p-3">Data / Hora</th>
+                                        <th class="p-3">Beneficiário</th>
+                                        <th class="p-3">Endereço / Bairro</th>
+                                        <th class="p-3 text-center">Item / Qtd</th>
+                                        <th class="p-3 text-center">Ações Logística</th>
                                     </tr>
                                 </thead>
-                                <tbody id="tabelaAlunos" class="divide-y divide-green-100 bg-white/50">
+                                <tbody id="tabelaEntregasAtivas" class="divide-y text-sm">
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
 
-                <div id="aba-mensalidades" class="conteudo-aba tela-oculta">
-                    <div class="mb-4 flex flex-col md:flex-row justify-between items-start md:items-end gap-3 no-print">
-                        <div>
-                            <h2 class="text-xl md:text-2xl font-black flex items-center gap-2 text-[#1b3b24] drop-shadow-sm">📝 Lote de Mensalidades</h2>
-                        </div>
-                        <div class="flex gap-2 text-xs w-full md:w-auto">
-                            <input type="text" id="mesReferencia" value="05/2026" class="p-3 border border-green-200 rounded-xl font-bold text-center flex-1 md:w-32 outline-none shadow-sm bg-white/90" title="Mês de Referência">
-                            <input type="date" id="dataVencimento" class="p-3 border border-green-200 rounded-xl font-bold text-center flex-1 outline-none shadow-sm bg-white/90" title="Data de Vencimento">
-                        </div>
-                    </div>
+                <div id="aba-config" class="conteudo-aba tela-oculta">
+                    <h2 class="text-xl md:text-2xl font-bold text-slate-700 mb-4 mt-4 md:mt-0">⚙️ Configurações do Sistema</h2>
                     
-                    <button onclick="window.gerarFaturasEmLote()" class="no-print w-full bg-[#1b3b24] hover:bg-green-900 text-white py-4 rounded-2xl font-black text-base md:text-xl shadow-xl active:scale-95 transition mb-6 border border-green-700">
-                        🚀 GERAR MENSALIDADES DO MÊS
-                    </button>
-                    
-                    <div class="card-gaucho rounded-2xl shadow-lg relative overflow-hidden no-print">
-                        <div class="w-full pb-4 overflow-x-auto scroll-suave">
-                            <table class="w-full text-left border-collapse text-xs md:text-sm whitespace-nowrap md:whitespace-normal">
-                                <thead>
-                                    <tr class="bg-green-50/80 uppercase font-bold text-green-800 border-b border-green-200">
-                                        <th class="p-2 md:p-3 pl-4 bg-green-50/90 backdrop-blur-md">Aluno</th>
-                                        <th class="p-2 md:p-3 text-center text-green-700">Valor Base</th>
-                                        <th class="p-2 md:p-3 text-center text-red-600">Multa/Outros</th>
-                                        <th class="p-2 md:p-3 text-right text-slate-900 font-black">Total a Cobrar</th>
-                                        <th class="p-2 md:p-3 text-center">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="corpoTabelaLote" class="divide-y divide-green-100 bg-white/50">
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="aba-avulso" class="conteudo-aba tela-oculta no-print">
-                    <h2 class="text-xl md:text-2xl font-black text-[#1b3b24] mb-4 md:mb-6 drop-shadow-sm">🐎 Lançar Jantar ou Evento</h2>
-                    <div class="card-gaucho rounded-2xl shadow-lg p-4 md:p-6 w-full max-w-2xl mx-auto md:mx-0">
-                        <form id="formAvulso" class="space-y-4" onsubmit="window.submitAvulso(event)">
-                            <div>
-                                <label class="block text-xs font-bold text-green-800 uppercase mb-1">Tipo de Lançamento</label>
-                                <select id="avulsoTipo" class="w-full p-3 bg-green-50/50 border border-green-200 rounded-xl outline-none font-bold text-green-900 focus:bg-white transition">
-                                    <option value="somar_proxima">➕ Adicionar à Próxima Mensalidade</option>
-                                    <option value="pix_agora">⚡ Gerar PIX Avulso Imediato</option>
-                                </select>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+                        
+                        <div class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-amber-200 lg:col-span-2">
+                            <h3 class="font-bold text-base md:text-lg text-amber-800 mb-3 md:mb-4">
+                                <i class="fa-solid fa-robot mr-2"></i>Status do Robô WhatsApp (Defesa Civil)
+                            </h3>
+                            
+                            <div class="flex flex-col md:flex-row gap-4 items-center mb-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                <div class="flex items-center gap-3 w-full">
+                                    <div id="defesa-bolinha-status" class="status-defesa status-offline"></div>
+                                    <span id="defesa-texto-status" class="font-bold text-slate-600 uppercase tracking-wider text-sm">Verificando...</span>
+                                </div>
+                                <div id="defesa-area-botoes" class="flex gap-2 w-full md:w-auto justify-end"></div>
                             </div>
                             
-                            <div class="bg-white/60 p-4 rounded-xl border border-green-100">
-                                <label class="block text-xs font-bold text-green-800 uppercase mb-2">Quem vai pagar?</label>
-                                <select id="avulsoModoDestino" onchange="window.mudarModoAvulso()" class="w-full p-3 mb-3 bg-white border border-gray-200 rounded-xl outline-none font-bold text-gray-700 shadow-sm">
-                                    <option value="manual">👤 Selecionar Alunos (Digitar Nomes)</option>
-                                    <option value="invernada">👥 Cobrar de uma Invernada Inteira</option>
-                                    <option value="todos">🌟 RATEIO: Cobrar de TODOS os Alunos</option>
-                                </select>
-
-                                <div id="blocoAvulsoInvernada" style="display: none;">
-                                    <select id="avulsoInvernada" class="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none font-bold text-gray-700 shadow-sm">
-                                        <option value="Dente de Leite">Dente de Leite</option>
-                                        <option value="Pré-Mirim">Pré-Mirim</option>
-                                        <option value="Mirim">Mirim</option>
-                                        <option value="Adulto">Adulto</option>
-                                    </select>
-                                </div>
-
-                                <div id="blocoAvulsoManual">
-                                    <input type="text" id="avulsoBuscaNome" list="listaNomesAvulso" placeholder="Digite o nome, selecione e aperte ENTER..." onkeydown="if(event.key === 'Enter') { event.preventDefault(); window.verificarEnterAvulso(); }" class="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none focus:border-green-500 shadow-sm">
-                                    <datalist id="listaNomesAvulso"></datalist>
-                                    
-                                    <div id="listaAlunosSelecionados" class="mt-3 flex flex-wrap gap-2">
-                                        </div>
-                                </div>
+                            <div id="defesa-area-qr" class="text-center hidden mb-4 bg-white p-6 rounded-xl border-2 border-dashed border-amber-300">
+                                <p class="text-sm font-bold text-amber-700 mb-4 uppercase">Leia o QR Code com o WhatsApp Oficial da Defesa Civil</p>
+                                <img id="defesa-qrcode-img" class="mx-auto border shadow-sm rounded-lg w-[200px] h-[200px]" src="" />
+                                <p class="text-[10px] text-gray-500 mt-4 font-bold">O código não leu ou expirou? Clique no botão "Gerar Novo QR Code" acima.</p>
                             </div>
-
-                            <div>
-                                <label class="block text-xs font-bold text-green-800 uppercase mb-1">Descrição (Ex: Jantar, Exame de Faixa)</label>
-                                <input type="text" id="avulsoDescricao" required class="w-full p-3 bg-white/80 border border-gray-200 rounded-xl outline-none focus:border-green-500">
-                            </div>
-                            <div class="flex gap-4">
-                                <div class="flex-1">
-                                    <label class="block text-xs font-bold text-green-800 uppercase mb-1">Valor (R$)</label>
-                                    <input type="number" step="0.01" id="avulsoValor" required class="w-full p-3 bg-white/80 border border-gray-200 rounded-xl outline-none text-green-700 font-black text-lg">
-                                </div>
-                                <div class="flex-1" id="divVencimentoAvulso" style="display:none;">
-                                    <label class="block text-xs font-bold text-green-800 uppercase mb-1">Vencimento</label>
-                                    <input type="date" id="avulsoVencimento" class="w-full p-3 bg-white/80 border border-gray-200 rounded-xl outline-none">
-                                </div>
-                            </div>
-                            <button type="submit" class="w-full bg-[#1b3b24] hover:bg-green-900 text-white font-black py-4 rounded-xl shadow-lg mt-2 active:scale-95 transition">
-                                Confirmar Lançamento
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-                <div id="aba-abertas" class="conteudo-aba tela-oculta">
-                    <div class="flex flex-col sm:flex-row justify-between sm:items-end mb-4 gap-2 no-print">
-                        <h2 class="text-xl md:text-2xl font-black text-amber-700 drop-shadow-sm flex items-center gap-2">⏳ Faturas Pendentes / Fila do Robô</h2>
-                    </div>
-                    <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl mb-4 text-xs font-bold text-amber-800 shadow-sm no-print">
-                        💡 Dica: Para cancelar/apagar uma mensalidade gerada indevidamente, clique no botão vermelho de lixeira (🗑️).
-                    </div>
-                    <div class="card-gaucho rounded-2xl shadow-lg overflow-hidden no-print">
-                        <div class="w-full overflow-x-auto">
-                            <table class="w-full text-left text-xs md:text-sm whitespace-nowrap">
-                                <tbody id="tabelaAbertas" class="divide-y divide-gray-100 bg-white/50"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="aba-recebimentos" class="conteudo-aba tela-oculta no-print">
-                    <h2 class="text-xl md:text-2xl font-black text-[#1b3b24] mb-4 md:mb-6 drop-shadow-sm">✅ Histórico de Recebimentos</h2>
-                    <div class="card-gaucho rounded-2xl shadow-lg overflow-hidden">
-                        <div class="w-full overflow-x-auto">
-                            <table class="w-full text-left text-xs md:text-sm whitespace-nowrap">
-                                <tbody id="tabelaPagos" class="divide-y divide-gray-100 bg-white/50"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="aba-relatorios" class="conteudo-aba tela-oculta relative">
-                    
-                    <div class="text-center mb-8 pb-6 border-b-2 border-green-800/20 print-only">
-                        <img src="LOGO.jpg" class="logo-blend" alt="Logo CTG Sentinela da Fronteira" style="width: 100px; height: 100px; object-fit: contain; margin: 0 auto 10px auto;" onerror="this.onerror=null; this.style.display='none'">
-                        <h1 style="font-size: 24px; font-weight: 900; color: #1b3b24; text-transform: uppercase;">CTG Sentinela da Fronteira</h1>
-                        <p id="subTituloRelatorio" style="font-size: 12px; color: #166534; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">Extrato Oficial de Movimentação Financeira</p>
-                    </div>
-
-                    <div class="flex flex-col md:flex-row justify-between items-center mb-6 no-print gap-4">
-                        <h2 class="text-xl md:text-2xl font-black text-[#1b3b24] drop-shadow-sm">📊 Relatórios e Caixa</h2>
-                        
-                        <div class="w-full md:w-auto flex flex-col md:flex-row gap-2">
-                            <select id="relTipo" onchange="window.mudarTipoRelatorio()" class="w-full md:w-auto bg-white border-2 border-[#1b3b24] text-[#1b3b24] font-black text-sm md:text-lg rounded-xl p-3 outline-none cursor-pointer shadow-sm hover:bg-green-50 transition">
-                                <option value="financeiro">📊 Relatório Financeiro (Caixa)</option>
-                                <option value="alunos">👥 Lista de Alunos (Por Invernada)</option>
-                            </select>
                             
-                            <button onclick="window.prepararImpressao()" class="bg-[#1b3b24] hover:bg-green-900 transition text-white px-6 py-3 rounded-xl font-bold shadow-lg text-sm flex items-center justify-center gap-2">
-                                <i class="fa-solid fa-print"></i> Imprimir Documento
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div id="filtrosFinanceiro" class="card-gaucho p-4 rounded-2xl shadow-sm border mb-6 no-print flex flex-col md:flex-row gap-3 items-end text-sm">
-                        <div class="flex-1 w-full">
-                            <label class="block font-bold text-green-800 mb-1">De (Vencimento)</label>
-                            <input type="date" id="relDataInicio" class="w-full p-2 border border-green-200 bg-white/80 rounded-lg outline-none focus:border-green-500">
-                        </div>
-                        <div class="flex-1 w-full">
-                            <label class="block font-bold text-green-800 mb-1">Até (Vencimento)</label>
-                            <input type="date" id="relDataFim" class="w-full p-2 border border-green-200 bg-white/80 rounded-lg outline-none focus:border-green-500">
-                        </div>
-                        <div class="flex-1 w-full">
-                            <label class="block font-bold text-green-800 mb-1">Situação</label>
-                            <select id="relStatus" class="w-full p-2 border border-green-200 bg-white/80 rounded-lg outline-none focus:border-green-500 font-bold text-slate-700">
-                                <option value="TODOS">Geral (Todas as Faturas)</option>
-                                <option value="pago">Somente Pagas (Verdes)</option>
-                                <option value="pendente">Somente Pendentes/Atrasadas (Vermelhas)</option>
-                            </select>
-                        </div>
-                        <div class="flex-[2] w-full">
-                            <label class="block font-bold text-green-800 mb-1">Pesquisar Aluno</label>
-                            <input type="text" id="relBusca" class="w-full p-2 border border-green-200 bg-white/80 rounded-lg outline-none focus:border-green-500" placeholder="Ex: João...">
-                        </div>
-                        <button onclick="window.gerarRelatorioFiltrado()" class="bg-green-700 hover:bg-green-800 transition text-white px-6 py-2 rounded-lg font-bold shadow-md h-[40px] w-full md:w-auto">
-                            <i class="fa-solid fa-filter mr-1"></i> Filtrar
-                        </button>
-                    </div>
-
-                    <div id="filtrosAlunos" class="card-gaucho p-4 rounded-2xl shadow-sm border mb-6 no-print flex flex-col md:flex-row gap-3 items-end text-sm hidden">
-                        <div class="flex-1 w-full">
-                            <label class="block font-bold text-green-800 mb-1">Pesquisar Aluno</label>
-                            <input type="text" id="relBuscaAlunoApenas" class="w-full p-3 border border-green-200 bg-white/80 rounded-lg outline-none focus:border-green-500" placeholder="Ex: João...">
-                        </div>
-                        <button onclick="window.gerarRelatorioFiltrado()" class="w-full md:w-auto bg-green-700 hover:bg-green-800 transition text-white px-6 py-3 rounded-lg font-bold shadow-md">
-                            <i class="fa-solid fa-magnifying-glass mr-1"></i> Buscar
-                        </button>
-                    </div>
-                    
-                    <div id="cardsFinanceiros" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 no-print">
-                        <div class="card-gaucho p-4 rounded-xl shadow-sm text-center">
-                            <p class="text-[10px] text-gray-500 font-bold uppercase">Mensalidades</p>
-                            <p class="text-xl font-black text-slate-800" id="relCardQtd">0</p>
-                        </div>
-                        <div class="card-gaucho p-4 rounded-xl shadow-sm text-center border-amber-200">
-                            <p class="text-[10px] text-amber-600 font-bold uppercase">A Receber</p>
-                            <p class="text-xl font-black text-amber-700" id="relCardPendente">R$ 0,00</p>
-                        </div>
-                        <div class="card-gaucho p-4 rounded-xl shadow-sm text-center border-red-200">
-                            <p class="text-[10px] text-red-600 font-bold uppercase">Inadimplentes</p>
-                            <p class="text-xl font-black text-red-600" id="relCardInadimplente">R$ 0,00</p>
-                        </div>
-                        <div class="card-gaucho p-4 rounded-xl shadow-sm text-center border-green-400 border-b-4 col-span-2 md:col-span-1">
-                            <p class="text-[10px] text-green-700 font-bold uppercase">Valor em Caixa</p>
-                            <p class="text-xl font-black text-green-700" id="relCardPago">R$ 0,00</p>
-                        </div>
-                    </div>
-
-                    <div class="card-gaucho rounded-2xl shadow-lg w-full mb-8 border-none no-shadow-print">
-                        <div class="w-full pb-4">
-                            <table class="w-full text-left">
-                                <thead id="theadRelatorio"></thead>
-                                <tbody id="tabelaRelatorio" class="divide-y divide-gray-200 bg-white/50">
-                                    <tr><td colspan="5" class="p-8 text-center text-gray-400 font-bold">A carregar dados...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    <div class="print-only w-full page-break-inside-avoid">
-                        <div class="print-flex" style="display: flex; justify-content: space-around; align-items: flex-end; width: 100%; margin-top: 50px; margin-bottom: 40px;">
-                            <div style="text-align: center; width: 250px;">
-                                <div style="border-top: 2px solid #1b3b24; padding-top: 8px;">
-                                    <p style="font-weight: bold; font-size: 14px; color: #1b3b24; text-transform: uppercase;">Tesoureiro(a)</p>
-                                    <p style="font-size: 10px; color: #4b5563; font-weight: bold; text-transform: uppercase;">Conferência Financeira</p>
+                            <div id="defesa-area-fila" class="mt-4 pt-4 border-t border-slate-200 bg-amber-50 p-4 rounded-xl hidden">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-xs md:text-sm font-black text-amber-900 uppercase"><i class="fa-solid fa-list-ol mr-1"></i> Fila de Envios para Motoristas</span>
+                                    <span id="defesa-qtd-fila" class="bg-amber-600 text-white px-3 py-1 rounded-lg text-xs font-black shadow-sm">0 Pendentes</span>
                                 </div>
-                            </div>
-                            <div style="text-align: center; width: 250px;">
-                                <div style="border-top: 2px solid #1b3b24; padding-top: 8px;">
-                                    <p style="font-weight: bold; font-size: 14px; color: #1b3b24; text-transform: uppercase;">Patrão / Patroa</p>
-                                    <p style="font-size: 10px; color: #4b5563; font-weight: bold; text-transform: uppercase;">CTG Sentinela da Fronteira</p>
-                                </div>
+                                <p id="defesa-status-fila" class="text-xs md:text-sm font-bold text-amber-700 bg-white p-2 rounded border border-amber-100">Ocioso</p>
                             </div>
                         </div>
-                        
-                        <div style="text-align: center; width: 100%; margin-top: 40px;">
-                            <span style="font-size: 12px; font-weight: 900; color: #1e293b; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 4px;">© AUTOMATIZA TECH</span>
-                            <span style="font-size: 8px; font-weight: bold; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 8px;">Desenvolvimento de Software para Patronagem</span>
-                            <img src="LOGO.jpg" class="logo-blend" style="width: 100px; margin: 0 auto; opacity: 0.85;" alt="Automatiza Tech" onerror="this.onerror=null; this.style.display='none'">
-                        </div>
-                    </div>
 
-                </div>
-
-                <div id="aba-config" class="conteudo-aba tela-oculta no-print">
-                    <h2 class="text-xl md:text-2xl font-black text-[#1b3b24] mb-6 drop-shadow-sm">⚙️ Configurações e Sistema</h2>
-                    
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        
-                        <div class="card-gaucho p-6 rounded-3xl shadow-lg border-l-8 border-l-blue-600 lg:col-span-2 relative">
-                            <h3 class="font-black text-lg md:text-xl text-blue-900 mb-2"><i class="fa-solid fa-user-shield mr-2"></i>Controle de Acessos (Login Google)</h3>
-                            <p class="text-xs text-slate-600 mb-4 font-medium">Permita que sua equipe acesse o sistema com suas próprias contas Google, com permissões restritas baseadas na hierarquia do CTG.</p>
+                        <div class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-blue-200 lg:col-span-2">
+                            <h3 class="font-black text-lg md:text-xl text-blue-900 mb-2">
+                                <i class="fa-solid fa-user-shield mr-2"></i>Controle de Acessos (Google)
+                            </h3>
+                            <p class="text-xs text-slate-600 mb-4 font-medium">Permita que a sua equipe acesse a Defesa Civil com as próprias contas Google.</p>
                             
                             <div class="flex flex-col sm:flex-row gap-3 mb-6 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
                                 <input type="email" id="novoEmailAuth" placeholder="Digite o E-mail do Google (Gmail)..." class="flex-1 p-3 border border-gray-200 rounded-xl outline-none bg-white focus:border-blue-500 shadow-sm text-sm">
-                                <select id="novoNivelAuth" class="p-3 border border-gray-200 rounded-xl outline-none bg-white text-sm font-bold text-slate-700 shadow-sm">
-                                    <option value="colaborador">Colaborador (Apenas vê Alunos)</option>
-                                    <option value="tesoureiro">Tesoureiro (Alunos e Financeiro)</option>
-                                    <option value="patrao">Patrão (Acesso Total a tudo)</option>
-                                </select>
-                                <button onclick="window.adicionarUsuarioAuth()" class="bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-md hover:bg-blue-800 transition">Conceder Acesso</button>
+                                <button onclick="window.adicionarUsuarioAuth()" class="bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-md hover:bg-blue-800 transition">
+                                    Conceder Acesso
+                                </button>
                             </div>
 
                             <div class="w-full overflow-x-auto border border-gray-200 rounded-xl">
                                 <table class="w-full text-left text-sm whitespace-nowrap">
                                     <thead class="bg-gray-100 text-gray-700 font-bold">
-                                        <tr><th class="p-3">E-mail Autorizado</th><th class="p-3">Nível de Hierarquia</th><th class="p-3 text-center">Ações</th></tr>
+                                        <tr>
+                                            <th class="p-3">E-mail Autorizado</th>
+                                            <th class="p-3 text-center">Nível</th>
+                                            <th class="p-3 text-center">Ações</th>
+                                        </tr>
                                     </thead>
                                     <tbody id="tabelaUsuariosAuth" class="divide-y divide-gray-100 bg-white">
-                                        <tr><td colspan="3" class="p-4 text-center text-gray-500">Carregando acessos...</td></tr>
+                                        <tr>
+                                            <td colspan="3" class="p-4 text-center text-gray-500">Carregando acessos...</td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
                         </div>
 
-                        <div class="card-gaucho p-6 rounded-3xl shadow-lg relative">
-                            <h3 class="font-black text-lg md:text-xl text-green-900 mb-2">💰 Valor Base da Mensalidade</h3>
-                            <p class="text-xs text-slate-600 mb-6 font-medium">Ao alterar este valor, todas as novas mensalidades geradas utilizarão este preço automaticamente.</p>
-                            <div class="flex flex-col gap-4">
-                                <div class="w-full relative">
-                                    <span class="absolute left-4 top-4 text-green-800 font-black">R$</span>
-                                    <input type="number" step="0.01" id="cfgValBase" class="w-full p-4 pl-12 border-2 border-green-300 rounded-xl font-black text-green-800 text-xl outline-none focus:border-green-600 bg-white/80 shadow-inner">
-                                </div>
-                                <button onclick="window.salvarConfigMensalidade()" class="w-full bg-green-700 hover:bg-green-800 transition text-white font-black py-4 px-8 rounded-xl shadow-lg">
-                                    💾 Salvar Novo Valor
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="card-gaucho p-6 rounded-3xl shadow-lg flex flex-col justify-between border border-blue-200 bg-blue-50/30">
-                            <div>
-                                <h3 class="font-bold text-blue-900 mb-2"><i class="fa-solid fa-database mr-2"></i>Segurança de Dados</h3>
-                                <p class="text-xs text-blue-700 mb-4">Faça cópias de segurança da sua base de dados regularmente para evitar perdas.</p>
-                            </div>
+                        <div class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <h3 class="font-bold text-slate-700 mb-4">📲 Contatos da Logística Oficial</h3>
                             <div class="space-y-4">
-                                <button onclick="window.exportarBase()" class="w-full bg-blue-600 hover:bg-blue-700 transition text-white font-bold py-3 rounded-xl shadow text-sm">
-                                    <i class="fa-solid fa-download mr-2"></i>Exportar Base de Dados (JSON)
-                                </button>
-                                <div class="border-t border-blue-200 pt-4">
-                                    <label class="block text-[10px] font-bold text-blue-800 mb-1 uppercase">Restaurar Backup</label>
-                                    <div class="flex gap-2">
-                                        <input type="file" id="fileImport" accept=".json" class="flex-1 text-xs file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 bg-white border border-blue-200 rounded-xl">
-                                        <button onclick="window.importarBase()" class="bg-amber-500 hover:bg-amber-600 transition text-white font-bold px-4 rounded-xl shadow text-xs">
-                                            <i class="fa-solid fa-upload"></i>
-                                        </button>
-                                    </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">WhatsApp Caminhão Pipa (Água)</label>
+                                    <input type="text" id="cfgTelPipa" placeholder="Ex: 46999999999" class="w-full p-3 border rounded-xl outline-none focus:border-amber-500 bg-blue-50 text-blue-800 font-bold">
                                 </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">WhatsApp Assistência Social (Telhas)</label>
+                                    <input type="text" id="cfgTelSocial" placeholder="Ex: 46999999999" class="w-full p-3 border rounded-xl outline-none focus:border-amber-500 bg-orange-50 text-orange-800 font-bold">
+                                </div>
+                                <button onclick="window.salvarContatosLogistica()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl transition">
+                                    Salvar Contatos e Sincronizar Robô
+                                </button>
                             </div>
                         </div>
+
+                        <div class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <h3 class="font-bold text-slate-700 mb-4">🔐 Alterar Senha do Administrador</h3>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nova Senha de Acesso Local</label>
+                            <input type="password" id="cfgSenhaAdmin" placeholder="Digite a nova senha..." class="w-full p-3 border rounded-xl outline-none focus:border-amber-500 mb-4 text-slate-700 font-bold">
+                            <button onclick="window.salvarSenhaAdmin()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl transition">
+                                Salvar Nova Senha
+                            </button>
+                        </div>
+
                     </div>
                 </div>
 
-            </div> 
-
-            <div class="no-print mt-auto w-full text-center pb-8 pt-4 opacity-80 hover:opacity-100 transition">
-                <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Sistema Licenciado para CTG Sentinela da Fronteira</p>
-                <p class="text-[10px] font-black text-slate-800 mt-1">© 2026 AUTOMATIZA TECH - TODOS OS DIREITOS RESERVADOS</p>
             </div>
-
         </main>
 
-        <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t border-green-100 flex justify-around items-center z-50 pb-2 pt-2 shadow-[0_-4px_15px_rgba(0,0,0,0.05)] px-1 gap-1 no-print">
-            <button id="nav-mob-alunos" onclick="window.mudarAba('aba-alunos', this)" class="w-full min-w-[60px] p-2 flex flex-col items-center text-green-800 bg-green-50 border border-green-200 rounded-xl transition-all">
-                <i class="fa-solid fa-users text-lg mb-1"></i><span class="text-[9px] font-bold">Alunos</span>
+        <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white border-t flex justify-around items-center z-50 pb-2 pt-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+            <button onclick="window.mudarAba('aba-dashboard', this)" class="w-full p-2 flex flex-col items-center text-amber-600 bg-amber-50 border border-amber-200 rounded-xl transition-all min-w-[60px]">
+                <i class="fa-solid fa-chart-line text-lg mb-1"></i><span class="text-[9px] font-bold">Painel</span>
             </button>
-            <button id="nav-mob-mensalidades" onclick="window.mudarAba('aba-mensalidades', this)" class="w-full min-w-[60px] p-2 flex flex-col items-center text-gray-500 bg-transparent rounded-xl transition-all hover:text-green-700">
-                <i class="fa-solid fa-file-invoice-dollar text-lg mb-1"></i><span class="text-[9px] font-bold">Gerar</span>
-            </button>
-            <button id="nav-mob-abertas" onclick="window.mudarAba('aba-abertas', this)" class="w-full min-w-[60px] p-2 flex flex-col items-center text-gray-500 bg-transparent rounded-xl transition-all hover:text-amber-600">
-                <i class="fa-solid fa-hourglass-half text-lg mb-1"></i><span class="text-[9px] font-bold">Robô</span>
-            </button>
-            <button id="nav-mob-relatorios" onclick="window.mudarAba('aba-relatorios', this)" class="w-full min-w-[60px] p-2 flex flex-col items-center text-gray-500 bg-transparent rounded-xl transition-all hover:text-blue-600">
-                <i class="fa-solid fa-chart-pie text-lg mb-1"></i><span class="text-[9px] font-bold">Relatório</span>
-            </button>
-            <button id="nav-mob-config" onclick="window.mudarAba('aba-config', this)" class="w-full min-w-[60px] p-2 flex flex-col items-center text-gray-500 bg-transparent rounded-xl transition-all hover:text-green-700">
+            <button id="nav-mob-config" onclick="window.mudarAba('aba-config', this)" class="w-full p-2 flex flex-col items-center text-gray-400 bg-transparent border border-transparent rounded-xl transition-all min-w-[60px]">
                 <i class="fa-solid fa-gear text-lg mb-1"></i><span class="text-[9px] font-bold">Ajustes</span>
             </button>
         </nav>
     </div>
 
-    <div id="modalAluno" class="modal-fundo no-print">
-        <div class="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl w-[95%] md:w-full max-w-sm mx-auto overflow-hidden border border-green-200">
-            <div class="cor-mate p-4 flex justify-between items-center text-white border-b-2 border-red-600">
-                <h3 class="font-bold tracking-wide">Ficha do Aluno</h3>
-                <button onclick="window.fecharModalAluno()" class="text-2xl hover:text-red-300 transition">&times;</button>
-            </div>
-            <form id="formAluno" class="p-5 space-y-4" onsubmit="window.submitAluno(event)">
-                <input type="hidden" id="modId">
-                <input type="text" id="modNome" required placeholder="Nome do Aluno(a)" class="w-full p-3 bg-gray-50 rounded-xl outline-none border border-gray-200 focus:border-green-600 focus:bg-white transition">
-                <select id="modTurma" required class="w-full p-3 bg-gray-50 rounded-xl outline-none border border-gray-200 focus:border-green-600 font-bold text-slate-700 focus:bg-white transition">
-                    <option value="" disabled selected>Selecionar Invernada...</option>
-                    <option value="Dente de Leite">Dente de Leite</option>
-                    <option value="Pré-Mirim">Pré-Mirim</option>
-                    <option value="Mirim">Mirim</option>
-                    <option value="Adulto">Adulto</option>
-                </select>
-                <input type="text" id="modResponsavel" placeholder="Nome do Responsável (se menor)" class="w-full p-3 bg-gray-50 rounded-xl outline-none border border-gray-200 focus:border-green-600 focus:bg-white transition">
-                <input type="tel" id="modCpf" required placeholder="CPF (Apenas números)" class="w-full p-3 bg-gray-50 rounded-xl outline-none border border-gray-200 focus:border-green-600 focus:bg-white transition">
-                <input type="tel" id="modTel" required placeholder="WhatsApp (DDD + Número)" class="w-full p-3 bg-gray-50 rounded-xl outline-none border border-gray-200 focus:border-green-600 focus:bg-white transition">
-                <div class="flex gap-2 pt-2">
-                    <button type="button" onclick="window.fecharModalAluno()" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-300 shadow-sm">Cancelar</button>
-                    <button type="submit" class="flex-1 bg-green-700 hover:bg-green-800 text-white py-3 rounded-xl font-bold shadow-md">Salvar Ficha</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, query, onSnapshot, setDoc, getDoc, addDoc, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
-        // Configuração Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyAcPf7fMPS8m4AdnN7wMa9lvOXimb40EcA",
-            authDomain: "ctg-sentinela-gestao.firebaseapp.com",
-            projectId: "ctg-sentinela-gestao",
-            storageBucket: "ctg-sentinela-gestao.firebasestorage.app",
-            messagingSenderId: "665363771909",
-            appId: "1:665363771909:web:bd53292c634b39cb23a26c",
-            measurementId: "G-TY33WDD12Y"
+        // CONFIGURAÇÃO OFICIAL (Igual da Água São Luiz, pois dividem a mesma base)
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCGXtcoSinCR6Kn7nDNf4ITWCelYW1PKBQ", 
+            authDomain: "sistema-agua-sao-luiz.firebaseapp.com", 
+            projectId: "sistema-agua-sao-luiz", 
+            storageBucket: "sistema-agua-sao-luiz.appspot.com" 
         };
-        
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
 
-        // Variáveis de Controle Global
-        window.alunosGlobal = {}; 
-        window.configGlobais = { valorBase: 30.00 }; 
+        let unsubDoacoes = null;
+        let unsubRoboStatus = null;
         window.nivelAcessoGlobal = null; 
         window.emailLogado = null;
-        let unsubAbertas = null; 
-        let unsubPagos = null;
-        let todasFaturasCache = []; 
-        window.alunosAvulsosLista = []; // Lista para as Taxas Avulsas
 
-        window.mostrarLoading = (msg) => { document.getElementById("loadingMsg").innerText = msg; document.getElementById("loading").style.display = "flex"; };
-        window.esconderLoading = () => { document.getElementById("loading").style.display = "none"; };
-        window.fecharModalAluno = () => { document.getElementById("modalAluno").style.display = "none"; };
-        window.gerarReciboPDF = () => { return ""; };
+        window.mostrarLoading = (msg) => { 
+            document.getElementById("loadingMsg").innerText = msg; 
+            document.getElementById("loading").style.display = "flex"; 
+        };
+        
+        window.esconderLoading = () => { 
+            document.getElementById("loading").style.display = "none"; 
+        };
 
         // ==============================================================================
-        // SISTEMA DE LOGIN GOOGLE E HIERARQUIA (RBAC)
+        // INTEGRAÇÃO ROBÔ WHATSAPP DEFESA CIVIL
+        // ==============================================================================
+        window.iniciarListenerRobo = () => {
+            if (unsubRoboStatus) unsubRoboStatus();
+            
+            unsubRoboStatus = onSnapshot(doc(db, "config", "status_bot_defesa"), (snap) => {
+                const bStatus = document.getElementById("defesa-bolinha-status");
+                const tStatus = document.getElementById("defesa-texto-status");
+                const areaQr = document.getElementById("defesa-area-qr");
+                const imgQr = document.getElementById("defesa-qrcode-img");
+                const areaBtn = document.getElementById("defesa-area-botoes");
+                const areaFila = document.getElementById("defesa-area-fila");
+                const qFila = document.getElementById("defesa-qtd-fila");
+                const tFila = document.getElementById("defesa-status-fila");
+                
+                if (snap.exists()) {
+                    const data = snap.data();
+                    
+                    if (data.fila_tamanho !== undefined) {
+                        areaFila.classList.remove('hidden');
+                        qFila.innerText = `${data.fila_tamanho} Pendentes`;
+                        tFila.innerText = data.status_fila || "Ocioso";
+                        
+                        if (data.status_fila && data.status_fila.includes("Anti-Ban")) {
+                            tFila.className = "text-xs md:text-sm font-bold text-amber-600 bg-amber-50 p-2 rounded border border-amber-200 animate-pulse";
+                        } else {
+                            tFila.className = "text-xs md:text-sm font-bold text-amber-700 bg-white p-2 rounded border border-amber-100";
+                        }
+                    } else {
+                        areaFila.classList.add('hidden');
+                    }
+
+                    if (data.status === 'online') {
+                        bStatus.className = "status-defesa status-online";
+                        tStatus.innerText = "Conectado e Operante!";
+                        areaQr.classList.add('hidden');
+                        areaBtn.innerHTML = `<button onclick="window.desconectarRoboDefesa()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition">Desconectar Robô</button>`;
+                    } 
+                    else if (data.qrCode && data.qrCode !== "") {
+                        bStatus.className = "status-defesa status-aguardando";
+                        tStatus.innerText = "Aguardando leitura do QR Code...";
+                        areaQr.classList.remove('hidden');
+                        
+                        QRCode.toDataURL(data.qrCode, { width: 250, margin: 2 }, function (err, url) { 
+                            if (!err) imgQr.src = url; 
+                        });
+                        
+                        areaBtn.innerHTML = `<button onclick="window.conectarRoboDefesa()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition"><i class="fa-solid fa-rotate"></i> Gerar Novo QR Code</button>`;
+                    } 
+                    else if (data.status === 'iniciando' || data.comando === 'conectar') {
+                        bStatus.className = "status-defesa status-aguardando";
+                        tStatus.innerText = "Iniciando Motor na Oracle...";
+                        areaQr.classList.add('hidden');
+                        areaBtn.innerHTML = `<button class="bg-slate-100 text-slate-400 px-4 py-2 rounded-xl text-xs font-bold border border-slate-200" disabled>Aguarde...</button>`;
+                    } 
+                    else {
+                        bStatus.className = "status-defesa status-offline";
+                        tStatus.innerText = "Motor Desligado";
+                        areaQr.classList.add('hidden');
+                        areaBtn.innerHTML = `<button onclick="window.conectarRoboDefesa()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm">Ligar Robô Defesa</button>`;
+                    }
+                } else {
+                    areaBtn.innerHTML = `<button onclick="window.conectarRoboDefesa()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm">Ligar Robô Defesa</button>`;
+                }
+            });
+        };
+
+        window.conectarRoboDefesa = async () => {
+            await setDoc(doc(db, "config", "status_bot_defesa"), { comando: "conectar" }, { merge: true });
+        };
+
+        window.desconectarRoboDefesa = async () => {
+            if(confirm("🛑 Deseja desligar o robô de envio de mensagens para os motoristas?")) {
+                await setDoc(doc(db, "config", "status_bot_defesa"), { comando: "desconectar" }, { merge: true });
+            }
+        };
+
+        // ==============================================================================
+        // AUTENTICAÇÃO E GOOGLE AUTH
         // ==============================================================================
         
         window.loginGoogle = async () => {
@@ -680,13 +416,14 @@
                 await window.verificarPermissoes(result.user);
             } catch (error) {
                 window.esconderLoading();
-                document.getElementById("erroLogin").innerText = "❌ Ocorreu um erro ao fazer login. Tente novamente.";
+                document.getElementById("erroLogin").innerText = "❌ Ocorreu um erro ao fazer login. O Firebase rejeitou a conexão.";
                 document.getElementById("erroLogin").classList.remove('hidden');
             }
         };
 
         window.verificarPermissoes = async (user) => {
-            const colRef = collection(db, "usuarios_autorizados");
+            // Usamos uma tabela diferente da Água para não misturar os administradores
+            const colRef = collection(db, "usuarios_defesa_civil");
             const q = query(colRef, where("email", "==", user.email));
             const snap = await getDocs(q);
 
@@ -694,17 +431,15 @@
                 const dados = snap.docs[0].data();
                 window.iniciarSessao(user.email, dados.nivel);
             } else {
-                // VERIFICA SE É O PRIMEIRO LOGIN DO SISTEMA (BOOTSTRAP)
                 const allUsers = await getDocs(colRef);
                 if(allUsers.empty) {
-                    await addDoc(colRef, { email: user.email, nivel: 'patrao', nome: user.displayName });
-                    alert("Bem-vindo! Você foi registrado como o PATRÃO oficial deste sistema.");
-                    window.iniciarSessao(user.email, 'patrao');
+                    await addDoc(colRef, { email: user.email, nivel: 'admin', nome: user.displayName });
+                    alert("Bem-vindo! O seu email foi registado como o ADMINISTRADOR oficial da Defesa Civil.");
+                    window.iniciarSessao(user.email, 'admin');
                 } else {
-                    // Se não for o primeiro e não estiver na lista, barra.
                     window.esconderLoading();
                     await signOut(auth);
-                    document.getElementById("erroLogin").innerText = "❌ Acesso Negado! Solicite ao Patrão para liberar seu E-mail.";
+                    document.getElementById("erroLogin").innerText = "❌ Acesso Negado! O seu E-mail não está autorizado no sistema da Defesa Civil.";
                     document.getElementById("erroLogin").classList.remove('hidden');
                 }
             }
@@ -715,58 +450,54 @@
             window.emailLogado = email;
             
             document.getElementById("lblUsuarioAtivo").innerText = `${nivel.toUpperCase()} | ${email}`;
-            document.getElementById("loginAdmin").style.display = "none"; 
+            document.getElementById("loginAdmin").style.display = "none";
             document.getElementById("painelAdmin").classList.remove('tela-oculta');
             
-            window.aplicarRegrasAcesso();
-            
-            await window.carregarValoresConfig(); 
-            window.carregarAlunos();
-            
-            if(nivel === 'patrao') window.carregarUsuariosAuth();
+            // Restrições de Acesso
+            if(nivel !== 'admin') {
+                document.getElementById("nav-config").style.display = 'none';
+                document.getElementById("nav-mob-config").style.display = 'none';
+            } else {
+                window.carregarUsuariosAuth();
+            }
+
+            await window.carregarContatosForm();
+            window.iniciarListenerDoacoes();
+            window.iniciarListenerRobo();
             
             window.esconderLoading();
         };
 
-        window.aplicarRegrasAcesso = () => {
-            const nv = window.nivelAcessoGlobal;
-            
-            const m_mensal = document.getElementById("nav-mensalidades");
-            const m_avulso = document.getElementById("nav-avulso");
-            const m_abertas = document.getElementById("nav-abertas");
-            const m_receb = document.getElementById("nav-recebimentos");
-            const m_relatorio = document.getElementById("nav-relatorios");
-            const m_config = document.getElementById("nav-config");
+        window.entrarAdmin = async (e) => {
+            e.preventDefault();
+            const s = document.getElementById("senhaAdmin").value;
+            window.mostrarLoading("A verificar...");
+            try {
+                const snap = await getDoc(doc(db, "configuracoes_capanema", "admin"));
+                let sc = snap.exists() ? snap.data().senha : "defesa123";
+                
+                if(!snap.exists()) {
+                    await setDoc(doc(db, "configuracoes_capanema", "admin"), { senha: sc });
+                }
 
-            const mob_mensal = document.getElementById("nav-mob-mensalidades");
-            const mob_abertas = document.getElementById("nav-mob-abertas");
-            const mob_relatorio = document.getElementById("nav-mob-relatorios");
-            const mob_config = document.getElementById("nav-mob-config");
-
-            const btnCadAluno = document.getElementById("btnCadastrarAluno");
-
-            if(nv === 'colaborador') {
-                m_mensal.style.display = 'none'; mob_mensal.style.display = 'none';
-                m_avulso.style.display = 'none'; 
-                m_abertas.style.display = 'none'; mob_abertas.style.display = 'none';
-                m_receb.style.display = 'none'; 
-                m_relatorio.style.display = 'none'; mob_relatorio.style.display = 'none';
-                m_config.style.display = 'none'; mob_config.style.display = 'none';
-                btnCadAluno.style.display = 'none';
-            } 
-            else if(nv === 'tesoureiro') {
-                m_config.style.display = 'none'; mob_config.style.display = 'none';
-            }
+                if(s === sc) {
+                    localStorage.setItem("admin_defesa_logado", "sim");
+                    window.iniciarSessao("Acesso Local (Senha)", "admin");
+                } else {
+                    document.getElementById("erroLogin").innerText = "❌ Senha Incorreta!";
+                    document.getElementById("erroLogin").classList.remove('hidden');
+                    window.esconderLoading();
+                }
+            } catch(err) { window.esconderLoading(); }
         };
 
-        window.sairAdmin = async () => { 
+        window.sairAdmin = async () => {
             window.mostrarLoading("Desconectando...");
             await signOut(auth); 
-            localStorage.removeItem("admin_ctg_logado");
-            location.reload(); 
+            localStorage.removeItem("admin_defesa_logado");
+            location.reload();
         };
 
-        // Persistência de Login Google
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 window.mostrarLoading("A restaurar sessão segura...");
@@ -774,48 +505,25 @@
             }
         });
 
-        // Backup - Login Senha Mestra (Caso dê erro no Firebase)
-        window.entrarAdmin = async (e) => {
-            e.preventDefault();
-            const s = document.getElementById("senhaAdmin").value;
-            if(s === "admin123") {
-                localStorage.setItem("admin_ctg_logado", "sim");
-                window.iniciarSessao("Acesso Local (Admin)", "patrao");
-            } else { 
-                document.getElementById("erroLogin").innerText = "❌ Senha Incorreta!";
-                document.getElementById("erroLogin").classList.remove('hidden'); 
-            }
-        };
-
-        // Verifica se já tinha logado pela senha
         window.onload = async () => {
-            const d = new Date();
-            document.getElementById("relDataInicio").value = "";
-            document.getElementById("relDataFim").value = "";
-            document.getElementById("dataVencimento").value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-10`;
-            
-            if(localStorage.getItem("admin_ctg_logado") === "sim") {
-                window.iniciarSessao("Acesso Local (Admin)", "patrao");
+            if(localStorage.getItem("admin_defesa_logado") === "sim") {
+                window.iniciarSessao("Acesso Local (Senha)", "admin");
             }
-            
-            document.getElementById("avulsoTipo").addEventListener('change', function() {
-                document.getElementById("divVencimentoAvulso").style.display = this.value === 'somar_proxima' ? 'none' : 'block';
-            });
         };
 
         // ==============================================================================
-        // GERENCIAMENTO DE ACESSOS (SÓ PATRÃO VÊ)
+        // GESTÃO DE ACESSOS (CONFIGURAÇÕES)
         // ==============================================================================
         
         window.carregarUsuariosAuth = async () => {
-            const snap = await getDocs(collection(db, "usuarios_autorizados"));
+            const snap = await getDocs(collection(db, "usuarios_defesa_civil"));
             let html = "";
             snap.forEach(doc => {
                 const d = doc.data();
                 html += `
                     <tr class="hover:bg-gray-50 transition">
                         <td class="p-3 font-medium text-gray-800">${d.email}</td>
-                        <td class="p-3 font-black uppercase text-[10px] text-blue-700">${d.nivel}</td>
+                        <td class="p-3 text-center font-black uppercase text-[10px] text-blue-700">${d.nivel}</td>
                         <td class="p-3 text-center">
                             <button onclick="window.removerUsuarioAuth('${doc.id}')" class="text-red-500 bg-red-50 hover:bg-red-500 hover:text-white transition px-3 py-1.5 rounded-lg shadow-sm">
                                 🗑️ Remover
@@ -824,554 +532,213 @@
                     </tr>
                 `;
             });
-            document.getElementById("tabelaUsuariosAuth").innerHTML = html || '<tr><td colspan="3" class="p-4 text-center">Nenhum acesso extra configurado.</td></tr>';
+            document.getElementById("tabelaUsuariosAuth").innerHTML = html || '<tr><td colspan="3" class="p-4 text-center">Nenhum acesso configurado.</td></tr>';
         };
 
         window.adicionarUsuarioAuth = async () => {
             const email = document.getElementById("novoEmailAuth").value.trim().toLowerCase();
-            const nivel = document.getElementById("novoNivelAuth").value;
+            const nivel = "operador"; // Na Defesa Civil, quem é adicionado é operador, admin é só o dono.
             if(!email) return alert("Digite um email válido do Google.");
 
             window.mostrarLoading("Concedendo acesso...");
-            await addDoc(collection(db, "usuarios_autorizados"), { email, nivel });
+            await addDoc(collection(db, "usuarios_defesa_civil"), { email, nivel });
             document.getElementById("novoEmailAuth").value = "";
             window.carregarUsuariosAuth();
             window.esconderLoading();
-            alert(`Acesso de ${nivel.toUpperCase()} concedido para ${email}!`);
+            alert(`Acesso concedido para ${email}!`);
         };
 
         window.removerUsuarioAuth = async (id) => {
-            if(confirm("ATENÇÃO: Este e-mail perderá acesso IMEDIATO ao sistema. Deseja remover?")) {
+            if(confirm("ATENÇÃO: Este e-mail perderá acesso IMEDIATO ao sistema da Defesa Civil. Deseja remover?")) {
                 window.mostrarLoading("Revogando acesso...");
-                await deleteDoc(doc(db, "usuarios_autorizados", id));
+                await deleteDoc(doc(db, "usuarios_defesa_civil", id));
                 window.carregarUsuariosAuth();
                 window.esconderLoading();
             }
         };
 
-        // ==============================================================================
-        // LÓGICA DAS TAXAS AVULSAS (NOVO SISTEMA INTELIGENTE)
-        // ==============================================================================
-
-        window.carregarSelectAvulso = () => {
-            // Preenche a lista do autocomplete invisível
-            const datalist = document.getElementById("listaNomesAvulso");
-            let html = "";
-            const alunos = Object.entries(window.alunosGlobal).map(([id, a]) => ({id, ...a})).sort((a,b) => (a.nome || "").localeCompare(b.nome || ""));
-            alunos.forEach(a => { 
-                html += `<option value="${a.nome}">`; 
-            });
-            datalist.innerHTML = html;
-            
-            window.alunosAvulsosLista = [];
-            window.renderizarListaAvulso();
-            document.getElementById("avulsoModoDestino").value = "manual";
-            window.mudarModoAvulso();
-        };
-
-        window.mudarModoAvulso = () => {
-            const modo = document.getElementById("avulsoModoDestino").value;
-            document.getElementById("blocoAvulsoInvernada").style.display = modo === 'invernada' ? 'block' : 'none';
-            document.getElementById("blocoAvulsoManual").style.display = modo === 'manual' ? 'block' : 'none';
-        };
-
-        window.verificarEnterAvulso = () => {
-            const input = document.getElementById("avulsoBuscaNome");
-            const nomeDigitado = input.value.trim();
-            if(!nomeDigitado) return;
-
-            const alunoEncontrado = Object.entries(window.alunosGlobal).find(([id, a]) => a.nome.toLowerCase() === nomeDigitado.toLowerCase());
-            
-            if(alunoEncontrado) {
-                const id = alunoEncontrado[0];
-                const dados = alunoEncontrado[1];
-                
-                if(!window.alunosAvulsosLista.some(a => a.id === id)) {
-                    window.alunosAvulsosLista.push({id, ...dados});
-                    window.renderizarListaAvulso();
-                }
-                input.value = "";
-            } else {
-                alert("Aluno não encontrado! Selecione um nome válido da lista que aparece enquanto digita.");
-            }
-        };
-
-        window.removerAlunoAvulso = (id) => {
-            window.alunosAvulsosLista = window.alunosAvulsosLista.filter(a => a.id !== id);
-            window.renderizarListaAvulso();
-        };
-
-        window.renderizarListaAvulso = () => {
-            const container = document.getElementById("listaAlunosSelecionados");
-            let html = "";
-            window.alunosAvulsosLista.forEach(a => {
-                html += `
-                    <span class="bg-green-100 text-green-800 text-xs font-bold px-3 py-1.5 rounded-full flex items-center shadow-sm border border-green-200">
-                        ${a.nome}
-                        <button type="button" onclick="window.removerAlunoAvulso('${a.id}')" class="ml-2 text-red-500 hover:text-red-700 font-black focus:outline-none">X</button>
-                    </span>
-                `;
-            });
-            container.innerHTML = html;
-        };
-
-        window.submitAvulso = async (e) => {
-            e.preventDefault();
-            
-            const tipo = document.getElementById("avulsoTipo").value;
-            const modo = document.getElementById("avulsoModoDestino").value;
-            const desc = document.getElementById("avulsoDescricao").value;
-            const valor = parseFloat(document.getElementById("avulsoValor").value);
-            
-            if(isNaN(valor) || valor <= 0) return alert("Por favor, introduza um valor monetário válido.");
-
-            // Descobre quem vai receber a cobrança
-            let alvos = [];
-            if(modo === 'todos') {
-                alvos = Object.entries(window.alunosGlobal).map(([id, a]) => ({id, ...a}));
-            } else if(modo === 'invernada') {
-                const inv = document.getElementById("avulsoInvernada").value;
-                alvos = Object.entries(window.alunosGlobal).map(([id, a]) => ({id, ...a})).filter(a => a.turma === inv);
-            } else {
-                alvos = [...window.alunosAvulsosLista];
-            }
-
-            if(alvos.length === 0) return alert("Nenhum aluno selecionado ou encontrado na invernada para receber o lançamento.");
-
-            window.mostrarLoading(`A processar lançamento para ${alvos.length} aluno(s)...`);
-            
-            if(tipo === 'somar_proxima') {
-                for(let a of alvos) { 
-                    await updateDoc(doc(db, "alunos", a.id), { taxa_pendente_valor: valor, taxa_pendente_desc: desc }); 
-                }
-                window.esconderLoading(); 
-                alert(`✅ Sucesso! O Lançamento foi agendado para ${alvos.length} aluno(s) na próxima vez que gerar mensalidades.`);
-                
-            } else {
-                const vencimento = document.getElementById("avulsoVencimento").value;
-                if(!vencimento) { 
-                    window.esconderLoading(); 
-                    return alert("Data de Vencimento é obrigatória para gerar o PIX Imediato."); 
-                }
-                
-                for(let a of alvos) {
-                    let pixData = { sucesso: false, copiaECola: "", qrCodeBase64: "" };
-                    try {
-                        const pixReq = fetch("/api/gerar-pix", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({valor, descricao: desc, nome: a.nome}) });
-                        const res = await Promise.race([pixReq, new Promise((_, r) => setTimeout(() => r(new Error("Timeout")), 10000))]);
-                        if(res.ok) pixData = await res.json();
-                    } catch(err) {}
-
-                    try {
-                        const pdfBase64 = window.gerarReciboPDF(a.nome, a.turma, desc, vencimento, valor, pixData.copiaECola, pixData.qrCodeBase64);
-                        await addDoc(collection(db, "faturas"), { 
-                            familia_id: a.id, 
-                            mes_referencia: desc, 
-                            turma: a.turma,
-                            valor_agua: 0, 
-                            valor_multa: 0, 
-                            taxa_extra: valor, 
-                            valor_total: valor, 
-                            pdf_base64: pdfBase64, 
-                            vencimento: vencimento, 
-                            status: "pendente", 
-                            whatsapp_enviado: false, 
-                            data_lancamento: new Date().toISOString(),
-                            pix_copia_cola: pixData.copiaECola || "", 
-                            qr_code_base64: pixData.qrCodeBase64 || "", 
-                            pix_txid: String(pixData.txid || ""), 
-                            telefone: a.telefone || "", 
-                            nome_morador: a.nome, 
-                            cpf: (a.cpf||"").replace(/\D/g, '') 
-                        }); 
-                    } catch(e) {}
-                }
-                window.esconderLoading(); 
-                alert(`✅ Concluído! Faturas avulsas PIX geradas para ${alvos.length} aluno(s).`);
-            }
-            
-            document.getElementById("formAvulso").reset();
-            window.alunosAvulsosLista = [];
-            window.renderizarListaAvulso();
-        };
-
-
-        // ==============================================================================
-        // LÓGICA RESTANTE DE TABELAS E RELATÓRIOS
-        // ==============================================================================
-
-        window.prepararImpressao = () => { window.print(); };
-
-        window.carregarValoresConfig = async () => {
+        window.carregarContatosForm = async () => {
             try {
-                const snap = await getDoc(doc(db, "config", "mensalidade"));
-                if(snap.exists()) window.configGlobais = snap.data(); 
-                else await setDoc(doc(db, "config", "mensalidade"), window.configGlobais); 
-                document.getElementById('cfgValBase').value = window.configGlobais.valorBase;
+                const docSnap = await getDoc(doc(db, "configuracoes_capanema", "whatsapp"));
+                if(docSnap.exists()) {
+                    const d = docSnap.data();
+                    document.getElementById("cfgTelPipa").value = d.telefonePipa || "";
+                    document.getElementById("cfgTelSocial").value = d.telefoneSocial || "";
+                }
             } catch(e) {}
         };
 
-        window.salvarConfigMensalidade = async () => {
-            const v = parseFloat(document.getElementById('cfgValBase').value);
-            if(isNaN(v) || v <= 0) return alert("Valor inválido.");
-            window.configGlobais.valorBase = v;
-            window.mostrarLoading("A guardar novo valor..."); 
-            await setDoc(doc(db, "config", "mensalidade"), window.configGlobais);
-            window.esconderLoading(); 
-            alert("✅ Novo Valor Base da Mensalidade atualizado!");
+        window.salvarContatosLogistica = async () => {
+            const telPipa = document.getElementById("cfgTelPipa").value.replace(/\D/g, '');
+            const telSoc = document.getElementById("cfgTelSocial").value.replace(/\D/g, '');
+            
+            window.mostrarLoading("A guardar...");
+            try {
+                await setDoc(doc(db, "configuracoes_capanema", "whatsapp"), { telefonePipa: telPipa, telefoneSocial: telSoc });
+                window.esconderLoading();
+                alert("✅ Contatos salvos! O Robô usará estes números na próxima rota.");
+            } catch(e) { window.esconderLoading(); }
         };
 
+        window.salvarSenhaAdmin = async () => {
+            const n = document.getElementById("cfgSenhaAdmin").value;
+            if(n.length < 4) return alert("A senha deve ter no mínimo 4 caracteres.");
+            window.mostrarLoading("A atualizar senha...");
+            try {
+                await setDoc(doc(db, "configuracoes_capanema", "admin"), { senha: n });
+                window.esconderLoading();
+                alert("✅ Senha Local da Defesa Civil alterada com sucesso!");
+                document.getElementById("cfgSenhaAdmin").value = "";
+            } catch(e) { window.esconderLoading(); }
+        };
+
+        // ==============================================================================
+        // LÓGICA DE NAVEGAÇÃO DE ABAS
+        // ==============================================================================
         window.mudarAba = (id, el) => {
             document.querySelectorAll('.conteudo-aba').forEach(a => a.classList.add('tela-oculta'));
             document.getElementById(id).classList.remove('tela-oculta');
             
             document.querySelectorAll('.menu-btn').forEach(b => { 
-                b.classList.remove('bg-green-700', 'text-white'); 
-                if(!b.classList.contains('text-amber-400')) b.classList.add('text-green-100/70'); 
+                b.classList.remove('bg-amber-600', 'text-white'); 
+                b.classList.add('text-slate-400'); 
             });
             
             if(el && el.classList.contains('menu-btn')) { 
-                el.classList.add('bg-green-700', 'text-white'); el.classList.remove('text-green-100/70'); 
+                el.classList.add('bg-amber-600', 'text-white'); 
+                el.classList.remove('text-slate-400'); 
             }
-
+            
             if(el && !el.classList.contains('menu-btn')) {
-                document.querySelectorAll('nav.md\\:hidden button').forEach(b => {
-                   b.classList.remove('bg-green-50', 'border-green-200', 'text-amber-600', 'text-blue-600', 'text-green-800'); 
-                   b.classList.add('bg-transparent', 'border-transparent', 'text-gray-500');
+                document.querySelectorAll('nav.md\\:hidden button').forEach(b => { 
+                    b.className = 'w-full p-2 flex flex-col items-center text-gray-400 bg-transparent border border-transparent rounded-xl transition-all min-w-[60px]'; 
                 });
-                
-                el.classList.remove('bg-transparent', 'border-transparent', 'text-gray-500');
-                if(el.querySelector('.fa-hourglass-half')) el.classList.add('text-amber-600', 'bg-amber-50', 'border-amber-200'); 
-                else if(el.querySelector('.fa-chart-pie')) el.classList.add('text-blue-600', 'bg-blue-50', 'border-blue-200'); 
-                else el.classList.add('text-green-800', 'bg-green-50', 'border-green-200'); 
-            }
-
-            if(id === 'aba-mensalidades') window.carregarLoteFaturas();
-            if(id === 'aba-abertas') window.iniciarListenerAbertas();
-            if(id === 'aba-recebimentos') window.iniciarListenerPagos();
-            if(id === 'aba-avulso') window.carregarSelectAvulso();
-            if(id === 'aba-relatorios') window.carregarRelatorio();
-            if(id === 'aba-config' && window.nivelAcessoGlobal === 'patrao') window.carregarUsuariosAuth();
-        };
-
-        window.abrirModalCadastro = () => { 
-            document.getElementById("formAluno").reset(); 
-            document.getElementById("modId").value = ""; 
-            document.getElementById("modalAluno").style.display = "flex"; 
-        };
-        
-        window.abrirModalEdicao = (id, n, t, r, c, w) => { 
-            document.getElementById("modId").value = id; 
-            document.getElementById("modNome").value = n; 
-            document.getElementById("modTurma").value = t; 
-            document.getElementById("modResponsavel").value = r; 
-            document.getElementById("modCpf").value = c; 
-            document.getElementById("modTel").value = w; 
-            document.getElementById("modalAluno").style.display = "flex"; 
-        };
-
-        window.filtrarTabela = (inputId, tabelaId) => {
-            const f = document.getElementById(inputId).value.toLowerCase(); 
-            const l = document.getElementById(tabelaId).getElementsByTagName('tr');
-            for (let i = 0; i < l.length; i++) {
-                if(!l[i].classList.contains('linha-turma')) l[i].style.display = l[i].innerText.toLowerCase().includes(f) ? "" : "none";
+                el.className = 'w-full p-2 flex flex-col items-center text-amber-600 bg-amber-50 border border-amber-200 rounded-xl transition-all min-w-[60px]';
             }
         };
 
-        window.atualizarCacheAlunos = async () => {
-            const snap = await getDocs(collection(db, "alunos"));
-            window.alunosGlobal = {}; 
-            snap.forEach(d => window.alunosGlobal[d.id] = d.data());
-        };
+        // ==============================================================================
+        // SISTEMA LOGÍSTICO DA DEFESA CIVIL (ROTAS)
+        // ==============================================================================
+        window.iniciarListenerDoacoes = () => {
+            if(unsubDoacoes) unsubDoacoes();
+            const tbody = document.getElementById("tabelaEntregasAtivas");
+            tbody.innerHTML = "<tr><td colspan='5' class='p-8 text-center text-amber-600 font-bold'>A procurar atividades logísticas ativas...</td></tr>";
 
-        window.submitAluno = async (e) => {
-            e.preventDefault();
-            const id = document.getElementById("modId").value;
-            const d = { 
-                nome: document.getElementById("modNome").value, 
-                turma: document.getElementById("modTurma").value, 
-                responsavel: document.getElementById("modResponsavel").value, 
-                cpf: document.getElementById("modCpf").value.replace(/\D/g, ''), 
-                telefone: document.getElementById("modTel").value 
-            };
-            
-            window.mostrarLoading("A guardar Ficha do Aluno...");
-            if(id) await updateDoc(doc(db, "alunos", id), d); 
-            else await addDoc(collection(db, "alunos"), {...d, senha: "123456", status_ativo: true, taxa_pendente_valor: 0});
-            
-            window.fecharModalAluno(); window.carregarAlunos(); window.esconderLoading();
-        };
+            unsubDoacoes = onSnapshot(collection(db, "doacoes_capanema"), (snap) => {
+                let todas = [];
+                snap.forEach(d => todas.push({id: d.id, ...d.data()}));
+                todas.sort((a,b) => new Date(b.dataRegistro) - new Date(a.dataRegistro));
 
-        window.excluirAluno = async (id, nome) => { 
-            if(confirm(`Tem a certeza absoluta que deseja remover o aluno ${nome}?`)) { 
-                window.mostrarLoading("A apagar dados do aluno..."); 
-                await deleteDoc(doc(db, "alunos", id)); 
-                window.carregarAlunos(); window.esconderLoading(); 
-            } 
-        };
+                let abertas = 0; let abertasPipa = 0; let abertasTelhas = 0;
+                let html = "";
 
-        window.carregarAlunos = async () => {
-            const tbody = document.getElementById("tabelaAlunos");
-            await window.atualizarCacheAlunos();
-            
-            const alunosArray = Object.entries(window.alunosGlobal).map(([id, a]) => ({id, ...a}));
-            const grupos = { "Dente de Leite": [], "Pré-Mirim": [], "Mirim": [], "Adulto": [], "Outros": [] };
-            
-            alunosArray.forEach(a => { if (grupos[a.turma]) grupos[a.turma].push(a); else grupos["Outros"].push(a); });
-
-            let html = "";
-            const isColab = window.nivelAcessoGlobal === 'colaborador';
-
-            for(let turmaNome in grupos) {
-                if(grupos[turmaNome].length > 0) {
-                    grupos[turmaNome].sort((a,b) => (a.nome || "").localeCompare(b.nome || "", 'pt-BR'));
+                for(let item of todas) {
+                    let pendenteAgua = false; let pendenteTelha = false; let txtRota = [];
                     
-                    html += `
-                        <tr class="linha-turma" style="background-color: #1b3b24 !important; color: #ffffff !important; font-weight: 900; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                            <td colspan="4" class="p-3 pl-4 md:pl-6 text-left" style="color: #ffffff !important; border: none !important;">
-                                <i class="fa-solid fa-users-viewfinder mr-2" style="color: #ffffff !important;"></i> Invernada: ${turmaNome} (${grupos[turmaNome].length})
+                    if (item.qtdAgua > (item.qtdAguaEntregue || 0)) {
+                        pendenteAgua = true;
+                        txtRota.push(`💧 Faltam ${(item.qtdAgua - (item.qtdAguaEntregue || 0))}L Pipa`);
+                    }
+                    if (item.telhaRequerEntrega && !item.telhaEntregue) {
+                        pendenteTelha = true;
+                        txtRota.push(`🏠 1x Kit Social (Telhas)`);
+                    }
+
+                    if (pendenteAgua || pendenteTelha) {
+                        abertas++;
+                        if(pendenteAgua) abertasPipa++;
+                        if(pendenteTelha) abertasTelhas++;
+                        
+                        const dtRegistro = new Date(item.dataRegistro).toLocaleString('pt-BR');
+                        const dataUrl = `https://www.google.com/maps/search/?api=1&query=$${encodeURIComponent(item.enderecoCompleto || item.bairro)}`;
+                        
+                        let btnClasse = "bg-amber-100 hover:bg-amber-200 text-amber-800";
+                        let btnIcone = "fa-truck-fast";
+                        let btnTexto = "Enviar Rota Motoristas";
+                        let btnAcao = `window.enviarRotaMotorista('${item.id}', '${item.nomeContato}', '${item.telefone}', '${item.enderecoCompleto || item.bairro}', '${item.pontoRef}', '${item.necessidadeTexto}', '${dataUrl}')`;
+                        
+                        if (item.logisticaPausada) {
+                            btnClasse = "bg-red-100 hover:bg-red-200 text-red-800 border border-red-300";
+                            btnIcone = "fa-triangle-exclamation";
+                            btnTexto = "ALERTA ROTA: Endereço / Contato Errados";
+                            btnAcao = `window.desmarcarErroLogistica('${item.id}')`;
+                        }
+
+                        html += `
+                        <tr class="border-b hover:bg-slate-50 transition">
+                            <td class="p-3 text-[10px] md:text-sm font-mono text-slate-500">${dtRegistro}</td>
+                            <td class="p-3">
+                                <div class="font-bold text-slate-800 text-xs md:text-sm">${item.nomeContato || 'Sem Nome'}</div>
+                                <div class="text-[10px] md:text-xs text-slate-500">${item.telefone}</div>
+                            </td>
+                            <td class="p-3">
+                                <div class="font-bold text-slate-700 text-[10px] md:text-sm line-clamp-1">${item.enderecoCompleto || item.bairro}</div>
+                                <div class="text-[10px] text-slate-500 italic line-clamp-1">Ref: ${item.pontoRef || '-'}</div>
+                            </td>
+                            <td class="p-3 text-center">
+                                <div class="text-[10px] md:text-xs font-black text-slate-600 leading-tight">
+                                    ${txtRota.join('<br>')}
+                                </div>
+                            </td>
+                            <td class="p-3 text-center">
+                                <button onclick="${btnAcao}" class="${btnClasse} px-3 py-2 rounded-lg font-bold text-[10px] md:text-xs shadow-sm transition inline-flex items-center gap-2">
+                                    <i class="fa-solid ${btnIcone}"></i> ${btnTexto}
+                                </button>
                             </td>
                         </tr>`;
-                    
-                    grupos[turmaNome].forEach(a => {
-                        html += `
-                            <tr class="border-b border-gray-100 hover:bg-green-50/80 transition">
-                                <td class="p-3 pl-4 md:pl-6"><div class="font-black text-sm md:text-base text-slate-800">${a.nome}</div></td>
-                                <td class="p-3 text-xs md:text-sm"><div class="font-bold text-slate-700">${a.responsavel || '-'}</div><div class="text-[10px] md:text-xs text-slate-400 font-bold">${a.cpf}</div></td>
-                                <td class="p-3 font-mono text-[10px] md:text-sm text-slate-600">${a.telefone}</td>
-                                <td class="p-3 text-center no-print acoes-coluna">
-                                    ${isColab ? `<span class="text-xs text-gray-400 font-bold">Sem Permissão</span>` : `
-                                    <button onclick="window.abrirModalEdicao('${a.id}','${a.nome}','${a.turma}','${a.responsavel || ''}','${a.cpf}','${a.telefone}')" class="text-blue-700 bg-blue-50 px-3 py-2 rounded-lg font-bold mr-2 shadow-sm border border-blue-200">Editar</button>
-                                    <button onclick="window.excluirAluno('${a.id}','${a.nome}')" class="text-red-600 bg-red-50 px-3 py-2 rounded-lg font-bold shadow-sm border border-red-200">🗑️</button>
-                                    `}
-                                </td>
-                            </tr>`;
-                    });
-                }
-            }
-            tbody.innerHTML = html || `<tr><td colspan="4" class="p-8 text-center text-slate-500 font-bold">Nenhum aluno cadastrado no sistema.</td></tr>`;
-            window.aplicarRegrasAcesso();
-        };
-
-        window.calcularLinha = (id) => {
-            const base = parseFloat(document.getElementById(`h-base-${id}`).value) || 0;
-            const extras = parseFloat(document.getElementById(`extras-${id}`).value) || 0;
-            const taxa = parseFloat(document.getElementById(`h-taxa-${id}`).value) || 0;
-            const total = base + extras + taxa; 
-            document.getElementById(`valTotal-${id}`).innerText = total.toFixed(2).replace('.', ',');
-            document.getElementById(`h-total-${id}`).value = total;
-        };
-
-        window.carregarLoteFaturas = async () => {
-            const corpo = document.getElementById("corpoTabelaLote");
-            corpo.innerHTML = "<tr><td colspan='5' class='p-8 text-center text-green-700 font-bold'>A preparar a tabela de mensalidades...</td></tr>";
-            try {
-                await window.atualizarCacheAlunos();
-                const vBaseGlobal = window.configGlobais.valorBase || 30.00;
-                const alunosArray = Object.entries(window.alunosGlobal).map(([id, a]) => ({id, ...a}));
-                const grupos = { "Dente de Leite": [], "Pré-Mirim": [], "Mirim": [], "Adulto": [], "Outros": [] };
-                
-                alunosArray.forEach(a => { if (grupos[a.turma]) grupos[a.turma].push(a); else grupos["Outros"].push(a); });
-
-                let html = "";
-                for(let turmaNome in grupos) {
-                    if(grupos[turmaNome].length > 0) {
-                        grupos[turmaNome].sort((a,b) => (a.nome || "").localeCompare(b.nome || ""));
-                        html += `
-                            <tr class="linha-turma" style="background-color: #1b3b24 !important; color: #ffffff !important; font-weight: 900; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                                <td colspan="5" class="p-3 pl-4 md:pl-6 text-left" style="color: #ffffff !important; border: none !important;"><i class="fa-solid fa-file-invoice-dollar mr-2" style="color: #ffffff !important;"></i> Invernada: ${turmaNome}</td>
-                            </tr>`;
-                        grupos[turmaNome].forEach(a => {
-                            const tP = a.taxa_pendente_valor || 0; const dT = a.taxa_pendente_desc || "";
-                            const avisoTaxa = tP > 0 ? `<br><span class="text-red-600 font-black text-[9px] uppercase bg-red-50 px-2 py-0.5 rounded mt-1 border border-red-200 inline-block">+ R$ ${tP} (${dT})</span>` : "";
-                            html += `
-                                <tr id="linha-${a.id}" class="hover:bg-green-50/80 border-b border-green-100 transition">
-                                    <td class="p-3 pl-4 md:pl-6 bg-white/50 md:bg-transparent backdrop-blur-sm"><strong class="text-sm text-slate-800">${a.nome}</strong>${avisoTaxa}</td>
-                                    <td class="p-3 text-center font-bold text-green-700">R$ ${vBaseGlobal.toFixed(2)}</td>
-                                    <td class="p-3 text-center"><input type="number" step="0.01" id="extras-${a.id}" value="0" onkeyup="window.calcularLinha('${a.id}')" class="w-16 md:w-20 p-2 border border-red-200 rounded-xl text-center outline-none text-red-700 font-bold bg-white/80 shadow-inner focus:border-red-500"></td>
-                                    <td class="p-3 text-right font-black text-slate-900 text-sm md:text-base">R$ <span id="valTotal-${a.id}">0,00</span><input type="hidden" id="h-total-${a.id}" value="0" data-nome="${a.nome}" data-cpf="${a.cpf}" data-tel="${a.telefone}" data-turma="${a.turma}"><input type="hidden" id="h-base-${a.id}" value="${vBaseGlobal}"><input type="hidden" id="h-taxa-${a.id}" value="${tP}" data-desc="${dT}"></td>
-                                    <td class="p-3 text-center" id="status-${a.id}"><span class="bg-gray-200 border border-gray-300 px-3 py-1 rounded-lg text-[10px] text-gray-500 font-bold uppercase shadow-sm">Espera</span></td>
-                                </tr>
-                            `;
-                        });
                     }
                 }
-                corpo.innerHTML = html || "<tr><td colspan='5' class='p-8 text-center'>Nenhum aluno foi localizado.</td></tr>";
-                Object.keys(window.alunosGlobal).forEach(id => { if(document.getElementById(`extras-${id}`)) window.calcularLinha(id); });
-            } catch (e) { corpo.innerHTML = "<tr><td colspan='5'>Erro de carregamento das turmas.</td></tr>"; }
-        };
-
-        window.gerarFaturasEmLote = async () => {
-            const inputs = document.querySelectorAll('input[id^="h-total-"]');
-            const linhas = Array.from(inputs).filter(i => parseFloat(i.value) > 0);
-            if(linhas.length === 0) return alert("Não existem valores válidos selecionados para cobrar!");
-            
-            const mes = document.getElementById("mesReferencia").value; const venc = document.getElementById("dataVencimento").value;
-            window.mostrarLoading(`A gerar ${linhas.length} mensalidades na base de dados...`);
-            
-            for(let input of linhas) {
-                const total = parseFloat(input.value); const id = input.id.replace('h-total-', '');
-                const vBase = parseFloat(document.getElementById(`h-base-${id}`).value); const extras = parseFloat(document.getElementById(`extras-${id}`).value) || 0;
-                const taxaPend = parseFloat(document.getElementById(`h-taxa-${id}`).value); const descTaxa = document.getElementById(`h-taxa-${id}`).dataset.desc;
-                const nome = input.dataset.nome; const turma = input.dataset.turma; const cpfOriginal = input.dataset.cpf || ""; const telCliente = input.dataset.tel || "";
                 
-                let descFinal = `Mensalidade CTG - ${mes}`; if(taxaPend > 0) descFinal += ` + ${descTaxa}`;
-                let pixData = { sucesso: false, copiaECola: "", qrCodeBase64: "", txid: "" };
+                document.getElementById("dashTotalAssistencias").innerText = abertas;
+                document.getElementById("dashPipaAbertas").innerText = abertasPipa;
+                document.getElementById("dashTelhasAbertas").innerText = abertasTelhas;
                 
-                try {
-                    const pixReq = fetch("/api/gerar-pix", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ valor: total, descricao: descFinal, nome: nome, cpf: cpfOriginal }) });
-                    const res = await Promise.race([pixReq, new Promise((_, r) => setTimeout(() => r(new Error("Timeout PIX")), 10000))]);
-                    if(res.ok) pixData = await res.json();
-                } catch(e) {}
-                
-                try {
-                    await addDoc(collection(db, "faturas"), { 
-                        familia_id: id, mes_referencia: descFinal, turma: turma, valor_agua: vBase, valor_multa: extras, taxa_extra: taxaPend, valor_total: total, pdf_base64: "", vencimento: venc, status: "pendente", whatsapp_enviado: false, data_lancamento: new Date().toISOString(), pix_copia_cola: pixData.copiaECola || "", qr_code_base64: pixData.qrCodeBase64 || "", pix_txid: String(pixData.txid || ""), telefone: telCliente, nome_morador: nome, cpf: cpfOriginal.replace(/\D/g, '') 
-                    });
-                    await updateDoc(doc(db, "alunos", id), { taxa_pendente_valor: 0, taxa_pendente_desc: "" });
-                    const nomePZ = nome.replace(/'/g, "\\'"); const dataBr = venc.split('-').reverse().join('/');
-                    document.getElementById(`status-${id}`).innerHTML = `<button onclick="window.enviarWhatsAppSemEmoji('${telCliente}', '${nomePZ}', '${mes}', '${total.toFixed(2)}', '${dataBr}')" class="bg-[#1b3b24] text-white font-bold px-3 py-2 rounded-lg shadow-md text-xs hover:bg-green-900 transition">📲 Enviar ZAP</button>`;
-                    document.getElementById(`extras-${id}`).disabled = true; document.getElementById(`linha-${id}`).classList.add("bg-green-50");
-                } catch(err) {}
-            }
-            window.esconderLoading(); alert("✅ Lote de Mensalidades processado! O Robô do WhatsApp pode começar a enviar as cobranças.");
-        };
-
-        window.enviarWhatsAppSemEmoji = (telefone, nome, ref, valor, venc) => {
-            if(!telefone || String(telefone).trim().length < 8) return alert("O aluno não possui um WhatsApp registado.");
-            const t = String(telefone).replace(/\D/g, '');
-            let msg = `*CTG SENTINELA DA FRONTEIRA*\n\nOlá, *${nome}*!\nA mensalidade referente a ${ref} já está disponível.\n\n- *Valor:* R$ ${valor}\n- *Vencimento:* ${venc}\n\n> Para pagar via PIX acesse o nosso portal oficial:\nhttps://seusite.vercel.app\n\n*(Utilize o número do seu CPF para entrar)*`;
-            window.open(`https://wa.me/${t}?text=${encodeURIComponent(msg)}`, '_blank');
-        };
-
-        window.iniciarListenerAbertas = async () => {
-            if(unsubAbertas) unsubAbertas();
-            const tbody = document.getElementById("tabelaAbertas"); tbody.innerHTML = "<tr><td colspan='4' class='p-8 text-center font-bold text-green-700'>A consultar base de dados em tempo real...</td></tr>";
-            unsubAbertas = onSnapshot(query(collection(db, "faturas"), where("status", "==", "pendente")), (snap) => {
-                let abertas = []; snap.forEach(d => abertas.push({id: d.id, ...d.data()})); abertas.sort((a,b) => new Date(a.vencimento) - new Date(b.vencimento));
-                let html = "";
-                for(let f of abertas) {
-                    const dataBr = f.vencimento.split('-').reverse().join('/'); const nomePZ = String(f.nome_morador || "Aluno").replace(/'/g, "\\'"); const valorForm = f.valor_total.toFixed(2); const tel = f.telefone || "";
-                    let dtLanc = new Date(f.data_lancamento); let hrCriacao = !isNaN(dtLanc) ? dtLanc.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit', second:'2-digit'}) : '--:--:--';
-                    let btnClass = 'bg-white hover:bg-slate-50 border border-slate-300'; let statusEnvio = `<span class="text-slate-400 text-[10px] font-bold mt-1"><i class="fa-solid fa-clock"></i> Na Fila</span>`;
-                    
-                    if (f.whatsapp_enviado) {
-                        if (f.data_envio_whatsapp && !f.data_envio_whatsapp.includes("ERRO") && !f.data_envio_whatsapp.includes("INVALIDO")) { let dtEnv = new Date(f.data_envio_whatsapp); let hrEnvio = dtEnv.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit', second:'2-digit'}); btnClass = 'bg-green-50 hover:bg-green-100 border border-green-400'; statusEnvio = `<span class="text-green-600 text-[10px] font-black mt-1"><i class="fa-brands fa-whatsapp"></i> Env: ${hrEnvio}</span>`; } 
-                        else { btnClass = 'bg-red-50 hover:bg-red-100 border border-red-400'; statusEnvio = `<span class="text-red-600 text-[10px] font-black mt-1"><i class="fa-solid fa-triangle-exclamation"></i> ERRO ZAP</span>`; }
-                    }
-                    const btnZap = `<button onclick="window.enviarWhatsAppSemEmoji('${tel}', '${nomePZ}', '${f.mes_referencia}', '${valorForm}', '${dataBr}')" class="${btnClass} rounded-lg shadow-sm transition flex flex-col items-center justify-center min-w-[70px] md:min-w-[85px] h-[40px] md:h-[45px] px-2 leading-none"><span class="text-red-500 font-bold text-[9px] md:text-[10px]">Criado: ${hrCriacao}</span>${statusEnvio}</button>`;
-                    html += `<tr class="border-b border-gray-100 hover:bg-white/60 transition"><td class="p-3 text-[10px] md:text-sm text-slate-500 font-mono">${dataBr}</td><td class="p-3 font-bold text-[10px] md:text-sm">${f.nome_morador}<br><span class="text-[9px] md:text-xs font-normal text-slate-500">${f.mes_referencia}</span></td><td class="p-3 text-right font-black text-amber-700 text-xs md:text-base">R$ ${valorForm}</td><td class="p-2 md:p-3"><div class="flex items-center justify-end gap-1 md:gap-2">${btnZap}<button onclick="window.marcarPago('${f.id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-bold text-[9px] md:text-xs shadow-md transition h-[40px] md:h-[45px]">Dar Baixa</button><button onclick="window.excluirFatura('${f.id}')" class="bg-red-50 text-red-600 border border-red-200 px-3 py-2 rounded-lg font-bold text-[9px] md:text-xs shadow-sm transition hover:bg-red-500 hover:text-white h-[40px] md:h-[45px]">🗑️</button></div></td></tr>`;
-                }
-                tbody.innerHTML = html || "<tr><td colspan='4' class='p-8 text-center text-green-700 font-bold'>A fila está limpa. Todas as faturas estão pagas!</td></tr>";
+                tbody.innerHTML = html || "<tr><td colspan='5' class='p-8 text-center text-slate-400 font-bold'>Nenhuma entrega pendente na logística.</td></tr>";
             });
         };
 
-        window.iniciarListenerPagos = async () => {
-            if(unsubPagos) unsubPagos(); const tbody = document.getElementById("tabelaPagos");
-            unsubPagos = onSnapshot(query(collection(db, "faturas"), where("status", "==", "pago")), (snap) => {
-                let pagas = []; snap.forEach(d => pagas.push({id: d.id, ...d.data()})); pagas.sort((a,b) => new Date(b.data_pagamento) - new Date(a.data_pagamento));
-                let html = "";
-                for(let p of pagas) {
-                    const dt = new Date(p.data_pagamento);
-                    html += `<tr class="border-b border-gray-100 hover:bg-white/60 transition"><td class="p-3 text-[10px] md:text-xs text-gray-500">${dt.toLocaleDateString('pt-BR')} às ${dt.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</td><td class="p-3 font-bold text-slate-800 text-xs md:text-sm">${p.nome_morador}</td><td class="p-3 text-right font-black text-green-700 text-sm md:text-base">R$ ${p.valor_total.toFixed(2)}</td><td class="p-3 text-center"><span class="bg-green-100 border border-green-200 text-green-800 px-3 py-1 rounded-lg text-[9px] md:text-[10px] font-bold uppercase shadow-sm">Confirmado</span></td></tr>`;
-                }
-                tbody.innerHTML = html || "<tr><td colspan='4' class='p-8 text-center text-gray-400'>Nenhum recebimento registado ainda.</td></tr>";
-            });
-        };
-
-        window.marcarPago = async (id) => { if(confirm("Deseja confirmar a baixa manual desta mensalidade?")) await updateDoc(doc(db, "faturas", id), { status: "pago", data_pagamento: new Date().toISOString() }); };
-        window.excluirFatura = async (id) => { if(confirm("Tem a certeza absoluta que deseja apagar esta mensalidade (irá sumir para o cliente também)?")) await deleteDoc(doc(db, "faturas", id)); };
-
-        window.mudarTipoRelatorio = () => {
-            const tipo = document.getElementById("relTipo").value;
-            if(tipo === 'alunos') {
-                document.getElementById("filtrosFinanceiro").classList.add('hidden'); document.getElementById("cardsFinanceiros").classList.add('hidden'); document.getElementById("filtrosAlunos").classList.remove('hidden'); document.getElementById("subTituloRelatorio").innerText = "Relatório Oficial de Invernadas e Alunos";
-            } else {
-                document.getElementById("filtrosFinanceiro").classList.remove('hidden'); document.getElementById("cardsFinanceiros").classList.remove('hidden'); document.getElementById("filtrosAlunos").classList.add('hidden'); document.getElementById("subTituloRelatorio").innerText = "Extrato Oficial de Movimentação Financeira";
-            }
-            window.gerarRelatorioFiltrado();
-        };
-
-        window.carregarRelatorio = async () => {
-            window.mostrarLoading("A ler e calcular todas as folhas da base de dados...");
-            await window.atualizarCacheAlunos();
-            const snap = await getDocs(collection(db, "faturas")); todasFaturasCache = []; snap.forEach(d => todasFaturasCache.push(d.data()));
-            window.esconderLoading(); window.mudarTipoRelatorio();
-        };
-
-        window.gerarRelatorioFiltrado = () => {
-            const tipo = document.getElementById("relTipo").value; const thead = document.getElementById("theadRelatorio"); const tbody = document.getElementById("tabelaRelatorio");
-
-            if(tipo === 'alunos') {
-                const termo = document.getElementById("relBuscaAlunoApenas").value.toLowerCase();
-                thead.innerHTML = `<tr class="bg-green-50/80 text-green-800 uppercase text-xs font-bold border-b border-green-200"><th class="p-3 md:p-4 pl-4 md:pl-6 text-left">Aluno / Responsável</th><th class="p-3 md:p-4 text-center">Invernada</th><th class="p-3 md:p-4 text-right pr-4 md:pr-6">Contato / WhatsApp</th></tr>`;
-                const alunosArray = Object.values(window.alunosGlobal); let filtrados = alunosArray.filter(a => (!termo || a.nome.toLowerCase().includes(termo))).sort((a,b) => a.turma.localeCompare(b.turma) || a.nome.localeCompare(b.nome));
-                let html = ""; let turmaAtual = "";
-                
-                filtrados.forEach(a => {
-                    if(a.turma !== turmaAtual) {
-                        turmaAtual = a.turma;
-                        html += `<tr class="linha-turma" style="background-color: #1b3b24 !important; color: #ffffff !important; font-weight: 900; -webkit-print-color-adjust: exact; print-color-adjust: exact;"><td colspan="3" class="p-3 pl-4 md:pl-6 text-left" style="color: #ffffff !important; border: none !important;"><i class="fa-solid fa-users-viewfinder mr-2" style="color: #ffffff !important;"></i> Invernada: ${turmaAtual}</td></tr>`;
-                    }
-                    html += `<tr class="border-b border-gray-200 hover:bg-white/60 transition"><td class="p-3 pl-4 md:pl-6 text-left"><div style="font-size: 16px; font-weight: 900; color: #1e293b;">${a.nome}</div><div style="font-size: 12px; color: #475569; font-weight: bold; margin-top: 2px;">Resp: ${a.responsavel || '-'} <span style="font-weight: normal; color: #94a3b8;">(${a.cpf})</span></div></td><td class="p-3 text-center" style="font-size: 14px; font-weight: bold; color: #1b3b24;">${a.turma}</td><td class="p-3 text-right pr-4 md:pr-6 font-mono" style="font-size: 14px; color: #475569;">${a.telefone}</td></tr>`;
-                });
-                tbody.innerHTML = html || "<tr><td colspan='3' class='p-8 text-center text-gray-500 font-bold'>Nenhum aluno encontrado correspondente ao filtro.</td></tr>";
-
-            } else {
-                thead.innerHTML = `<tr class="bg-green-50/80 text-green-800 uppercase text-[11px] font-bold border-b border-green-200"><th class="p-3 md:p-4 pl-4 md:pl-6 text-left">Aluno / Responsável</th><th class="p-3 md:p-4 text-left">Ref / Vencimento</th><th class="p-3 md:p-4 text-center">Contato</th><th class="p-3 md:p-4 text-center">Status</th><th class="p-3 md:p-4 text-right pr-4 md:pr-6">Valor Total</th></tr>`;
-                const dtIni = document.getElementById("relDataInicio").value; const dtFim = document.getElementById("relDataFim").value; const statusF = document.getElementById("relStatus").value; const termo = document.getElementById("relBusca").value.toLowerCase();
-                let filtradas = todasFaturasCache.filter(f => {
-                    let matchD = true; if(dtIni || dtFim) { const dtB = f.vencimento; if(dtIni && dtB < dtIni) matchD = false; if(dtFim && dtB > dtFim) matchD = false; }
-                    return matchD && (statusF === "TODOS" || f.status === statusF) && (!termo || (f.nome_morador || "").toLowerCase().includes(termo));
-                });
-                filtradas.sort((a, b) => { let tA = a.turma || "Outros"; let tB = b.turma || "Outros"; if (tA !== tB) return tA.localeCompare(tB); return (a.nome_morador || "").localeCompare(b.nome_morador || ""); });
-
-                let tPago = 0, tPend = 0, tInad = 0, html = ""; const hoje = new Date(); hoje.setHours(0,0,0,0); let turmaAtual = "";
-
-                filtradas.forEach(f => {
-                    let t = f.turma || "Outros";
-                    if (t !== turmaAtual) {
-                        turmaAtual = t;
-                        html += `<tr class="linha-turma" style="background-color: #1b3b24 !important; color: #ffffff !important; font-weight: 900; -webkit-print-color-adjust: exact; print-color-adjust: exact;"><td colspan="5" class="p-3 pl-4 md:pl-6 text-left" style="color: #ffffff !important; border: none !important;"><i class="fa-solid fa-users-viewfinder mr-2" style="color: #ffffff !important;"></i> Invernada: ${turmaAtual}</td></tr>`;
-                    }
-
-                    let st = f.status; let colorValor = ''; let badgeClass = '';
-                    if(f.status === "pago") { tPago += f.valor_total; st = "PAGO"; badgeClass = 'bg-green-100 text-green-800 border-green-300'; colorValor = 'color: #16A34A !important;'; } 
-                    else if(new Date(f.vencimento + "T00:00:00") < hoje) { tInad += f.valor_total; st = "ATRASADO"; badgeClass = 'bg-red-100 text-red-800 border-red-300'; colorValor = 'color: #DC2626 !important;'; } 
-                    else { tPend += f.valor_total; st = "PENDENTE"; badgeClass = 'bg-amber-100 text-amber-800 border-amber-300'; colorValor = 'color: #DC2626 !important;'; }
-                    
-                    let responsavel = window.alunosGlobal[f.familia_id]?.responsavel || "-"; let contato = f.telefone || window.alunosGlobal[f.familia_id]?.telefone || "-";
-                    html += `<tr class="border-b border-gray-200 hover:bg-white/60 transition"><td class="p-3 pl-4 md:pl-6 text-left"><div style="font-size: 16px; font-weight: 900; color: #1e293b;">${f.nome_morador}</div><div style="font-size: 12px; color: #475569; font-weight: bold; margin-top: 2px;">Resp: ${responsavel}</div></td><td class="p-3 text-left"><div style="font-size: 12px; font-weight: bold; color: #1e293b;">${f.mes_referencia}</div><div style="font-size: 11px; color: #475569;">Venc: ${f.vencimento.split('-').reverse().join('/')}</div></td><td class="p-3 text-center font-mono" style="font-size: 12px; color: #475569;">${contato}</td><td class="p-3 text-center"><span class="px-2 py-1 rounded-md text-[10px] font-black uppercase border ${badgeClass}" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">${st}</span></td><td class="p-3 text-right pr-4 md:pr-6" style="font-size: 16px; font-weight: 900; ${colorValor}">R$ ${f.valor_total.toFixed(2).replace('.',',')}</td></tr>`;
-                });
-                
-                document.getElementById("relCardQtd").innerText = filtradas.length; document.getElementById("relCardPendente").innerText = "R$ " + tPend.toFixed(2).replace('.',','); document.getElementById("relCardInadimplente").innerText = "R$ " + tInad.toFixed(2).replace('.',','); document.getElementById("relCardPago").innerText = "R$ " + tPago.toFixed(2).replace('.',','); 
-                tbody.innerHTML = html || "<tr><td colspan='5' class='p-8 text-center text-gray-500 font-bold'>Nenhum resultado financeiro apurado pelos filtros atuais.</td></tr>";
+        window.desmarcarErroLogistica = async (id) => {
+            if(confirm("Deseja marcar este endereço como CORRIGIDO para que a logística possa retomar o envio?")) {
+                await updateDoc(doc(db, "doacoes_capanema", id), { logisticaPausada: false });
             }
         };
 
-        window.exportarBase = async () => {
-            window.mostrarLoading("A gerar pacote JSON de segurança..."); 
+        window.enviarRotaMotorista = async (idCadastro, nome, fone, endereco, ref, itens, mapsUrl) => {
+            if(!confirm(`Deseja enviar esta rota oficial agora para o WhatsApp dos motoristas disponíveis?`)) return;
+            window.mostrarLoading("A preparar envio da rota para o robô...");
+            
             try {
-                const famSnap = await getDocs(collection(db, "alunos")); const fatSnap = await getDocs(collection(db, "faturas")); const data = { alunos: [], faturas: [] }; 
-                famSnap.forEach(d => data.alunos.push({id: d.id, ...d.data()})); fatSnap.forEach(d => data.faturas.push({id: d.id, ...d.data()}));
-                const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], {type: "application/json"})); a.download = `backup_ctg_sentinela_${new Date().toISOString().split('T')[0]}.json`; a.click(); 
+                const docSnap = await getDoc(doc(db, "configuracoes_capanema", "whatsapp"));
+                if(!docSnap.exists()) {
+                    window.esconderLoading(); return alert("Configure os contatos de logística primeiro!");
+                }
+                
+                const contatos = docSnap.data();
+                const motoristas = [];
+                if(contatos.telefonePipa) motoristas.push(contatos.telefonePipa);
+                if(contatos.telefoneSocial) motoristas.push(contatos.telefoneSocial);
+                
+                if(motoristas.length === 0) {
+                    window.esconderLoading(); return alert("Não existem contatos de motoristas salvos.");
+                }
+
+                const msgFormatada = `🚨 *NOVA ROTA DE ENTREGA - DEFESA CIVIL* 🚨\n\n👤 *Nome:* ${nome}\n📞 *Contato:* ${fone}\n\n📍 *Endereço Destino:*\n${endereco}\n*Ref:* ${ref || 'Não informada'}\n\n📦 *Itens para Entrega:*\n${itens}\n\n🗺️ *Abrir no Maps:*\n${mapsUrl}\n\n*(Responda esta mensagem caso não consiga encontrar o endereço).*`;
+
+                for(let num of motoristas) {
+                    await addDoc(collection(db, "mensagens_externas"), {
+                        telefone: num,
+                        mensagem: msgFormatada,
+                        status: "pendente",
+                        data_criacao: new Date().toISOString()
+                    });
+                }
                 window.esconderLoading();
-            } catch(e) { window.esconderLoading(); alert("Falha técnica ao gerar backup: " + e.message); }
-        };
-
-        window.importarBase = async () => {
-            const file = document.getElementById("fileImport").files[0]; 
-            if(!file || !confirm("CUIDADO: Os dados deste ficheiro serão misturados à base de dados atual. Deseja mesmo continuar com a injeção de dados?")) return;
-            window.mostrarLoading("A ler e gravar dados remotos na base..."); const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    if(data.alunos) for(let f of data.alunos) { const {id, ...rest} = f; await setDoc(doc(db, "alunos", id), rest); }
-                    if(data.faturas) for(let f of data.faturas) { const {id, ...rest} = f; await setDoc(doc(db, "faturas", id), rest); }
-                    alert("Injeção de base de dados finalizada perfeitamente!"); window.carregarAlunos(); window.esconderLoading(); document.getElementById("fileImport").value = "";
-                } catch(error) { window.esconderLoading(); alert("Aviso: Falha ao ler ficheiro. Verifique se escolheu um arquivo .json seguro."); }
-            }; 
-            reader.readAsText(file);
+                alert("✅ Sucesso! A rota foi colocada na fila e o Robô da Defesa Civil irá enviá-la para o WhatsApp dos motoristas.");
+            } catch(e) {
+                window.esconderLoading();
+                alert("Erro técnico ao gerar rota.");
+            }
         };
     </script>
 </body>
