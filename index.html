@@ -1226,10 +1226,10 @@ function loginGoogle() {
         }
     }
 
- // ==========================================
-    // WHATSAPP: MAPS DE ROTAS OFICIAL E ROBÔ
     // ==========================================
-    let configZap = JSON.parse(localStorage.getItem('defesaCivilConfigZap')) || { emailSolicitante: '', telefonePipa: '', telefoneSocial: '', telefoneAdminNotif: '' };
+    // WHATSAPP: MAPS DE ROTAS OFICIAL
+    // ==========================================
+    let configZap = JSON.parse(localStorage.getItem('defesaCivilConfigZap')) || { emailSolicitante: '', telefonePipa: '', telefoneSocial: '' };
     
     function carregarConfigZap() { 
         if(navigator.onLine && db) { 
@@ -1242,100 +1242,64 @@ function loginGoogle() {
         } 
     }
 
-    async function salvarConfigZap(event) {
-        let elEmail = document.getElementById('configZapEmail');
-        let elAdmin = document.getElementById('configZapAdmin');
-        let elPipa = document.getElementById('configZapPipa');
-        let elSocial = document.getElementById('configZapSocial');
-
-        if (!elEmail || !elAdmin || !elPipa || !elSocial) {
-            alert("Erro: A tela do robô precisa estar aberta para salvar.");
-            return;
-        }
-
-        const email = elEmail.value.toLowerCase().trim(); 
-        const telAdmin = elAdmin.value.replace(/[^\d,]/g,''); 
-        const telPipa = elPipa.value.replace(/\D/g,''); 
-        const telSocial = elSocial.value.replace(/\D/g,''); 
+    async function salvarConfigZap() {
+        const email = document.getElementById('configZapEmail').value.toLowerCase().trim(); 
+        const telPipa = document.getElementById('configZapTelPipa').value.replace(/\D/g,''); 
+        const telSocial = document.getElementById('configZapTelSocial').value.replace(/\D/g,''); 
         
-        configZap = { 
-            emailSolicitante: email, 
-            telefoneAdminNotif: telAdmin,
-            telefonePipa: telPipa, 
-            telefoneSocial: telSocial 
-        }; 
-        
+        configZap = { emailSolicitante: email, telefonePipa: telPipa, telefoneSocial: telSocial }; 
         localStorage.setItem('defesaCivilConfigZap', JSON.stringify(configZap)); 
         
         if(navigator.onLine && db) { 
-            try { 
-                let btn = event ? event.target : null;
-                let txtOriginal = btn ? btn.innerText : "";
-                if(btn) {
-                    btn.innerText = "⏳ Salvando...";
-                    btn.disabled = true;
-                }
-
-                await db.collection('configuracoes_capanema').doc('whatsapp').set(configZap, { merge: true }); 
-                
-                if(btn) {
-                    btn.innerText = "✅ Salvo com Sucesso!";
-                    btn.style.backgroundColor = "#28a745";
-                    setTimeout(() => { 
-                        btn.innerText = txtOriginal; 
-                        btn.disabled = false;
-                    }, 3000);
-                }
-
-            } catch(e) { 
-                alert("Erro ao salvar contatos na nuvem: " + e.message);
-            } 
-        } else {
-            alert("Sem conexão com a internet ou banco de dados.");
-        }
+            try { await db.collection('configuracoes_capanema').doc('whatsapp').set(configZap); alert("Configurações Salvas com Sucesso!"); } 
+            catch(e) { alert("Erro ao salvar contatos na nuvem."); } 
+        } 
     }
 
-    async function reenviarZapMotorista(nome, bairro, loc, rua, num, ref, obs, tel, vol, tipo, temCesta) {
-        let numDestino = tipo === 'agua' ? configZap.telefonePipa : configZap.telefoneSocial;
-        if (!numDestino) { alert(`O telefone responsável por ${tipo === 'agua' ? 'ÁGUA' : 'TELHAS'} não está configurado na aba Auditoria.`); return; }
-        
-        let horaAtual = new Date().getHours(); let saudacao = "";
-        if (horaAtual >= 5 && horaAtual < 12) saudacao = "Bom dia"; else if (horaAtual >= 12 && horaAtual < 18) saudacao = "Boa tarde"; else saudacao = "Boa noite";
-        
-        let origemGPS = ""; let cabecalho = ""; let textMaterial = "";
+   async function reenviarZapMotorista(nome, bairro, loc, rua, num, ref, obs, tel, vol, tipo, temCesta) {
+    let numDestino = tipo === 'agua' ? configZap.telefonePipa : configZap.telefoneSocial;
+    if (!numDestino) { alert(`O telefone responsável por ${tipo === 'agua' ? 'ÁGUA' : 'TELHAS'} não está configurado na aba Auditoria.`); return; }
+    
+    let horaAtual = new Date().getHours(); let saudacao = "";
+    if (horaAtual >= 5 && horaAtual < 12) saudacao = "Bom dia"; else if (horaAtual >= 12 && horaAtual < 18) saudacao = "Boa tarde"; else saudacao = "Boa noite";
+    
+    let origemGPS = ""; let cabecalho = ""; let textMaterial = "";
 
-        if (tipo === 'agua') {
-            saudacao = `${saudacao}, Agente da Defesa Civil!`; origemGPS = encodeURIComponent("Corpo de Bombeiros, Capanema - PR");
-            cabecalho = `*Ordem de serviço Defesa Civil entrega de água potável 💧*`; textMaterial = `*Volume Solicitado:* ${Number(vol)} m³ 💧`;
-        } else {
-            saudacao = `${saudacao}, motorista!`; origemGPS = encodeURIComponent("CRAS - Rua Antônio Nieheus, 670, Centro, Capanema - PR");
-            if (temCesta) { cabecalho = `*Ordem de serviço Assistência Social: Entrega de telhas e cesta básica 🏠📦*`; textMaterial = `*Material Liberado:* ${vol} Telhas e Cesta(s) Básica(s).`; } 
-            else { cabecalho = `*Ordem de serviço Assistência Social: Entrega de telhas 🏠*`; textMaterial = `*Material Liberado:* ${vol} Telhas.`; }
-        }
-
-        let enderecoBusca = loc ? loc : (rua ? `${rua}, ${num||'S/N'}` : '');
-        let destinoMaps = encodeURIComponent(`${enderecoBusca} ${bairro} Capanema PR`.trim());
-        let linkMaps = `https://www.google.com/maps/dir/?api=1&origin=${origemGPS}&destination=${destinoMaps}`;
-        
-        let textEnd = loc ? `*Localização:* ${loc}` : ''; if(rua) textEnd += `\n*Rua:* ${rua}, Nº: ${num || 'S/N'}`;
-        let textRef = ref ? `*Ref:* ${ref}\n` : ''; let textObs = obs ? `\n*Observação:* ${obs}` : '';
-        
-        let msg = `${saudacao}\n\n${cabecalho}\n\n*Nome:* ${nome}\n*Bairro:* ${bairro}\n${textEnd}\n${textRef}*Telefone:* ${tel || 'Não informado'}${textObs}\n${textMaterial}\n\n*🗺️ Rota de Entrega (GPS Oficial):*\n${linkMaps}\n\n*⚠️ ATENÇÃO: Caso o GPS não consiga traçar a rota exata, por favor ligue para o solicitante!*`;
-        
-        try {
-            await db.collection('mensagens_externas').add({
-                telefone: numDestino,
-                mensagem: msg,
-                status: 'pendente',
-                data_criacao: new Date().toISOString(),
-                tipo: 'defesa'
-            });
-            alert('✅ Rota enviada com sucesso para a fila do robô!');
-        } catch (e) {
-            console.error("Erro ao enviar para o robô: ", e);
-            window.open(`https://api.whatsapp.com/send?phone=${numDestino}&text=${encodeURIComponent(msg)}`, '_blank');
-        }
+    if (tipo === 'agua') {
+        saudacao = `${saudacao}, Agente da Defesa Civil!`; origemGPS = encodeURIComponent("Corpo de Bombeiros, Capanema - PR");
+        cabecalho = `*Ordem de serviço Defesa Civil entrega de água potável 💧*`; textMaterial = `*Volume Solicitado:* ${Number(vol)} m³ 💧`;
+    } else {
+        saudacao = `${saudacao}, motorista!`; origemGPS = encodeURIComponent("CRAS - Rua Antônio Nieheus, 670, Centro, Capanema - PR");
+        if (temCesta) { cabecalho = `*Ordem de serviço Assistência Social: Entrega de telhas e cesta básica 🏠📦*`; textMaterial = `*Material Liberado:* ${vol} Telhas e Cesta(s) Básica(s).`; } 
+        else { cabecalho = `*Ordem de serviço Assistência Social: Entrega de telhas 🏠*`; textMaterial = `*Material Liberado:* ${vol} Telhas.`; }
     }
+
+    let enderecoBusca = loc ? loc : (rua ? `${rua}, ${num||'S/N'}` : '');
+    let destinoMaps = encodeURIComponent(`${enderecoBusca} ${bairro} Capanema PR`.trim());
+    let linkMaps = `https://www.google.com/maps/dir/?api=1&origin=${origemGPS}&destination=${destinoMaps}`;
+    
+    let textEnd = loc ? `*Localização:* ${loc}` : ''; if(rua) textEnd += `\n*Rua:* ${rua}, Nº: ${num || 'S/N'}`;
+    let textRef = ref ? `*Ref:* ${ref}\n` : ''; let textObs = obs ? `\n*Observação:* ${obs}` : '';
+    
+    let msg = `${saudacao}\n\n${cabecalho}\n\n*Nome:* ${nome}\n*Bairro:* ${bairro}\n${textEnd}\n${textRef}*Telefone:* ${tel || 'Não informado'}${textObs}\n${textMaterial}\n\n*🗺️ Rota de Entrega (GPS Oficial):*\n${linkMaps}\n\n*⚠️ ATENÇÃO: Caso o GPS não consiga traçar a rota exata, por favor ligue para o solicitante!*`;
+    
+    // NOVA LÓGICA: Envia para o Firebase para o Robô pegar
+    try {
+        await db.collection('mensagens_externas').add({
+            telefone: numDestino,
+            mensagem: msg,
+            status: 'pendente',
+            data_criacao: new Date().toISOString(),
+            tipo: 'defesa'
+        });
+        alert('✅ Rota enviada com sucesso para a fila do robô!');
+    } catch (e) {
+        console.error("Erro ao enviar para o robô: ", e);
+        // Fallback: se a internet falhar na hora de salvar, abre no navegador como era antes
+        window.open(`https://api.whatsapp.com/send?phone=${numDestino}&text=${encodeURIComponent(msg)}`, '_blank');
+    }
+}
+
     // ==========================================
     // LOGÍSTICA DE FROTAS
     // ==========================================
@@ -1889,38 +1853,16 @@ function loginGoogle() {
         filtrarTabelaAuditoria();
     }
 
-function renderPainelRobo() {
+   function renderPainelRobo() {
         if(currentUserNivel !== 'admin' && currentUserNivel !== 'supervisor') return;
         
         let h = `<div class="report-summary" style="background: #e8f5e9; border-color: #c8e6c9; color: #2e7d32;"><strong>🤖 Gestão do Robô e Automação</strong></div>
         
-        <div style="background:#fff; border:1px solid #c8e6c9; padding:20px; border-radius:8px; margin-bottom:15px; position: relative;">
-            <h3 style="margin: 0 0 15px 0; color: #2e7d32; border-bottom: 2px solid #e8f5e9; padding-bottom: 8px;">1. Configurar Telefones e Notificações</h3>
-            
-            <span id="avisoSalvo" style="position: absolute; right: 20px; top: 20px; color: var(--success-color); font-weight: bold; opacity: 0; transition: opacity 0.5s;">✅ Salvo automático!</span>
-            
-            <div style="margin-bottom: 15px;">
-                <label style="font-weight: bold; color: var(--primary-color);">📧 E-mail SOLICITANTES (Separe por vírgula):</label>
-                <input type="text" id="configZapEmail" value="${configZap.emailSolicitante || ''}" placeholder="exemplo@gmail.com, outro@gmail.com" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; margin-top: 5px;" onblur="salvarConfigZap()">
-            </div>
-
-            <div style="margin-bottom: 15px;">
-                <label style="font-weight: bold; color: var(--danger-color);">📱 Telefones ADMIN (Recebem a 'Missão Concluída'):</label>
-                <input type="text" id="configZapAdmin" value="${configZap.telefoneAdminNotif || ''}" placeholder="Ex: 46999999999, 46888888888" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; margin-top: 5px;" onblur="salvarConfigZap()">
-                <small style="color: #666; display: block; margin-top: 2px;">Digite os números com DDD (sem o zero). Separe por vírgula se for mais de um.</small>
-            </div>
-
-            <div style="margin-bottom: 15px;">
-                <label style="font-weight: bold; color: var(--agua-color);">💧 Telefone Central Defesa Civil:</label>
-                <input type="text" id="configZapPipa" value="${configZap.telefonePipa || ''}" placeholder="Ex: 46999999999" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; margin-top: 5px;" onblur="salvarConfigZap()">
-                <small style="color: #666; display: block; margin-top: 2px;">Digite apenas o DDD e o número (sem o zero inicial).</small>
-            </div>
-
-            <div style="margin-bottom: 20px;">
-                <label style="font-weight: bold; color: var(--lona-color);">🏠 Telefone Central CRAS:</label>
-                <input type="text" id="configZapSocial" value="${configZap.telefoneSocial || ''}" placeholder="Ex: 46999999999" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; margin-top: 5px;" onblur="salvarConfigZap()">
-                <small style="color: #666; display: block; margin-top: 2px;">Digite apenas o DDD e o número (sem o zero inicial).</small>
-            </div>
+        <div style="background:#fff; border:1px solid #c8e6c9; padding:20px; border-radius:8px; margin-bottom:15px;">
+            <h3 style="margin: 0 0 15px 0; color: #2e7d32; border-bottom: 2px solid #e8f5e9; padding-bottom: 8px;">1. Configurar Telefones (Motoristas)</h3>
+            <div class="form-row"><div class="form-col" style="flex:1"><label>E-mail SOLICITANTES (Separe por vírgula):</label><input type="text" id="configZapEmail" value="${configZap.emailSolicitante || ''}" placeholder="email1@..., email2@..." class="nav-input"></div></div>
+            <div class="form-row"><div class="form-col" style="flex:1"><label>Zap Motorista ÁGUA (Ex: 55469...):</label><input type="tel" id="configZapTelPipa" value="${configZap.telefonePipa || ''}" placeholder="55469..." class="nav-input"></div><div class="form-col" style="flex:1"><label>Zap Social TELHAS (Ex: 55469...):</label><input type="tel" id="configZapTelSocial" value="${configZap.telefoneSocial || ''}" placeholder="55469..." class="nav-input"></div></div>
+            <div class="form-row" style="justify-content:flex-end; margin-top:10px;"><button class="btn-small" style="background:var(--success-color); height:45px; padding: 0 25px; font-size: 1.1rem;" onclick="salvarConfigZap()">💾 Salvar Números</button></div>
         </div>
 
         <div style="background:#fff; border:1px solid #c8e6c9; padding:20px; border-radius:8px; margin-bottom:15px;">
@@ -1943,6 +1885,7 @@ function renderPainelRobo() {
         </div>`;
         
         document.getElementById('tab-robo').innerHTML = h;
+        // Inicia a escuta apenas quando a aba é aberta
         iniciarEscutaStatusRobo();
     }
 async function apagarCadastrosPorEmail() {
