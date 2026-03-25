@@ -9,8 +9,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         :root {
@@ -26,740 +26,125 @@
             --bg-color: #f0f2f5; 
         }
 
-        * { 
-            box-sizing: border-box; 
-            font-family: Arial, sans-serif; 
-        }
-
-        body { 
-            background-color: var(--bg-color); 
-            color: var(--text-color); 
-            margin: 0; 
-            padding: 4px; 
-            font-size: 13px; 
-            transition: all 0.3s ease; 
-        }
+        * { box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 4px; font-size: 13px; transition: all 0.3s ease; }
         
-        .login-overlay { 
-            display: none; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: #ffffff; 
-            z-index: 10000; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            text-align: center; 
-            padding: 20px; 
-        }
-
-        .container { 
-            width: 100%; 
-            max-width: 96%; 
-            margin: 0 auto; 
-            background: #fff; 
-            padding: 8px 12px; 
-            border-radius: 8px; 
-            border: 2px solid var(--primary-color); 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
-            position: relative; 
-            overflow: hidden; 
-        }
-
-        .container::before { 
-            content: ""; 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            right: 0; 
-            bottom: 0; 
-            background-image: url('1001145756.png'); 
-            background-repeat: no-repeat; 
-            background-position: center; 
-            background-size: 40%; 
-            opacity: 0.03; 
-            pointer-events: none; 
-            z-index: 0; 
-        }
-
-        .container > * { 
-            position: relative; 
-            z-index: 1; 
-        }
+        .login-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; z-index: 10000; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+        .container { width: 100%; max-width: 96%; margin: 0 auto; background: #fff; padding: 8px 12px; border-radius: 8px; border: 2px solid var(--primary-color); box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; overflow: hidden; }
+        .container::before { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: url('1001145756.png'); background-repeat: no-repeat; background-position: center; background-size: 40%; opacity: 0.03; pointer-events: none; z-index: 0; }
+        .container > * { position: relative; z-index: 1; }
         
-        .cloud-panel { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            background: rgba(238, 238, 238, 0.9); 
-            padding: 4px 8px; 
-            border-radius: 4px; 
-            margin-bottom: 6px; 
-            font-weight: bold; 
-            font-size: 0.75rem;
-        }
-
-        .status-indicator { 
-            display: flex; 
-            align-items: center; 
-            gap: 4px; 
-            flex-wrap: wrap; 
-        }
-
-        .dot { 
-            height: 8px; 
-            width: 8px; 
-            background-color: #bbb; 
-            border-radius: 50%; 
-            display: inline-block; 
-        }
-
-        .dot.online { 
-            background-color: var(--success-color); 
-        }
-
-        .dot.offline { 
-            background-color: var(--danger-color); 
-        }
+        .cloud-panel { display: flex; justify-content: space-between; align-items: center; background: rgba(238, 238, 238, 0.9); padding: 4px 8px; border-radius: 4px; margin-bottom: 6px; font-weight: bold; font-size: 0.75rem;}
+        .status-indicator { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+        .dot { height: 8px; width: 8px; background-color: #bbb; border-radius: 50%; display: inline-block; }
+        .dot.online { background-color: var(--success-color); }
+        .dot.offline { background-color: var(--danger-color); }
         
-        .cloud-btns { 
-            display: flex; 
-            gap: 4px; 
-        }
+        .cloud-btns { display: flex; gap: 4px; }
+        .btn-small { padding: 4px 6px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; font-size: 0.75rem; }
+        .btn-login { background-color: #4285F4; } 
+        .btn-sync { background-color: var(--success-color); display: none; }
 
-        .btn-small { 
-            padding: 4px 6px; 
-            border: none; 
-            border-radius: 4px; 
-            cursor: pointer; 
-            font-weight: bold; 
-            color: white; 
-            font-size: 0.75rem; 
-        }
+        .form-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-bottom: 6px; }
+        .logo { width: 55px; height: auto; object-fit: contain; transition: width 0.3s ease; }
+        .title-container { text-align: center; flex-grow: 1; padding: 0 5px; line-height: 1.1;}
+        .title-container h1 { margin: 0; font-size: 1.05rem; color: var(--primary-color);}
+        .title-container h2 { margin: 0; font-size: 0.8rem; color: var(--danger-color); text-transform: uppercase; font-weight: bold;}
 
-        .btn-login { 
-            background-color: #4285F4; 
-        } 
-
-        .btn-sync { 
-            background-color: var(--success-color); 
-            display: none; 
-        }
-
-        .form-header { 
-            display: flex; 
-            align-items: center; 
-            justify-content: space-between; 
-            border-bottom: 1px solid #ccc; 
-            padding-bottom: 4px; 
-            margin-bottom: 6px; 
-        }
-
-        .logo { 
-            width: 55px; 
-            height: auto; 
-            object-fit: contain; 
-            transition: width 0.3s ease; 
-        }
-
-        .title-container { 
-            text-align: center; 
-            flex-grow: 1; 
-            padding: 0 5px; 
-            line-height: 1.1;
-        }
-
-        .title-container h1 { 
-            margin: 0; 
-            font-size: 1.05rem; 
-            color: var(--primary-color);
-        }
-
-        .title-container h2 { 
-            margin: 0; 
-            font-size: 0.8rem; 
-            color: var(--danger-color); 
-            text-transform: uppercase; 
-            font-weight: bold;
-        }
-
-        @keyframes blink-red { 
-            0% { background-color: var(--danger-color); } 
-            50% { background-color: #ff9999; color: #900; } 
-            100% { background-color: var(--danger-color); } 
-        }
-
-        .blink { 
-            animation: blink-red 1.5s infinite; 
-        }
-
-        .btn-logistica { 
-            width: 100%; 
-            padding: 12px; 
-            font-size: 1.1rem; 
-            font-weight: bold; 
-            color: white; 
-            border: none; 
-            border-radius: 5px; 
-            margin-bottom: 10px; 
-            cursor: pointer; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
-        }
+        @keyframes blink-red { 0% { background-color: var(--danger-color); } 50% { background-color: #ff9999; color: #900; } 100% { background-color: var(--danger-color); } }
+        .blink { animation: blink-red 1.5s infinite; }
+        .btn-logistica { width: 100%; padding: 12px; font-size: 1.1rem; font-weight: bold; color: white; border: none; border-radius: 5px; margin-bottom: 10px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         
-        .modal-content-logistica { 
-            background: #f0f2f5; 
-            width: 96%; 
-            max-width: 600px; 
-            border-radius: 8px; 
-            padding: 15px; 
-            position: relative; 
-            max-height: 90vh; 
-            overflow-y: auto; 
-        }
-
-        .dispatch-card { 
-            background: #fff; 
-            border-left: 5px solid var(--agua-color); 
-            padding: 10px; 
-            border-radius: 4px; 
-            margin-bottom: 8px; 
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center;
-        }
-
-        .dispatch-card.telha { 
-            border-left-color: var(--telha-color); 
-        }
-
-        .dispatch-info { 
-            flex: 1; 
-        }
-
-        .dispatch-info strong { 
-            font-size: 1rem; 
-            color: #222; 
-            display: block; 
-            margin-bottom: 2px;
-        }
-
-        .dispatch-info p { 
-            margin: 0; 
-            font-size: 0.85rem; 
-            color: #555; 
-        }
-
-        .dispatch-actions { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 5px; 
-            align-items: flex-end; 
-            min-width: 110px;
-        }
+        .modal-content-logistica { background: #f0f2f5; width: 96%; max-width: 600px; border-radius: 8px; padding: 15px; position: relative; max-height: 90vh; overflow-y: auto; }
+        .dispatch-card { background: #fff; border-left: 5px solid var(--agua-color); padding: 10px; border-radius: 4px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center;}
+        .dispatch-card.telha { border-left-color: var(--telha-color); }
+        .dispatch-info { flex: 1; }
+        .dispatch-info strong { font-size: 1rem; color: #222; display: block; margin-bottom: 2px;}
+        .dispatch-info p { margin: 0; font-size: 0.85rem; color: #555; }
+        .dispatch-actions { display: flex; flex-direction: column; gap: 5px; align-items: flex-end; min-width: 110px;}
         
-        .bulk-delete-btn { 
-            background: var(--danger-color); 
-            color: white; 
-            padding: 8px 15px; 
-            border: none; 
-            border-radius: 4px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            display: none; 
-            margin-bottom: 10px; 
-            width: 100%; 
-            font-size: 1rem;
-        }
+        .bulk-delete-btn { background: var(--danger-color); color: white; padding: 8px 15px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; display: none; margin-bottom: 10px; width: 100%; font-size: 1rem;}
+        .bulk-checkbox { width: 18px; height: 18px; cursor: pointer; margin-right: 5px; vertical-align: middle;}
 
-        .bulk-checkbox { 
-            width: 18px; 
-            height: 18px; 
-            cursor: pointer; 
-            margin-right: 5px; 
-            vertical-align: middle;
-        }
+        .main-question { display: block; font-size: 1rem; font-weight: bold; color: var(--primary-color); margin-bottom: 4px; }
+        .section-title { font-size: 0.9rem; color: var(--primary-color); border-bottom: 2px solid var(--primary-color); margin-bottom: 4px; padding-bottom: 2px; margin-top: 4px; font-weight: bold;}
 
-        .main-question { 
-            display: block; 
-            font-size: 1rem; 
-            font-weight: bold; 
-            color: var(--primary-color); 
-            margin-bottom: 4px; 
-        }
+        .form-row { display: flex; gap: 6px; margin-bottom: 5px; align-items: flex-end; }
+        .form-col { flex: 1; display: flex; flex-direction: column; }
 
-        .section-title { 
-            font-size: 0.9rem; 
-            color: var(--primary-color); 
-            border-bottom: 2px solid var(--primary-color); 
-            margin-bottom: 4px; 
-            padding-bottom: 2px; 
-            margin-top: 4px; 
-            font-weight: bold;
-        }
-
-        .form-row { 
-            display: flex; 
-            gap: 6px; 
-            margin-bottom: 5px; 
-            align-items: flex-end; 
-        }
-
-        .form-col { 
-            flex: 1; 
-            display: flex; 
-            flex-direction: column; 
-        }
-
-        label { 
-            display: block; 
-            font-size: 0.8rem; 
-            font-weight: bold; 
-            margin-bottom: 2px; 
-            color: #222; 
-        }
-
-        input[type="text"], 
-        input[type="number"], 
-        input[type="tel"], 
-        input[type="date"], 
-        select { 
-            width: 100%; 
-            padding: 6px 8px; 
-            font-size: 0.95rem; 
-            border: 1px solid #aaa; 
-            border-radius: 4px; 
-            background: rgba(255,255,255,0.9); 
-            height: 32px; 
-            transition: all 0.3s; 
-        }
-
-        input:focus, select:focus { 
-            outline: 2px solid var(--primary-color); 
-        }
-
-        #nome { 
-            text-transform: capitalize; 
-        }
+        label { display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 2px; color: #222; }
+        input[type="text"], input[type="number"], input[type="tel"], input[type="date"], select { width: 100%; padding: 6px 8px; font-size: 0.95rem; border: 1px solid #aaa; border-radius: 4px; background: rgba(255,255,255,0.9); height: 32px; transition: all 0.3s; }
+        input:focus, select:focus { outline: 2px solid var(--primary-color); }
+        #nome { text-transform: capitalize; }
         
-        .camera-btn { 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 4px; 
-            width: 100%; 
-            background: rgba(238, 238, 238, 0.9); 
-            border: 1px dashed #777; 
-            border-radius: 4px; 
-            font-size: 0.8rem; 
-            font-weight: bold; 
-            color: #444; 
-            cursor: pointer; 
-            height: 32px; 
-            margin: 0; 
-        }
+        .camera-btn { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; background: rgba(238, 238, 238, 0.9); border: 1px dashed #777; border-radius: 4px; font-size: 0.8rem; font-weight: bold; color: #444; cursor: pointer; height: 32px; margin: 0; }
+        .camera-btn.has-photo { background: #dff0d8; border-color: var(--success-color); color: var(--success-color); }
+        #rgPhotoInput { display: none; } .rg-preview { max-height: 20px; border-radius: 3px; display: none; margin-left: 4px; border: 1px solid #555; }
 
-        .camera-btn.has-photo { 
-            background: #dff0d8; 
-            border-color: var(--success-color); 
-            color: var(--success-color); 
-        }
+        .donation-type-group { display: flex; gap: 4px; width: 100%; margin-bottom: 6px; flex-wrap: wrap;}
+        .toggle-btn { flex: 1; min-width: 22%; text-align: center; background: rgba(238,238,238,0.9); padding: 6px 0; border-radius: 4px; font-size: 0.75rem; font-weight: bold; border: 2px solid #ccc; cursor: pointer; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+        .toggle-btn input { display: none; }
+        .toggle-btn.active-lona { background: var(--lona-color); color: white; border-color: #ec971f; }
+        .toggle-btn.active-telha { background: var(--telha-color); color: white; border-color: var(--primary-color); }
+        .toggle-btn.active-cesta { background: var(--cesta-color); color: white; border-color: #1e7e34; }
+        .toggle-btn.active-agua { background: var(--agua-color); color: white; border-color: #0056b3; }
 
-        #rgPhotoInput { 
-            display: none; 
-        } 
+        .report-type-group { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; width: 100%; }
+        .report-toggle { flex: 1; min-width: 30%; text-align: center; background: rgba(238,238,238,0.9); padding: 8px 4px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; border: 2px solid #ccc; cursor: pointer; margin: 0; color: #555; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .report-toggle input { display: none; } .report-toggle.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
 
-        .rg-preview { 
-            max-height: 20px; 
-            border-radius: 3px; 
-            display: none; 
-            margin-left: 4px; 
-            border: 1px solid #555; 
-        }
-
-        .donation-type-group { 
-            display: flex; 
-            gap: 4px; 
-            width: 100%; 
-            margin-bottom: 6px; 
-            flex-wrap: wrap;
-        }
-
-        .toggle-btn { 
-            flex: 1; 
-            min-width: 22%; 
-            text-align: center; 
-            background: rgba(238,238,238,0.9); 
-            padding: 6px 0; 
-            border-radius: 4px; 
-            font-size: 0.75rem; 
-            font-weight: bold; 
-            border: 2px solid #ccc; 
-            cursor: pointer; 
-            margin: 0; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 2px; 
-        }
-
-        .toggle-btn input { 
-            display: none; 
-        }
-
-        .toggle-btn.active-lona { 
-            background: var(--lona-color); 
-            color: white; 
-            border-color: #ec971f; 
-        }
-
-        .toggle-btn.active-telha { 
-            background: var(--telha-color); 
-            color: white; 
-            border-color: var(--primary-color); 
-        }
-
-        .toggle-btn.active-cesta { 
-            background: var(--cesta-color); 
-            color: white; 
-            border-color: #1e7e34; 
-        }
-
-        .toggle-btn.active-agua { 
-            background: var(--agua-color); 
-            color: white; 
-            border-color: #0056b3; 
-        }
-
-        .report-type-group { 
-            display: flex; 
-            gap: 4px; 
-            flex-wrap: wrap; 
-            margin-bottom: 8px; 
-            width: 100%; 
-        }
-
-        .report-toggle { 
-            flex: 1; 
-            min-width: 30%; 
-            text-align: center; 
-            background: rgba(238,238,238,0.9); 
-            padding: 8px 4px; 
-            border-radius: 4px; 
-            font-size: 0.75rem; 
-            font-weight: bold; 
-            border: 2px solid #ccc; 
-            cursor: pointer; 
-            margin: 0; 
-            color: #555; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 4px; 
-        }
-
-        .report-toggle input { 
-            display: none; 
-        } 
-
-        .report-toggle.active { 
-            background: var(--primary-color); 
-            color: white; 
-            border-color: var(--primary-color); 
-        }
-
-        .signature-container { 
-            border: 1px dashed #777; 
-            border-radius: 4px; 
-            background: rgba(255,255,255,0.9); 
-            position: relative; 
-            width: 100%; 
-            margin-top: 2px;
-        }
-
-        canvas { 
-            width: 100%; 
-            height: 80px; 
-            touch-action: none; 
-            cursor: crosshair; 
-        }
-
-        .clear-btn { 
-            position: absolute; 
-            top: 2px; 
-            right: 2px; 
-            padding: 4px 8px; 
-            font-size: 0.7rem; 
-            font-weight: bold; 
-            background: var(--danger-color); 
-            color: white; 
-            border: none; 
-            border-radius: 3px; 
-            cursor: pointer; 
-            z-index: 10;
-        }
+        .signature-container { border: 1px dashed #777; border-radius: 4px; background: rgba(255,255,255,0.9); position: relative; width: 100%; margin-top: 2px;}
+        canvas { width: 100%; height: 80px; touch-action: none; cursor: crosshair; }
+        .clear-btn { position: absolute; top: 2px; right: 2px; padding: 4px 8px; font-size: 0.7rem; font-weight: bold; background: var(--danger-color); color: white; border: none; border-radius: 3px; cursor: pointer; z-index: 10;}
         
-        .action-btns { 
-            display: flex; 
-            gap: 8px; 
-            margin-top: 8px; 
-        }
+        .action-btns { display: flex; gap: 8px; margin-top: 8px; }
+        .action-btns button { flex: 1; padding: 10px; font-size: 1rem; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; color: white; height: 38px; }
+        .btn-save { background-color: #5cb85c; } .btn-save:disabled { background-color: #999; cursor: not-allowed; }
+        .btn-report { background-color: #f0ad4e; color: #333 !important; }
 
-        .action-btns button { 
-            flex: 1; 
-            padding: 10px; 
-            font-size: 1rem; 
-            font-weight: bold; 
-            border: none; 
-            border-radius: 4px; 
-            cursor: pointer; 
-            color: white; 
-            height: 38px; 
-        }
-
-        .btn-save { 
-            background-color: #5cb85c; 
-        } 
-
-        .btn-save:disabled { 
-            background-color: #999; 
-            cursor: not-allowed; 
-        }
-
-        .btn-report { 
-            background-color: #f0ad4e; 
-            color: #333 !important; 
-        }
-
-        .hidden { 
-            display: none !important; 
-        }
-
-        .btn-print { 
-            background-color: var(--primary-color); 
-            width: 100%; 
-            padding: 12px; 
-            color: white; 
-            font-weight: bold; 
-            font-size: 1.1rem; 
-            border: none; 
-            border-radius: 5px; 
-            margin-bottom: 8px; 
-            cursor: pointer;
-        }
-
-        .btn-back { 
-            background-color: #e67e22; 
-            width: 100%; 
-            padding: 12px; 
-            color: white; 
-            font-weight: bold; 
-            font-size: 1.1rem; 
-            border: none; 
-            border-radius: 5px; 
-            margin-bottom: 8px; 
-            cursor: pointer;
-        }
+        .hidden { display: none !important; }
+        .btn-print { background-color: var(--primary-color); width: 100%; padding: 12px; color: white; font-weight: bold; font-size: 1.1rem; border: none; border-radius: 5px; margin-bottom: 8px; cursor: pointer;}
+        .btn-back { background-color: #e67e22; width: 100%; padding: 12px; color: white; font-weight: bold; font-size: 1.1rem; border: none; border-radius: 5px; margin-bottom: 8px; cursor: pointer;}
         
-        .tabs-header { 
-            display: flex; 
-            overflow-x: auto; 
-            border-bottom: 2px solid #ccc; 
-            margin-bottom: 10px; 
-            padding-bottom: 2px; 
-        }
-
-        .tab-btn { 
-            padding: 8px 12px; 
-            font-size: 0.85rem; 
-            cursor: pointer; 
-            background: rgba(238,238,238,0.9); 
-            border: 1px solid #ccc; 
-            border-bottom: none; 
-            border-radius: 4px 4px 0 0; 
-            margin-right: 4px; 
-            font-weight: bold; 
-            white-space: nowrap; 
-            color: #333;
-        }
-
-        .tab-btn.active { 
-            background: var(--primary-color); 
-            color: white; 
-            border-color: var(--primary-color); 
-        }
-
-        .tab-btn-log { 
-            background: #f8d7da; 
-            color: var(--danger-color); 
-            border-color: #f5c6cb; 
-        }
-
-        .tab-btn-log.active { 
-            background: var(--danger-color); 
-            color: white; 
-            border-color: var(--danger-color); 
-        }
+        .tabs-header { display: flex; overflow-x: auto; border-bottom: 2px solid #ccc; margin-bottom: 10px; padding-bottom: 2px; }
+        .tab-btn { padding: 8px 12px; font-size: 0.85rem; cursor: pointer; background: rgba(238,238,238,0.9); border: 1px solid #ccc; border-bottom: none; border-radius: 4px 4px 0 0; margin-right: 4px; font-weight: bold; white-space: nowrap; color: #333;}
+        .tab-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+        .tab-btn-log { background: #f8d7da; color: var(--danger-color); border-color: #f5c6cb; }
+        .tab-btn-log.active { background: var(--danger-color); color: white; border-color: var(--danger-color); }
         
-        .tab-content { 
-            display: none; 
-        } 
-
-        .tab-content.active { 
-            display: block; 
-        }
-
-        .report-summary { 
-            background: rgba(233,236,239,0.9); 
-            padding: 12px; 
-            border-radius: 4px; 
-            margin-bottom: 10px; 
-            font-size: 1.2rem; 
-            border: 1px solid #ccc; 
-            text-align: center; 
-        }
+        .tab-content { display: none; } .tab-content.active { display: block; }
+        .report-summary { background: rgba(233,236,239,0.9); padding: 12px; border-radius: 4px; margin-bottom: 10px; font-size: 1.2rem; border: 1px solid #ccc; text-align: center; }
         
-        .bairro-section { 
-            margin-bottom: 15px; 
-        }
-
-        .bairro-header { 
-            background: #e2e8f0; 
-            color: var(--primary-color); 
-            padding: 6px 10px; 
-            border-left: 5px solid var(--primary-color); 
-            border-radius: 3px; 
-            font-size: 1rem; 
-            font-weight: bold; 
-            margin-bottom: 6px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-        }
-
-        .table-responsive { 
-            overflow-x: auto; 
-        }
-
-        .report-table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            background: rgba(255,255,255,0.95); 
-            font-size: 0.8rem; 
-        }
-
-        .report-table th, .report-table td { 
-            border: 1px solid #ccc; 
-            padding: 4px 6px; 
-            text-align: left; 
-            vertical-align: middle; 
-        }
-
-        .report-table th { 
-            background-color: var(--primary-color); 
-            color: white; 
-            font-weight: bold; 
-        }
-
-        .report-table tr:nth-child(even) { 
-            background-color: #f8f9fa; 
-        }
+        .bairro-section { margin-bottom: 15px; }
+        .bairro-header { background: #e2e8f0; color: var(--primary-color); padding: 6px 10px; border-left: 5px solid var(--primary-color); border-radius: 3px; font-size: 1rem; font-weight: bold; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+        .table-responsive { overflow-x: auto; }
+        .report-table { width: 100%; border-collapse: collapse; background: rgba(255,255,255,0.95); font-size: 0.8rem; }
+        .report-table th, .report-table td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; vertical-align: middle; }
+        .report-table th { background-color: var(--primary-color); color: white; font-weight: bold; }
+        .report-table tr:nth-child(even) { background-color: #f8f9fa; }
         
-        .sync-badge { 
-            font-size: 0.65rem; 
-            font-weight: bold; 
-            padding: 2px 4px; 
-            border-radius: 8px; 
-            display: inline-block; 
-            border: 1px solid #ccc; 
-            margin-top: 4px;
-        }
-
-        .sync-badge.synced { 
-            color: var(--success-color); 
-            border-color: var(--success-color); 
-            background: #e8f5e9; 
-        }
-
-        .btn-edit { 
-            background: #0275d8; 
-            border: none; 
-            padding: 4px 6px; 
-            border-radius: 3px; 
-            font-size: 0.75rem; 
-            font-weight: bold; 
-            cursor: pointer; 
-            color: #fff; 
-            width: 100%; 
-            margin-bottom: 4px;
-        }
+        .sync-badge { font-size: 0.65rem; font-weight: bold; padding: 2px 4px; border-radius: 8px; display: inline-block; border: 1px solid #ccc; margin-top: 4px;}
+        .sync-badge.synced { color: var(--success-color); border-color: var(--success-color); background: #e8f5e9; }
+        .btn-edit { background: #0275d8; border: none; padding: 4px 6px; border-radius: 3px; font-size: 0.75rem; font-weight: bold; cursor: pointer; color: #fff; width: 100%; margin-bottom: 4px;}
         
-        .agent-signature { 
-            text-align: center; 
-            margin-top: 40px; 
-            padding-top: 20px; 
-            page-break-inside: avoid; 
-            clear: both; 
-            width: 100%; 
-        }
+        .agent-signature { text-align: center; margin-top: 40px; padding-top: 20px; page-break-inside: avoid; clear: both; width: 100%; }
+        .agent-signature .line { width: 80%; max-width: 300px; border-bottom: 1px solid #000; margin: 0 auto 5px auto; }
+        .agent-signature p { margin: 0; font-size: 1rem; font-weight: bold; }
 
-        .agent-signature .line { 
-            width: 80%; 
-            max-width: 300px; 
-            border-bottom: 1px solid #000; 
-            margin: 0 auto 5px auto; 
-        }
-
-        .agent-signature p { 
-            margin: 0; 
-            font-size: 1rem; 
-            font-weight: bold; 
-        }
-
-        .modal { 
-            display: none; 
-            position: fixed; 
-            z-index: 9999; 
-            left: 0; 
-            top: 0; 
-            width: 100%; 
-            height: 100%; 
-            background-color: rgba(0,0,0,0.85); 
-            align-items: center; 
-            justify-content: center; 
-        }
-
-        .modal img { 
-            max-width: 95%; 
-            max-height: 90%; 
-            border-radius: 8px; 
-            border: 2px solid white; 
-        }
-
-        .print-footer-fixed { 
-            display: none; 
-        }
+        .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
+        .modal img { max-width: 95%; max-height: 90%; border-radius: 8px; border: 2px solid white; }
+        .print-footer-fixed { display: none; }
 
         @media (min-width: 768px) {
-            .logo { width: 130px; } 
-            .title-container h1 { font-size: 2.2rem; } 
-            .title-container h2 { font-size: 1.4rem; }
+            .logo { width: 130px; } .title-container h1 { font-size: 2.2rem; } .title-container h2 { font-size: 1.4rem; }
             .main-question { font-size: 1.5rem; margin-bottom: 10px; margin-top: 10px; text-align: center;}
             .section-title { font-size: 1.5rem; margin-top: 20px; margin-bottom: 15px; }
             label { font-size: 1.1rem; margin-bottom: 6px; }
             input[type="text"], input[type="number"], input[type="tel"], input[type="date"], select { font-size: 1.2rem; height: 48px; padding: 8px 12px; }
-            .camera-btn { font-size: 1.1rem; height: 48px; } 
-            .toggle-btn { font-size: 1.2rem; padding: 15px 0; }
+            .camera-btn { font-size: 1.1rem; height: 48px; } .toggle-btn { font-size: 1.2rem; padding: 15px 0; }
             .toggle-btn span:first-child { font-size: 2.2rem !important; margin-bottom: 5px; }
-            .action-btns button { font-size: 1.5rem; height: 55px; } 
-            .btn-report { font-size: 1.5rem; padding: 15px; }
-            .report-table { font-size: 1rem; } 
-            .cloud-panel { padding: 10px 15px; font-size: 1.1rem; } 
-            .report-toggle { font-size: 1rem; padding: 12px; }
+            .action-btns button { font-size: 1.5rem; height: 55px; } .btn-report { font-size: 1.5rem; padding: 15px; }
+            .report-table { font-size: 1rem; } .cloud-panel { padding: 10px 15px; font-size: 1.1rem; } .report-toggle { font-size: 1rem; padding: 12px; }
         }
 
         @media print {
@@ -768,21 +153,16 @@
             body:not(.print-acoes-mode) .container { border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; max-width: 100% !important; padding-bottom: 30px !important; overflow: visible !important; position: static !important; }
             .container::before, .no-print, .modal, .app-footer { display: none !important; }
             .form-header { margin-top: 0; padding-bottom: 2px !important; margin-bottom: 5px !important; border-bottom: 1px solid #000; }
-            .logo { width: 35px !important; } 
-            .title-container h1 { font-size: 11px !important; margin: 0 !important; } 
-            .title-container h2 { font-size: 9px !important; margin: 0 !important; }
-            .tab-content { display: none; } 
-            .tab-content.active { display: block; }
+            .logo { width: 35px !important; } .title-container h1 { font-size: 11px !important; margin: 0 !important; } .title-container h2 { font-size: 9px !important; margin: 0 !important; }
+            .tab-content { display: none; } .tab-content.active { display: block; }
             .report-summary { padding: 4px !important; font-size: 11px !important; margin-bottom: 5px !important; border: 1px solid #000; }
             .bairro-section { page-break-inside: avoid; margin-bottom: 5px !important; }
             .bairro-header { background: #eee !important; border: 1px solid #000 !important; padding: 3px 6px !important; margin-bottom: 3px !important; color: #000 !important; font-size: 10px !important; }
             .report-table { font-size: 8.5px !important; line-height: 1 !important; border: 1px solid #000; width: 100%;}
             .report-table th { background-color: #ddd !important; color: #000 !important; padding: 2px !important; font-size: 8.5px !important; border: 1px solid #000;}
-            .report-table td { padding: 2px 3px !important; border: 1px solid #000;} 
-            .report-table tr { page-break-inside: avoid; }
+            .report-table td { padding: 2px 3px !important; border: 1px solid #000;} .report-table tr { page-break-inside: avoid; }
             .agent-signature { margin-top: 25px !important; padding-bottom: 15px !important; page-break-inside: avoid; }
-            .agent-signature p { font-size: 9px !important; } 
-            .agent-signature .line { margin-bottom: 2px !important; }
+            .agent-signature p { font-size: 9px !important; } .agent-signature .line { margin-bottom: 2px !important; }
             .print-footer-fixed { display: flex !important; position: fixed; bottom: 0; left: 0; width: 100%; justify-content: flex-end; font-size: 7px !important; color: #999; padding: 2px 10px !important; background-color: white; z-index: 1000; }
         }
     </style>
@@ -882,7 +262,7 @@
             <span id="realtimeClock" style="margin-left: 10px; font-weight: normal; color: #555;"></span>
         </div>
         <div class="cloud-btns">
-            <button class="btn-small admin-only-section" id="btnEquipe" style="background:#8e44ad; display:none;" onclick="abrirModalEquipe()">👥 Equipe</button>
+            <button class="btn-small" id="btnEquipe" style="background:#8e44ad; display:none;" onclick="abrirModalEquipe()">👥 Equipe</button>
             <button class="btn-small btn-login" id="btnLogin" onclick="loginGoogle()">Logar Google</button>
             <button class="btn-small btn-sync" id="btnSync" onclick="sincronizarFirebaseAutomatica()">☁️ Sync</button>
         </div>
@@ -1053,14 +433,36 @@
 
     <div class="tabs-header no-print" style="margin-bottom: 15px; border-bottom: 3px solid #ccc;">
         <div class="tab-btn active" id="tab-btn-geral" onclick="openTab('geral')" style="font-size: 1rem; padding: 10px 15px;">📊 Relatórios de Cadastros</div>
-        
-        <div class="tab-btn tab-btn-estoque admin-only-section" id="tab-btn-estoque" onclick="openTab('estoque')" style="font-size: 1rem; padding: 10px 15px; display: none;">📦 Controle de Estoque</div>
-        
-        <div class="tab-btn tab-btn-log admin-only-section" id="tab-btn-log" onclick="openTab('log')" style="font-size: 1rem; padding: 10px 15px; display: none;">🔒 Auditoria e Configs</div>
+        <div class="tab-btn tab-btn-log" id="tab-btn-log" onclick="openTab('log')" style="font-size: 1rem; padding: 10px 15px; display: none;">🔒 Auditoria e Configs</div>
     </div>
     
     <div class="tab-content active" id="tab-geral">
         
+        <div id="painel-estoque-admin" class="no-print" style="background:#e8f4f8; border:1px solid #bce8f1; padding:12px; border-radius:8px; margin-bottom:15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:2px solid #bce8f1; padding-bottom:5px;">
+                <h3 style="margin:0; color:#31708f; font-size:1.1rem; font-weight:bold;">📦 Controle de Estoque Geral</h3>
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px;">
+                <div style="background:#fff; padding:10px; border-radius:6px; text-align:center; border:1px solid #ddd; position:relative;">
+                    <button class="no-print" style="position:absolute; top:2px; right:2px; background:none; border:none; font-size:1rem; cursor:pointer; color:#0275d8;" onclick="prepararManejoEstoque('lona')">⚙️</button>
+                    <span style="font-size:1.5rem;">⛺</span><br><strong style="color:var(--lona-color);">Lonas (m²)</strong><br><span id="estLona" style="font-size:1.2rem; font-weight:bold;">0</span>
+                </div>
+                <div style="background:#fff; padding:10px; border-radius:6px; text-align:center; border:1px solid #ddd; position:relative;">
+                    <button class="no-print" style="position:absolute; top:2px; right:2px; background:none; border:none; font-size:1rem; cursor:pointer; color:#0275d8;" onclick="prepararManejoEstoque('telha')">⚙️</button>
+                    <span style="font-size:1.5rem;">🏠</span><br><strong style="color:var(--telha-color);">Telhas (un)</strong><br><span id="estTelha" style="font-size:1.2rem; font-weight:bold;">0</span>
+                </div>
+                <div style="background:#fff; padding:10px; border-radius:6px; text-align:center; border:1px solid #ddd; position:relative;">
+                    <button class="no-print" style="position:absolute; top:2px; right:2px; background:none; border:none; font-size:1rem; cursor:pointer; color:#0275d8;" onclick="prepararManejoEstoque('cesta')">⚙️</button>
+                    <span style="font-size:1.5rem;">📦</span><br><strong style="color:var(--cesta-color);">Cestas (un)</strong><br><span id="estCesta" style="font-size:1.2rem; font-weight:bold;">0</span>
+                </div>
+                <div style="background:#fff; padding:10px; border-radius:6px; text-align:center; border:1px solid #ddd; position:relative;">
+                    <button class="no-print" style="position:absolute; top:2px; right:2px; background:none; border:none; font-size:1rem; cursor:pointer; color:#0275d8;" onclick="prepararManejoEstoque('agua')">⚙️</button>
+                    <span style="font-size:1.5rem;">💧</span><br><strong style="color:var(--agua-color);">Água (m³)</strong><br><span id="estAgua" style="font-size:1.2rem; font-weight:bold;">0</span>
+                </div>
+            </div>
+            <p style="font-size:0.7rem; color:#777; margin:5px 0 0 0; text-align:center; font-style:italic;">O estoque diminui automaticamente ao criar um cadastro. Clique na engrenagem ⚙️ para repor itens ou fazer retiradas avulsas da base.</p>
+        </div>
+
         <div class="filter-group no-print" id="geralFilters" style="background: #f8f9fa; border: 1px solid #ddd; padding: 12px;">
             <label style="width: 100%; text-align: center; color: var(--primary-color); font-size: 0.9rem; font-weight: bold; margin-bottom: 8px;">1. Selecione os tipos de relatórios:</label>
             <div class="report-type-group">
@@ -1121,134 +523,7 @@
         </div>
     </div>
 
-    <div class="tab-content" id="tab-estoque">
-        <div class="no-print" style="background:#e8f4f8; border:1px solid #bce8f1; padding:12px; border-radius:8px; margin-bottom:15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:2px solid #bce8f1; padding-bottom:5px;">
-                <h3 style="margin:0; color:#31708f; font-size:1.1rem; font-weight:bold;">📦 Controle de Estoque Geral</h3>
-            </div>
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px;">
-                <div style="background:#fff; padding:10px; border-radius:6px; text-align:center; border:1px solid #ddd; position:relative;">
-                    <button class="no-print" style="position:absolute; top:2px; right:2px; background:none; border:none; font-size:1rem; cursor:pointer; color:#0275d8;" onclick="prepararManejoEstoque('lona')">⚙️</button>
-                    <span style="font-size:1.5rem;">⛺</span><br><strong style="color:var(--lona-color);">Lonas (m²)</strong><br><span id="estLona" style="font-size:1.2rem; font-weight:bold;">0</span>
-                </div>
-                <div style="background:#fff; padding:10px; border-radius:6px; text-align:center; border:1px solid #ddd; position:relative;">
-                    <button class="no-print" style="position:absolute; top:2px; right:2px; background:none; border:none; font-size:1rem; cursor:pointer; color:#0275d8;" onclick="prepararManejoEstoque('telha')">⚙️</button>
-                    <span style="font-size:1.5rem;">🏠</span><br><strong style="color:var(--telha-color);">Telhas (un)</strong><br><span id="estTelha" style="font-size:1.2rem; font-weight:bold;">0</span>
-                </div>
-                <div style="background:#fff; padding:10px; border-radius:6px; text-align:center; border:1px solid #ddd; position:relative;">
-                    <button class="no-print" style="position:absolute; top:2px; right:2px; background:none; border:none; font-size:1rem; cursor:pointer; color:#0275d8;" onclick="prepararManejoEstoque('cesta')">⚙️</button>
-                    <span style="font-size:1.5rem;">📦</span><br><strong style="color:var(--cesta-color);">Cestas (un)</strong><br><span id="estCesta" style="font-size:1.2rem; font-weight:bold;">0</span>
-                </div>
-                <div style="background:#fff; padding:10px; border-radius:6px; text-align:center; border:1px solid #ddd; position:relative;">
-                    <button class="no-print" style="position:absolute; top:2px; right:2px; background:none; border:none; font-size:1rem; cursor:pointer; color:#0275d8;" onclick="prepararManejoEstoque('agua')">⚙️</button>
-                    <span style="font-size:1.5rem;">💧</span><br><strong style="color:var(--agua-color);">Água (m³)</strong><br><span id="estAgua" style="font-size:1.2rem; font-weight:bold;">0</span>
-                </div>
-            </div>
-            <p style="font-size:0.7rem; color:#777; margin:5px 0 0 0; text-align:center; font-style:italic;">O estoque diminui automaticamente ao criar um cadastro. Clique na engrenagem ⚙️ para repor itens ou fazer retiradas avulsas da base.</p>
-        </div>
-    </div>
-
-    <div class="tab-content" id="tab-log">
-        
-        <div class="admin-card admin-only-section" style="background:#f0fdf4; border:1px solid #bbf7d0; padding:20px; border-radius:10px; margin-bottom:20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: none;">
-            <div style="display:flex; align-items:center; gap:10px; border-bottom:2px solid #bbf7d0; padding-bottom:10px; margin-bottom:15px;">
-                <i class="fa-brands fa-whatsapp" style="font-size:2rem; color:#25D366;"></i>
-                <h3 style="margin:0; color:#166534; font-size:1.3rem;">Conexão do Robô WhatsApp</h3>
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 15px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #bbf7d0;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <div id="defesa-bolinha-status" style="width: 16px; height: 16px; border-radius: 50%; background-color: #94a3b8; transition: all 0.3s;"></div>
-                        <span id="defesa-texto-status" style="font-weight: 900; color: #374151; font-size: 1.1rem; text-transform: uppercase;">Verificando...</span>
-                    </div>
-                    <div style="text-align: right;">
-                        <span style="font-size: 0.8rem; color: #6b7280; font-weight: bold; display: block;">Tempo de Conexão</span>
-                        <span id="defesa-tempo-conexao" style="font-size: 1rem; color: #166534; font-weight: 900;">00:00:00</span>
-                    </div>
-                </div>
-
-                <div id="defesa-area-botoes" style="display: flex; gap: 10px; justify-content: flex-end;"></div>
-                
-                <div id="defesa-area-qr" style="display: none; text-align: center; background: #fff; padding: 20px; border-radius: 8px; border: 2px dashed #25D366;">
-                    <p style="margin: 0 0 15px 0; font-weight: 900; color: #166534; font-size: 1.1rem;">Aponte o celular e leia o QR Code</p>
-                    <div style="display: flex; justify-content: center; margin-bottom: 10px;">
-                        <img id="defesa-qrcode-img" style="width: 220px; height: 220px; border-radius: 8px; border: 1px solid #e5e7eb; padding: 5px; background: #fff;" src="" />
-                    </div>
-                    <p style="font-size: 0.85rem; color: #6b7280; font-weight: bold; margin-top: 10px;">Para o robô oficial da Defesa Civil de Capanema</p>
-                </div>
-                
-                <div id="defesa-area-fila" style="display: none; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #bbf7d0;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <span style="color: #166534; font-weight: 900;"><i class="fa-solid fa-list-ol mr-2"></i> Fila de Envios:</span>
-                        <span id="defesa-qtd-fila" style="background: #25D366; color: #fff; padding: 4px 10px; border-radius: 12px; font-size: 0.85rem; font-weight: bold;">0 Pendentes</span>
-                    </div>
-                    <p id="defesa-status-fila" style="margin: 0; font-size: 0.9rem; color: #374151; font-weight: bold; background: #f3f4f6; padding: 8px; border-radius: 4px;">Ocioso</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="admin-card admin-only-section" style="background:#e8f5e9; border:1px solid #81c784; padding:15px; border-radius:10px; margin-bottom:20px; display: none;">
-            <p style="margin-top:0; color:#2e7d32; font-weight:bold; font-size:1.1rem; border-bottom:1px solid #c8e6c9; padding-bottom:10px; margin-bottom:15px;">
-                <i class="fa-solid fa-address-book mr-2"></i> Contatos Oficiais de Entrega
-            </p>
-            <div class="form-row">
-                <div class="form-col" style="flex:1">
-                    <label style="color:#2e7d32;">E-mail SOLICITANTES (Separe por vírgula):</label>
-                    <input type="text" id="configZapEmail" placeholder="email1@..., email2@..." style="border: 1px solid #81c784;">
-                </div>
-            </div>
-            <div class="form-row" style="margin-top: 10px;">
-                <div class="form-col" style="flex:1">
-                    <label style="color:#1976d2;">Zap Motorista ÁGUA:</label>
-                    <input type="tel" id="configZapTelPipa" placeholder="Ex: 55469..." style="border: 1px solid #90caf9;">
-                </div>
-                <div class="form-col" style="flex:1">
-                    <label style="color:#e65100;">Zap Social TELHAS:</label>
-                    <input type="tel" id="configZapTelSocial" placeholder="Ex: 55469..." style="border: 1px solid #ffcc80;">
-                </div>
-            </div>
-            <div class="form-row" style="justify-content:flex-end; margin-top:15px;">
-                <button class="btn-small" style="background:var(--success-color); height:40px; padding: 0 25px; font-size:1rem; border-radius:6px;" onclick="salvarContatosLogistica()">💾 Guardar Contatos</button>
-            </div>
-        </div>
-
-        <div class="admin-card" style="background:#fff; border:1px solid #ccc; padding:15px; border-radius:10px; margin-bottom:20px;">
-            <p style="margin-top:0; color:var(--primary-color); font-weight:bold; font-size:1.1rem; border-bottom:1px solid #ccc; padding-bottom:10px; margin-bottom:15px;">
-                <i class="fa-solid fa-magnifying-glass mr-2"></i> Auditoria de Logs Ao Vivo
-            </p>
-            <div class="filter-group" style="display:flex; flex-wrap:wrap; gap:15px; margin-bottom:15px; background: #f8f9fa; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
-                <label style="cursor:pointer; font-weight:bold;"><input type="checkbox" class="fLogAcaoCb" value="NOVO CADASTRO" checked onchange="filtrarTabelaAuditoria()"> Novo Cadastro</label>
-                <label style="cursor:pointer; font-weight:bold;"><input type="checkbox" class="fLogAcaoCb" value="EDIÇÃO" checked onchange="filtrarTabelaAuditoria()"> Edições</label>
-                <label style="cursor:pointer; font-weight:bold; color: #0275d8;"><input type="checkbox" class="fLogAcaoCb" value="ENTREGA ÁGUA" checked onchange="filtrarTabelaAuditoria()"> Logística Água</label>
-                <label style="cursor:pointer; font-weight:bold; color: #d9534f;"><input type="checkbox" class="fLogAcaoCb" value="EXCLUSÃO" checked onchange="filtrarTabelaAuditoria()"> Exclusões</label>
-            </div>
-            <input type="text" id="fLogAge" placeholder="🔍 Filtrar pelo nome do Agente / E-mail..." onkeyup="filtrarTabelaAuditoria()" style="width:100%; margin-bottom:15px; padding: 10px; font-size: 1rem;">
-            <div id="logTableContainer" style="overflow-x:auto;"></div>
-        </div>
-        
-        <div class="admin-card admin-only-section danger-zone" style="background:#fff5f5; border:2px solid var(--danger-color); padding:20px; border-radius:10px; margin-bottom:15px; display: none;">
-            <p style="margin-top:0; color:var(--danger-color); font-weight:900; font-size:1.2rem; border-bottom:2px solid #fecaca; padding-bottom:10px;">
-                <i class="fa-solid fa-triangle-exclamation mr-2"></i> ZONA DE RISCO MÁXIMO
-            </p>
-            
-            <div style="margin-top: 15px;">
-                <label style="font-size:0.95rem; color:#991b1b; font-weight:bold; display:block;">1. Apagar TODOS os cadastros feitos por um Agente/E-mail (Limpeza de Spam):</label>
-                <div style="display:flex; gap:10px; margin-bottom: 20px; margin-top: 8px;">
-                    <input type="email" id="emailSpamDelete" placeholder="Ex: email.spammer@gmail.com" style="flex:2; padding:10px; border:2px solid #fecaca; border-radius:6px; font-size:1rem;">
-                    <button onclick="apagarCadastrosPorEmail()" style="flex:1; background:var(--danger-color); color:white; border:none; border-radius:6px; font-weight:bold; font-size:1rem; cursor:pointer; transition: 0.2s;">🗑️ Apagar E-mail</button>
-                </div>
-            </div>
-            
-            <div style="border-top:2px solid #fecaca; padding-top:15px;">
-                <label style="font-size:0.95rem; color:#991b1b; font-weight:bold; display:block; margin-bottom: 8px;">2. Reset Completo (Formatação do Sistema):</label>
-                <button class="btn-print" style="background:var(--danger-color); width:100%; padding: 15px; font-size: 1.1rem; font-weight: 900;" onclick="limparBancoDeDados()">
-                    🚨 DESTRUIR TODA A BASE DE DADOS (CADASTROS E LOGS)
-                </button>
-            </div>
-        </div>
-
-    </div>
+    <div class="tab-content" id="tab-log"></div>
     
     <div class="no-print" style="margin-top:20px; border-top: 2px solid #eee; padding-top: 15px;">
         <button class="btn-print" onclick="prepararImpressao()">🖨️ Imprimir / Salvar PDF</button>
@@ -1257,86 +532,483 @@
 </div>
 
 <div class="app-footer no-print" style="text-align: center; margin-top: 10px; padding-bottom: 10px; color: #bbb; font-size: 0.7rem;">@Sieklicki</div>
- : ''; 
+
+<script>
+    // ============================================================================
+    // ⏳ SISTEMA DE TIMEOUT POR INATIVIDADE (30 MINUTOS) E AUTO-DESLOGAR
+    // ============================================================================
+    let timeoutInatividade;
+    const TEMPO_MAXIMO_INATIVO = 30 * 60 * 1000; // 30 minutos em milissegundos
+
+    function resetarTempoInatividade() {
+        clearTimeout(timeoutInatividade);
+        timeoutInatividade = setTimeout(() => {
+            if (auth && auth.currentUser) {
+                alert("⏳ Sessão Expirada!\nVocê ficou 30 minutos inativo no sistema. Por medida de segurança e para libertar recursos, sua conta foi desconectada automaticamente.");
+                logoutGoogle();
+            }
+        }, TEMPO_MAXIMO_INATIVO);
+    }
+
+    // Ouve todas as interações do utilizador como atividade (reseta o relógio)
+    window.addEventListener('mousemove', resetarTempoInatividade);
+    window.addEventListener('keypress', resetarTempoInatividade);
+    window.addEventListener('click', resetarTempoInatividade);
+    window.addEventListener('scroll', resetarTempoInatividade);
+    window.addEventListener('touchstart', resetarTempoInatividade);
+    
+    // Inicia o relógio assim que o script carrega
+    resetarTempoInatividade();
+
+    // ============================================================================
+    // ESC - ATALHO PARA LIMPAR FORMULÁRIO
+    // ============================================================================
+    document.addEventListener('keydown', function(event) {
+        if (event.key === "Escape") {
+            const formSection = document.getElementById('formSection');
+            if (formSection && !formSection.classList.contains('hidden')) {
+                clearFormFields();
+            }
+        }
+    });
+
+    // ============================================================================
+    // CONFIGURAÇÃO FIREBASE E VARIÁVEIS GLOBAIS
+    // ==============================================================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyDq-OnjiyJht5JLJnidp098TSCWgspuHr4",
+        authDomain: "plano-de-contingencia-92f13.firebaseapp.com",
+        databaseURL: "https://plano-de-contingencia-92f13-default-rtdb.firebaseio.com",
+        projectId: "plano-de-contingencia-92f13",
+        storageBucket: "plano-de-contingencia-92f13.firebasestorage.app",
+        messagingSenderId: "730435366319",
+        appId: "1:730435366319:web:aaea93f2094319a986535a"
+    };
+
+    if (!firebase.apps.length) { 
+        firebase.initializeApp(firebaseConfig); 
+    }
+    
+    const auth = firebase.auth(); 
+    const db = firebase.firestore(); 
+    const rtdb = firebase.database();
+
+    // Variáveis Globais de Interface e Estado
+    const dot = document.getElementById('networkStatusDot'); 
+    const text = document.getElementById('networkStatusText');
+    const btnLogin = document.getElementById('btnLogin'); 
+    const btnSync = document.getElementById('btnSync');
+    const btnEquipe = document.getElementById('btnEquipe');
+    const loginOverlay = document.getElementById('loginOverlay'); 
+    const blockedOverlay = document.getElementById('blockedOverlay');
+
+    let unsubscribeSnapshot = null; 
+    let unsubscribeLogs = null; 
+    let unsubRoboStatus = null; 
+    
+    let timerConexaoInterval = null;
+    let tempoConectadoSegundos = 0;
+    
+    // Lista de Patrões / Administradores Supremos do Sistema
+    const ADMIN_EMAILS = ['andersonsieklicki@gmail.com', 'vanderleipettenon@gmail.com']; 
+    
+    let currentUserStatus = 'deslogado'; 
+    let currentUserEmail = ''; 
+    let currentUserNivel = 'agente'; 
+    let onlineUsersMap = {}; 
+    let configZap = {}; 
+    let estoqueAtual = { lona: 0, telha: 0, cesta: 0, agua: 0 };
+
+    auth.getRedirectResult().then((result) => {
+        if (result && result.user) { 
+            console.log("Login recuperado pelo redirecionamento."); 
+        }
+    }).catch((error) => {
+        if (error.code === 'auth/unauthorized-domain') { 
+            alert("⚠️ ALERTA DE SEGURANÇA:\nEste site não foi autorizado no Firebase (Domínios Autorizados)."); 
+        } 
+        if(btnLogin) {
+            btnLogin.innerText = "Logar Google";
+        }
+    });
+
+    // ============================================================================
+    // SISTEMA DE LOGIN E HIERARQUIA
+    // ==============================================================================
+    function loginGoogle() {
+        if (!navigator.onLine) { 
+            alert("Sem internet. Conecte-se para fazer login."); 
+            return; 
+        }
+        
+        if (btnLogin) {
+            btnLogin.innerText = "Carregando..."; 
+        }
+        
+        const provider = new firebase.auth.GoogleAuthProvider();
+        
+        auth.signInWithPopup(provider).catch(error => {
+            console.warn("Popup bloqueado. Acionando rota alternativa...", error);
+            if (error.code === 'auth/popup-blocked' || error.code === 'auth/web-storage-unsupported') { 
+                auth.signInWithRedirect(provider); 
+            } else if (error.code === 'auth/unauthorized-domain') { 
+                alert("⛔ ERRO: Este site não está liberado no Firebase."); 
+                if (btnLogin) btnLogin.innerText = "Logar Google"; 
+            } else if (error.code === 'auth/popup-closed-by-user') { 
+                if (btnLogin) btnLogin.innerText = "Logar Google"; 
+            } else { 
+                alert("Falha no login: " + error.message); 
+                if (btnLogin) btnLogin.innerText = "Logar Google"; 
+            }
+        });
+    }
+
+    function logoutGoogle() { 
+        if (confirm("Deseja realmente sair da sua conta?")) {
+            auth.signOut().then(() => { 
+                localStorage.clear();
+                location.reload(); 
+            }); 
+        }
+    }
+
+    async function processarAcessoUsuario(user) {
+        currentUserEmail = user.email ? user.email.toLowerCase() : "sem-email@google.com";
+        
+        // Garante que o e-mail do dono é sempre Administrador Supremo
+        if (ADMIN_EMAILS.includes(currentUserEmail)) { 
+            currentUserNivel = 'admin'; 
+            return 'aprovado'; 
+        }
+        
+        // Se estiver offline, assume as regras do último login bem-sucedido
+        if (!navigator.onLine) { 
+            currentUserNivel = localStorage.getItem('nivel_' + currentUserEmail) || 'agente'; 
+            return localStorage.getItem('permissao_' + currentUserEmail) || 'aprovado'; 
+        }
+        
+        try {
+            const docRef = db.collection('usuarios_capanema').doc(currentUserEmail); 
+            const doc = await docRef.get();
+            
+            // Se for a primeira vez que o utilizador faz login, cria o registo como 'agente'
+            if (!doc.exists) {
+                await docRef.set({ 
+                    email: currentUserEmail, 
+                    nome: user.displayName || 'Sem Nome', 
+                    status: 'aprovado', 
+                    nivel: 'agente', 
+                    dataRegistro: new Date().toLocaleString('pt-BR') 
+                });
                 
-                // Botão de excluir só aparece se for admin
-                if (currentUserNivel === 'admin') { 
-                    act += `<button class="btn-small no-print" style="background-color: var(--danger-color); padding: 3px 6px; font-size: 0.7rem; display:inline-block; width:auto; margin-top:4px;" onclick="deleteRecord(${r.id})">🗑️ Excluir</button>`; 
+                localStorage.setItem('permissao_' + currentUserEmail, 'aprovado'); 
+                localStorage.setItem('nivel_' + currentUserEmail, 'agente'); 
+                currentUserNivel = 'agente'; 
+                
+                return 'aprovado';
+            } else {
+                const data = doc.data(); 
+                currentUserNivel = data.nivel || 'agente';
+                
+                localStorage.setItem('permissao_' + currentUserEmail, data.status || 'aprovado'); 
+                localStorage.setItem('nivel_' + currentUserEmail, currentUserNivel); 
+                
+                return data.status || 'aprovado';
+            }
+        } catch (e) { 
+            currentUserNivel = localStorage.getItem('nivel_' + currentUserEmail) || 'agente'; 
+            return localStorage.getItem('permissao_' + currentUserEmail) || 'aprovado'; 
+        }
+    }
+
+    function verificarAcesso() {
+        // Encontra as secções restritas do HTML usando querySelector (para classes e IDs específicos)
+        const painelEstoqueAdmin = document.getElementById('painel-estoque-admin');
+        const sessoesAdmin = document.querySelectorAll('.admin-only-section');
+        
+        // HIERARQUIA: Administradores e Supervisores
+        if (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') { 
+            sessoesAdmin.forEach(el => el.style.display = 'block'); // Mostra painéis
+            
+            if (btnEquipe && currentUserNivel === 'admin') {
+                btnEquipe.style.display = 'inline-block';
+            }
+            if (document.getElementById('tab-btn-log')) {
+                document.getElementById('tab-btn-log').style.display = 'block'; 
+            }
+            if (document.getElementById('tab-btn-estoque')) {
+                document.getElementById('tab-btn-estoque').style.display = 'block';
+            }
+            if (painelEstoqueAdmin) {
+                painelEstoqueAdmin.style.display = 'block';
+            }
+            
+        } else { 
+            // HIERARQUIA: Agente/Operador Normal (Não tem acesso ao robô e stock)
+            sessoesAdmin.forEach(el => el.style.display = 'none'); // Esconde painéis
+            
+            if (btnEquipe) {
+                btnEquipe.style.display = 'none'; 
+            }
+            if (document.getElementById('tab-btn-log')) {
+                document.getElementById('tab-btn-log').style.display = 'none'; 
+            }
+            if (document.getElementById('tab-btn-estoque')) {
+                document.getElementById('tab-btn-estoque').style.display = 'none';
+            }
+            if (painelEstoqueAdmin) {
+                painelEstoqueAdmin.style.display = 'none';
+            }
+        }
+
+        if (navigator.onLine) {
+            if (!auth.currentUser) { 
+                if (loginOverlay) loginOverlay.style.display = 'flex'; 
+                if (blockedOverlay) blockedOverlay.style.display = 'none'; 
+            } else { 
+                if (loginOverlay) loginOverlay.style.display = 'none';
+                
+                if (currentUserStatus === 'bloqueado') { 
+                    if (document.getElementById('blockedEmailDisplay')) {
+                        document.getElementById('blockedEmailDisplay').innerText = auth.currentUser.email || 'Usuário'; 
+                    }
+                    if (blockedOverlay) blockedOverlay.style.display = 'flex'; 
+                } else { 
+                    if (blockedOverlay) blockedOverlay.style.display = 'none'; 
+                }
+            }
+        } else {
+            if (loginOverlay) loginOverlay.style.display = 'none';
+            
+            if (auth.currentUser && currentUserStatus === 'bloqueado') { 
+                if (document.getElementById('blockedEmailDisplay')) {
+                    document.getElementById('blockedEmailDisplay').innerText = auth.currentUser.email || 'Usuário'; 
+                }
+                if (blockedOverlay) blockedOverlay.style.display = 'flex'; 
+            } else { 
+                if (blockedOverlay) blockedOverlay.style.display = 'none'; 
+            }
+        }
+    }
+
+    function updateOnlineStatus() {
+        if (navigator.onLine) {
+            if (dot) dot.className = "dot online"; 
+            if (text) text.innerText = "Online";
+            
+            if (auth && auth.currentUser && currentUserStatus === 'aprovado') { 
+                if (typeof sincronizarFirebaseAutomatica === 'function') sincronizarFirebaseAutomatica(); 
+                if (typeof sincronizarLogsOffline === 'function') sincronizarLogsOffline(); 
+            }
+        } else { 
+            if (dot) dot.className = "dot offline"; 
+            if (text) text.innerText = "Offline"; 
+            if (btnSync) { 
+                btnSync.innerText = "☁️ S/ Internet"; 
+                btnSync.style.backgroundColor = "#777"; 
+            }
+        }
+        verificarAcesso();
+    }
+    
+    window.addEventListener('online', updateOnlineStatus); 
+    window.addEventListener('offline', updateOnlineStatus);
+
+    if (auth) {
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                try {
+                    currentUserStatus = await processarAcessoUsuario(user); 
+                    verificarAcesso();
+                    
+                    if (currentUserStatus === 'aprovado') {
+                        if (typeof setupPresenceSystem === 'function') setupPresenceSystem(user); 
+                        
+                        if ((currentUserNivel === 'admin' || currentUserNivel === 'supervisor') && typeof escutarUsuariosOnline === 'function') {
+                            escutarUsuariosOnline();
+                        }
+                        
+                        if ((currentUserNivel === 'admin' || currentUserNivel === 'supervisor') && typeof iniciarListenerEstoque === 'function') {
+                            iniciarListenerEstoque();
+                        }
+                        
+                        const nomeExibicao = user.displayName ? user.displayName.split(" ")[0] : (user.email ? user.email.split('@')[0] : 'Agente');
+                        
+                        if (btnLogin) { 
+                            btnLogin.innerHTML = `👤 ${nomeExibicao} | <span onclick="logoutGoogle()" style="text-decoration:underline; color:#ffcccc; cursor:pointer;">Sair</span>`;
+                            btnLogin.style.backgroundColor = "#333";
+                            btnLogin.onclick = null; 
+                        }
+                        
+                        if (btnSync) {
+                            btnSync.style.display = "inline-block";
+                        }
+                        
+                        if (typeof carregarConfigZap === 'function') carregarConfigZap();
+                        if (typeof sincronizarFirebaseAutomatica === 'function') sincronizarFirebaseAutomatica(); 
+                        if (typeof sincronizarLogsOffline === 'function') sincronizarLogsOffline(); 
+                        if (typeof iniciarEscutaNuvem === 'function') iniciarEscutaNuvem();
+                        if (typeof iniciarEscutaLogsNuvem === 'function') iniciarEscutaLogsNuvem(); 
+                        if (typeof carregarPainelDespacho === 'function') carregarPainelDespacho(); 
+                    } else { 
+                        if (unsubscribeSnapshot) unsubscribeSnapshot(); 
+                        if (unsubscribeLogs) unsubscribeLogs(); 
+                    }
+                } catch(e) { 
+                    console.error("Erro AuthState:", e); 
+                }
+            } else {
+                currentUserStatus = 'deslogado'; 
+                currentUserEmail = ''; 
+                currentUserNivel = 'agente'; 
+                
+                if (btnLogin) { 
+                    btnLogin.innerText = "Logar Google"; 
+                    btnLogin.style.backgroundColor = "#4285F4"; 
+                    btnLogin.onclick = loginGoogle; 
                 }
                 
-                h += `
-                <tr>
-                    <td style="text-align:center;">${cbh}</td>
-                    <td><small>${r.dataHoraFormatada.split(' ')[0]}<br>${r.dataHoraFormatada.split(' ')[1]}</small></td>
-                    <td>
-                        <strong>${r.nome}</strong> <small style="color:#666;">(RG: ${ps ? r.rg || 'N/I' : '***'})</small><br>
-                        <div style="font-size:0.8rem; color:#444; margin:4px 0; line-height:1.4;">${detEnd}</div>
-                        <div class="no-print" style="margin-top:4px;">${act}</div>
-                    </td>
-                    <td style="vertical-align:middle; line-height:1.5;">${mats}</td>
-                </tr>`;
-            }); 
-            h += `</tbody></table></div>`;
-        }); 
-        
-        return h;
-    }
-
-    // ============================================================================
-    // GERAÇÃO DOS RELATÓRIOS SELECIONADOS
-    // ============================================================================
-    function generateReport() {
-        const sel = Array.from(document.querySelectorAll('input[name="reportType"]:checked')).map(c => c.value); 
-        const dI = document.getElementById('dataInicio').value; 
-        const dF = document.getElementById('dataFim').value; 
-        const fN = document.getElementById('filtroNome').value.toUpperCase(); 
-        const fRg = document.getElementById('filtroRg').value.trim(); 
-        const fB = document.getElementById('filtroRelBairro').value.toUpperCase();
-        const fE = document.getElementById('filtroRelEmail') ? document.getElementById('filtroRelEmail').value.toLowerCase().trim() : '';
-
-        let f = records; 
-        if(dI) f = f.filter(r => new Date(r.dataISO) >= new Date(dI+'T00:00:00')); 
-        if(dF) f = f.filter(r => new Date(r.dataISO) <= new Date(dF+'T23:59:59')); 
-        if(fN) f = f.filter(r => r.nome.toUpperCase().includes(fN)); 
-        if(fRg) f = f.filter(r => (r.rg||'').includes(fRg)); 
-        if(fB) f = f.filter(r => (r.bairro||'').toUpperCase().includes(fB));
-        if(fE) f = f.filter(r => (r.emailCriador||'').toLowerCase().includes(fE) || (r.agente||'').toLowerCase().includes(fE));
-
-        let h = ''; 
-        let sig = document.getElementById('agentSignatureBlock');
-        
-        if(f.length === 0) { 
-            h += `<p style="text-align:center; padding: 20px; font-weight:bold; color:#777;">Nenhum registro encontrado para estes filtros.</p>`; 
-            sig.style.display = 'none'; 
-        } else {
-            if(sel.includes('geral')) h += buildGroupedHTML(f, 'Lista Detalhada', sel); 
-            if(sel.includes('resumoBairros')) h += buildResumoBairrosHTML(f); 
-            if(sel.includes('quantAgua')) h += buildIndividualHTML(f, 'quantAgua'); 
-            if(sel.includes('quantLona')) h += buildIndividualHTML(f, 'quantLona'); 
-            if(sel.includes('quantTelha')) h += buildIndividualHTML(f, 'quantTelha'); 
-            if(sel.includes('quantCesta')) h += buildIndividualHTML(f, 'quantCesta');
-            
-            if(sel.length === 0) { 
-                h += `<p style="text-align:center; padding: 20px; color: var(--primary-color); font-weight:bold;">☝️ Selecione um ou mais tipos de relatório na parte superior.</p>`; 
-                sig.style.display = 'none'; 
-            } else { 
-                sig.style.display = 'block'; 
+                if (btnSync) btnSync.style.display = "none";
+                if (unsubscribeSnapshot) unsubscribeSnapshot(); 
+                if (unsubscribeLogs) unsubscribeLogs(); 
+                
+                verificarAcesso();
             }
-        } 
+        });
+    }
+    
+    updateOnlineStatus();
+
+    // ==============================================================================
+    // ⏱️ GESTÃO DE RELÓGIO DO WHATSAPP (TEMPO CONECTADO) E STATUS DO ROBÔ
+    // ==============================================================================
+    function atualizarTempoConexaoUI() {
+        tempoConectadoSegundos++;
+        let h = Math.floor(tempoConectadoSegundos / 3600);
+        let m = Math.floor((tempoConectadoSegundos % 3600) / 60);
+        let s = tempoConectadoSegundos % 60;
         
-        document.getElementById('reportContent').innerHTML = h; 
-        checkBulkDelete(); 
+        let formatado = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        let el = document.getElementById('defesa-tempo-conexao');
+        
+        if (el) el.innerText = formatado;
     }
 
+    function iniciarRelogioConexao() {
+        if (timerConexaoInterval) clearInterval(timerConexaoInterval);
+        
+        let salvo = localStorage.getItem('defesa_zap_tempo_conectado');
+        tempoConectadoSegundos = salvo ? parseInt(salvo) : 0;
+        
+        timerConexaoInterval = setInterval(() => {
+            atualizarTempoConexaoUI();
+            localStorage.setItem('defesa_zap_tempo_conectado', tempoConectadoSegundos);
+        }, 1000);
+    }
+
+    function pararRelogioConexao() {
+        if (timerConexaoInterval) clearInterval(timerConexaoInterval);
+        
+        tempoConectadoSegundos = 0;
+        localStorage.removeItem('defesa_zap_tempo_conectado');
+        
+        let el = document.getElementById('defesa-tempo-conexao');
+        if (el) el.innerText = '00:00:00';
+    }
+
+    window.iniciarListenerRobo = () => {
+        if (unsubRoboStatus) unsubRoboStatus();
+        
+        // Verifica se a div existe na página antes de injetar
+        if (!document.getElementById("defesa-bolinha-status")) return;
+
+        unsubRoboStatus = db.collection("config").doc("status_bot_defesa").onSnapshot((snap) => {
+            const bStatus = document.getElementById("defesa-bolinha-status");
+            const tStatus = document.getElementById("defesa-texto-status");
+            const areaQr = document.getElementById("defesa-area-qr");
+            const imgQr = document.getElementById("defesa-qrcode-img");
+            const areaBtn = document.getElementById("defesa-area-botoes");
+            const areaFila = document.getElementById("defesa-area-fila");
+            const qFila = document.getElementById("defesa-qtd-fila");
+            const tFila = document.getElementById("defesa-status-fila");
+            
+            if (!bStatus) return; // Proteção extra
+
+            if (snap.exists) {
+                const data = snap.data();
+                
+                // Trata o Relógio de Conexão
+                if (data.status === 'online') {
+                    if (!timerConexaoInterval) iniciarRelogioConexao();
+                } else {
+                    pararRelogioConexao();
+                }
+
+                // Trata o visual da Fila
+                if (data.fila_tamanho !== undefined) {
+                    areaFila.style.display = 'block';
+                    qFila.innerText = `${data.fila_tamanho} Pendentes`;
+                    tFila.innerText = data.status_fila || "Ocioso";
+                } else {
+                    areaFila.style.display = 'none';
+                }
+
+                // Trata o Estado do Robô (Status e Cores)
+                if (data.status === 'online') {
+                    bStatus.style.backgroundColor = "#10b981";
+                    bStatus.style.boxShadow = "0 0 8px #10b981";
+                    tStatus.innerText = "Conectado e Operante!";
+                    areaQr.style.display = 'none';
+                    areaBtn.innerHTML = `<button onclick="window.desconectarRoboDefesa()" style="background:#dc3545; color:white; border:none; padding:10px 15px; border-radius:6px; font-weight:bold; cursor:pointer; box-shadow: 0 2px 4px rgba(220,53,69,0.3); transition:0.2s;">🔌 Desconectar Robô</button>`;
+                } 
+                else if (data.qrCode && data.qrCode !== "") {
+                    bStatus.style.backgroundColor = "#f59e0b";
+                    bStatus.style.boxShadow = "none";
+                    tStatus.innerText = "Aguardando leitura do QR Code...";
+                    areaQr.style.display = 'block';
+                    
+                    QRCode.toDataURL(data.qrCode, { width: 220, margin: 2 }, function (err, url) { 
+                        if (!err) imgQr.src = url; 
+                    });
+                    
+                    areaBtn.innerHTML = `<button onclick="window.conectarRoboDefesa()" style="background:#f0ad4e; color:#fff; border:none; padding:10px 15px; border-radius:6px; font-weight:bold; cursor:pointer; box-shadow: 0 2px 4px rgba(240,173,78,0.3); transition:0.2s;"><i class="fa-solid fa-rotate"></i> Gerar Novo QR Code</button>`;
+                } 
+                else if (data.status === 'iniciando' || data.comando === 'conectar') {
+                    bStatus.style.backgroundColor = "#f59e0b";
+                    bStatus.style.boxShadow = "none";
+                    tStatus.innerText = "Iniciando Motor no Servidor...";
+                    areaQr.style.display = 'none';
+                    areaBtn.innerHTML = `<button disabled style="background:#e2e8f0; color:#64748b; border:none; padding:10px 15px; border-radius:6px; font-weight:bold;">Aguarde...</button>`;
+                } 
+                else {
+                    bStatus.style.backgroundColor = "#94a3b8";
+                    bStatus.style.boxShadow = "none";
+                    tStatus.innerText = "Motor Desligado";
+                    areaQr.style.display = 'none';
+                    areaBtn.innerHTML = `<button onclick="window.conectarRoboDefesa()" style="background:#28a745; color:white; border:none; padding:10px 15px; border-radius:6px; font-weight:bold; cursor:pointer; box-shadow: 0 2px 4px rgba(40,167,69,0.3); transition:0.2s;"><i class="fa-solid fa-power-off"></i> Ligar Robô Defesa</button>`;
+                }
+            } else {
+                areaBtn.innerHTML = `<button onclick="window.conectarRoboDefesa()" style="background:#28a745; color:white; border:none; padding:10px 15px; border-radius:6px; font-weight:bold; cursor:pointer; box-shadow: 0 2px 4px rgba(40,167,69,0.3); transition:0.2s;"><i class="fa-solid fa-power-off"></i> Ligar Robô Defesa</button>`;
+            }
+        });
+    };
+
+    window.conectarRoboDefesa = async () => {
+        await db.collection("config").doc("status_bot_defesa").set({ comando: "conectar" }, { merge: true });
+    };
+
+    window.desconectarRoboDefesa = async () => {
+        if(confirm("🛑 Deseja desligar o robô de envio de mensagens para os motoristas?")) {
+            await db.collection("config").doc("status_bot_defesa").set({ comando: "desconectar" }, { merge: true });
+        }
+    };
+
     // ============================================================================
-    // AUDITORIA E PAINEL DO ROBÔ (EXCLUSIVO PARA ADMIN)
+    // AUDITORIA (RENDER E FILTROS)
     // ============================================================================
     function renderPainelAuditoria() {
-        // Como o HTML agora é fixo (para não perder os IDs do QR Code e Inputs),
-        // o JS apenas atualiza a tabela de logs e inicia o Robô.
         if(currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
             filtrarTabelaAuditoria();
-            
             if(typeof window.iniciarListenerRobo === 'function') {
                 window.iniciarListenerRobo();
             }
@@ -1347,11 +1019,19 @@
         let acCb = Array.from(document.querySelectorAll('.fLogAcaoCb:checked')).map(cb => cb.value); 
         let ag = document.getElementById('fLogAge') ? document.getElementById('fLogAge').value.toUpperCase() : ''; 
         
-        if(typeof auditLogs === 'undefined') return;
+        if (typeof auditLogs === 'undefined') return;
         
-        let f = auditLogs.filter(l => acCb.includes(l.acao) || (l.acao === "EXCLUSÃO EM LOTE" && acCb.includes("EXCLUSÃO")) || (l.acao === "EXCLUSÃO SPAM (NUKE)" && acCb.includes("EXCLUSÃO")) || (l.acao === "TENTATIVA DE FRAUDE" && acCb.includes("ALERTA VIGIA")) || (l.acao === "RETOMADA LOGÍSTICA" && acCb.includes("ALERTA LOGÍSTICA")) || (l.acao === "AJUSTE DE ESTOQUE" && acCb.includes("EDIÇÃO")) || l.acao === "LIMPEZA"); 
+        let f = auditLogs.filter(l => acCb.includes(l.acao) || 
+            (l.acao === "EXCLUSÃO EM LOTE" && acCb.includes("EXCLUSÃO")) || 
+            (l.acao === "EXCLUSÃO SPAM (NUKE)" && acCb.includes("EXCLUSÃO")) || 
+            (l.acao === "TENTATIVA DE FRAUDE" && acCb.includes("ALERTA VIGIA")) || 
+            (l.acao === "RETOMADA LOGÍSTICA" && acCb.includes("ALERTA LOGÍSTICA")) || 
+            (l.acao === "AJUSTE DE ESTOQUE" && acCb.includes("EDIÇÃO")) || 
+            l.acao === "LIMPEZA"); 
         
-        if(ag) f = f.filter(l => l.agente.toUpperCase().includes(ag));
+        if (ag) {
+            f = f.filter(l => l.agente.toUpperCase().includes(ag));
+        }
         
         let gLogs = []; 
         let aMap = new Map();
@@ -1360,7 +1040,9 @@
             if (l.acao === "ENTREGA ÁGUA") { 
                 let c = l.codigoDC || (l.detalhes.match(/\[(DC-[0-9-]+)\]/) ? l.detalhes.match(/\[(DC-[0-9-]+)\]/)[1] : null); 
                 if (c) { 
-                    if (!aMap.has(c)) { aMap.set(c, { ...l }); } 
+                    if (!aMap.has(c)) { 
+                        aMap.set(c, { ...l }); 
+                    } 
                 } else { 
                     gLogs.push(l); 
                 } 
@@ -1374,283 +1056,240 @@
         
         let h = `<table class="report-table"><thead><tr><th width="20%">Data/Hora</th><th width="30%">Agente Responsável</th><th>Ação / Detalhes do Log</th></tr></thead><tbody>`; 
         
-        if(gLogs.length === 0) { 
+        if (gLogs.length === 0) { 
             h += `<tr><td colspan="3" style="text-align:center; font-weight:bold; color:#777; padding:15px;">Nenhum log corresponde aos filtros.</td></tr>`; 
         }
         
-        gLogs.slice(0,100).forEach(l => { 
+        gLogs.slice(0, 100).forEach(l => { 
             let cr = ''; 
-            if(l.acao.includes('ENTREGA')) cr = 'color:#0275d8;'; 
-            if(l.acao.includes('EXCLUSÃO') || l.acao.includes('LIMPEZA') || l.acao.includes('NUKE')) cr = 'color:red; font-weight:bold;'; 
-            if(l.acao.includes('LOGÍSTICA')) cr = 'color:#e67e22; font-weight:bold;'; 
-            if(l.acao.includes('ESTOQUE')) cr = 'color:#198754; font-weight:bold;'; 
+            if (l.acao.includes('ENTREGA')) cr = 'color:#0275d8;'; 
+            if (l.acao.includes('EXCLUSÃO') || l.acao.includes('LIMPEZA') || l.acao.includes('NUKE')) cr = 'color:red; font-weight:bold;'; 
+            if (l.acao.includes('LOGÍSTICA')) cr = 'color:#e67e22; font-weight:bold;'; 
+            if (l.acao.includes('ESTOQUE')) cr = 'color:#198754; font-weight:bold;'; 
             
-            h += `<tr style="border-bottom:1px solid #e2e8f0;">
+            h += `
+                <tr style="border-bottom:1px solid #e2e8f0;">
                     <td style="padding:10px;"><small style="font-weight:bold; color:#555;">${l.dataHora}</small></td>
                     <td style="padding:10px;"><small style="font-weight:bold; color:#333;">${l.agente.split('@')[0]}</small></td>
-                    <td style="padding:10px; ${cr}"><strong>${l.acao}</strong><br><span style="color:#555; font-weight:normal; font-size:0.8rem;">${l.detalhes}</span></td>
-                  </tr>`; 
+                    <td style="padding:10px; ${cr}">
+                        <strong>${l.acao}</strong><br>
+                        <span style="color:#555; font-weight:normal; font-size:0.8rem;">${l.detalhes}</span>
+                    </td>
+                </tr>`; 
         }); 
         
-        document.getElementById('logTableContainer').innerHTML = h + `</tbody></table>`;
-    }
-
-    // ============================================================================
-    // ZONA DE PERIGO E LIMPEZA DE DADOS
-    // ============================================================================
-    async function apagarCadastrosPorEmail() {
-        const emailSpam = document.getElementById('emailSpamDelete').value.trim().toLowerCase();
-        
-        if (!emailSpam) { 
-            alert("Digite o e-mail do usuário spammer."); 
-            return; 
-        }
-        
-        if (currentUserNivel !== 'admin') return;
-
-        let cadastrosAlvo = records.filter(r => (r.emailCriador || "").toLowerCase() === emailSpam);
-        
-        if (cadastrosAlvo.length === 0) {
-            alert(`Nenhum cadastro encontrado no banco de dados para o e-mail:\n${emailSpam}`);
-            return;
-        }
-
-        if (!confirm(`🚨 ATENÇÃO EXTREMA!\n\nForam encontrados ${cadastrosAlvo.length} cadastros feitos por "${emailSpam}".\n\nDeseja excluir TODOS ELES permanentemente de uma só vez?`)) {
-            return;
-        }
-
-        document.getElementById('emailSpamDelete').value = 'Aguarde... Apagando na nuvem...';
-        
-        let idsAlvo = cadastrosAlvo.map(r => r.id);
-        records = records.filter(r => !idsAlvo.includes(r.id));
-        localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
-
-        // Deleta em lotes no Firebase (limite de 500 por vez)
-        if (navigator.onLine && db) { 
-            let batch = db.batch(); 
-            let c = 0; 
-            for (let id of idsAlvo) { 
-                let ref = db.collection("doacoes_capanema").doc(id.toString()); 
-                batch.delete(ref); 
-                c++; 
-                if (c === 490) { 
-                    await batch.commit(); 
-                    batch = db.batch(); 
-                    c = 0; 
-                } 
-            } 
-            if (c > 0) {
-                await batch.commit(); 
-            }
-        }
-        
-        if (typeof registrarLog === "function") {
-            await registrarLog("EXCLUSÃO SPAM (NUKE)", `Apagou ${idsAlvo.length} cadastros criados pelo e-mail: ${emailSpam}`); 
-        }
-        
-        alert(`SUCESSO!\n${idsAlvo.length} cadastros do e-mail ${emailSpam} foram apagados do sistema e dos caminhões de entrega.`);
-        document.getElementById('emailSpamDelete').value = '';
-        generateReport(); 
-        
-        if (typeof carregarPainelDespacho === "function") {
-            carregarPainelDespacho();
+        let container = document.getElementById('logTableContainer');
+        if (container) {
+            container.innerHTML = h + `</tbody></table>`;
         }
     }
 
-    async function limparBancoDeDados() {
-        if (!confirm('⚠️ TEM CERTEZA ABSOLUTA?\nIsso vai APAGAR TUDO (Cadastros e Logs do sistema inteiro).')) {
-            return; 
-        }
+    // ==========================================
+    // SISTEMA DE PRESENÇA E EQUIPE
+    // ==========================================
+    function setupPresenceSystem(user) {
+        if (!user || !user.email) return;
         
-        if (btnSync) {
-            btnSync.innerText = "⏳ Apagando...";
-        }
+        const userStatusDatabaseRef = rtdb.ref('/status/' + user.uid);
         
-        if (navigator.onLine && db && auth && auth.currentUser) {
-            try { 
-                const sC = await db.collection("doacoes_capanema").get(); 
-                let bC = db.batch(); 
-                sC.docs.forEach(d => bC.delete(d.ref)); 
-                await bC.commit(); 
-                
-                const sL = await db.collection("logs_capanema").get(); 
-                let bL = db.batch(); 
-                sL.docs.forEach(d => bL.delete(d.ref)); 
-                await bL.commit(); 
-            } catch(e) { 
-                console.error("Erro ao limpar db:", e); 
-            }
-        }
+        const isOfflineForDatabase = { 
+            state: 'offline', 
+            last_changed: firebase.database.ServerValue.TIMESTAMP, 
+            email: user.email 
+        };
         
-        localStorage.removeItem('defesaCivilRecords'); 
-        records = []; 
-        localStorage.removeItem('defesaCivilLogs'); 
+        const isOnlineForDatabase = { 
+            state: 'online', 
+            last_changed: firebase.database.ServerValue.TIMESTAMP, 
+            email: user.email 
+        };
         
-        if (typeof auditLogs !== 'undefined') {
-            auditLogs = [];
-        }
-        
-        if (typeof registrarLog === "function") {
-            await registrarLog("LIMPEZA", "Base totalmente formatada e resetada."); 
-        }
-        
-        alert('O sistema foi formatado com sucesso!'); 
-        if (btnSync) {
-            btnSync.innerText = "☁️ Nuvem OK"; 
-        }
-        
-        showForm(); 
-        if (typeof carregarPainelDespacho === "function") {
-            carregarPainelDespacho();
-        }
+        rtdb.ref('.info/connected').on('value', function(snapshot) {
+            if (snapshot.val() == false) return;
+            userStatusDatabaseRef.onDisconnect().set(isOfflineForDatabase).then(function() { 
+                userStatusDatabaseRef.set(isOnlineForDatabase); 
+            });
+        });
     }
 
-    // ============================================================================
-    // ESTOQUE - CONTROLE GERAL E MANEJO
-    // ============================================================================
-    function iniciarListenerEstoque() {
-        db.collection('estoque_capanema').doc('geral').onSnapshot((doc) => {
-            if (doc.exists) {
-                estoqueAtual = doc.data();
-                document.getElementById('estLona').innerText = (estoqueAtual.lona || 0).toFixed(2);
-                document.getElementById('estTelha').innerText = (estoqueAtual.telha || 0);
-                document.getElementById('estCesta').innerText = (estoqueAtual.cesta || 0);
-                document.getElementById('estAgua').innerText = (estoqueAtual.agua || 0).toFixed(2);
-            } else {
-                db.collection('estoque_capanema').doc('geral').set(estoqueAtual);
+    function escutarUsuariosOnline() {
+        rtdb.ref('/status/').on('value', (snapshot) => {
+            onlineUsersMap = snapshot.val() || {};
+            if (document.getElementById('equipeModal') && document.getElementById('equipeModal').style.display === 'flex') {
+                carregarListaUsuarios(); 
             }
         });
     }
-    
-    let modoManejoAtual = '';
-    let itemManejoAtual = '';
 
-    function prepararManejoEstoque(chave) {
-        if (currentUserNivel !== 'admin') { 
-            alert("Apenas administradores podem ajustar o estoque."); 
-            return; 
-        }
-        
-        itemManejoAtual = chave;
-        let titulos = { lona: '⛺ Lonas', telha: '🏠 Telhas', cesta: '📦 Cestas', agua: '💧 Água' };
-        
-        document.getElementById('tituloManejo').innerHTML = `Ajustar: ${titulos[chave]}`;
-        document.getElementById('descManejoTexto').innerText = `Estoque Atual: ${(estoqueAtual[chave] || 0)} ${chave === 'lona' || chave === 'agua' ? (chave==='agua'?'m³':'m²') : 'unid.'}\nEscolha se deseja dar entrada de novos itens ou fazer uma retirada avulsa (ex: doação para outra cidade).`;
-        document.getElementById('btnModoEntrada').style.opacity = '0.5';
-        document.getElementById('btnModoSaida').style.opacity = '0.5';
-        document.getElementById('areaCamposManejo').style.display = 'none';
-        document.getElementById('areaCancelarManejo').style.display = 'block';
-        document.getElementById('inputManejoQtd').value = '';
-        document.getElementById('inputManejoMotivo').value = '';
-        document.getElementById('modalManejoEstoque').style.display = 'flex';
-    }
-
-    function setModoManejo(modo) {
-        modoManejoAtual = modo;
-        document.getElementById('btnModoEntrada').style.opacity = modo === 'entrada' ? '1' : '0.3';
-        document.getElementById('btnModoSaida').style.opacity = modo === 'saida' ? '1' : '0.3';
-        document.getElementById('areaCamposManejo').style.display = 'block';
-        document.getElementById('areaCancelarManejo').style.display = 'none';
-        document.getElementById('inputManejoQtd').focus();
-    }
-
-    function fecharModalManejo() {
-        document.getElementById('modalManejoEstoque').style.display = 'none';
-    }
-
-    async function confirmarManejoEstoque() {
-        let qtd = parseFloat(document.getElementById('inputManejoQtd').value.replace(',', '.'));
-        let motivo = document.getElementById('inputManejoMotivo').value.trim();
-        
-        if (isNaN(qtd) || qtd <= 0) { 
-            alert("Digite uma quantidade válida."); 
-            return; 
-        }
-        if (!motivo || motivo.length < 4) { 
-            alert("Você precisa justificar com um motivo válido!"); 
-            return; 
-        }
-
-        if (modoManejoAtual === 'saida' && (estoqueAtual[itemManejoAtual] || 0) - qtd < 0) {
-            if (!confirm(`⚠️ ALERTA: O estoque atual é ${(estoqueAtual[itemManejoAtual] || 0)}. Essa retirada vai deixar o estoque NEGATIVO.\n\nDeseja continuar mesmo assim?`)) {
-                return;
-            }
-        }
-
-        document.getElementById('areaCamposManejo').style.display = 'none';
-        document.getElementById('descManejoTexto').innerText = "⏳ Processando...";
-
-        try {
-            const ref = db.collection('estoque_capanema').doc('geral');
-            
-            await db.runTransaction(async (transaction) => {
-                const doc = await transaction.get(ref);
-                if (!doc.exists) { 
-                    transaction.set(ref, estoqueAtual); 
-                }
-                
-                let qtdAtual = doc.exists ? (doc.data()[itemManejoAtual] || 0) : 0;
-                let novaQtd = modoManejoAtual === 'entrada' ? qtdAtual + qtd : qtdAtual - qtd;
-                
-                let updateData = {}; 
-                updateData[itemManejoAtual] = novaQtd;
-                
-                transaction.update(ref, updateData);
-            });
-            
-            await registrarLog("AJUSTE DE ESTOQUE", `${modoManejoAtual.toUpperCase()} MANUAL: ${qtd} ${itemManejoAtual}. Motivo: ${motivo}`);
-            alert(`Estoque atualizado com sucesso!`);
-            fecharModalManejo();
-        } catch(e) { 
-            alert("Erro ao atualizar estoque."); 
-            fecharModalManejo();
-        }
-    }
-
-    async function deduzirEstoqueAutomatico(qLona, qTelha, qCesta, qAgua, codigo) {
-        if (!navigator.onLine || !db) return;
-        
-        try {
-            const ref = db.collection('estoque_capanema').doc('geral');
-            
-            await db.runTransaction(async (transaction) => {
-                const doc = await transaction.get(ref);
-                if (!doc.exists) return;
-                
-                let data = doc.data();
-                if (qLona > 0) data.lona = (data.lona || 0) - qLona;
-                if (qTelha > 0) data.telha = (data.telha || 0) - qTelha;
-                if (qCesta > 0) data.cesta = (data.cesta || 0) - qCesta;
-                if (qAgua > 0) data.agua = (data.agua || 0) - qAgua;
-                
-                transaction.update(ref, data);
-            });
-            
-            await registrarLog("ESTOQUE", `Consumo automático [${codigo}] -> L:${qLona} | T:${qTelha} | C:${qCesta} | A:${qAgua}`);
-        } catch (e) { 
-            console.error("Erro na dedução do estoque", e); 
-        }
-    }
-
-    // ============================================================================
-    // GESTÃO DE ABAS (TABS)
-    // ============================================================================
-    function openTab(t) { 
-        document.querySelectorAll('.tab-content, .tab-btn').forEach(e => e.classList.remove('active')); 
-        document.getElementById('tab-' + t).classList.add('active'); 
-        document.getElementById('tab-btn-' + t).classList.add('active'); 
-        
-        if (t === 'log') { 
-            renderPainelAuditoria(); 
+    function abrirModalEquipe() { 
+        const modal = document.getElementById('equipeModal'); 
+        if (modal) { 
+            modal.style.display = 'flex'; 
+            carregarListaUsuarios(); 
         } 
     }
     
-    // Inicia os componentes pendentes quando a página carrega
-    window.addEventListener('DOMContentLoaded', () => { 
-        setTimeout(carregarPainelDespacho, 1000); 
-    });
+    function fecharModalEquipe() { 
+        const modal = document.getElementById('equipeModal'); 
+        if (modal) modal.style.display = 'none'; 
+    }
+
+    async function adicionarUsuarioManual() {
+        const novoEmail = document.getElementById('novoEmailEquipe').value.trim().toLowerCase(); 
+        const novoNivel = document.getElementById('novoNivelEquipe').value;
+        
+        if (!novoEmail) { 
+            alert("Digite um e-mail válido."); 
+            return; 
+        }
+        
+        try { 
+            await db.collection('usuarios_capanema').doc(novoEmail).set({ 
+                email: novoEmail, 
+                nome: 'Adicionado Manualmente', 
+                status: 'aprovado', 
+                nivel: novoNivel, 
+                dataRegistro: new Date().toLocaleString('pt-BR') 
+            }, { merge: true }); 
+            
+            alert(`Acesso liberado para ${novoEmail} como ${novoNivel.toUpperCase()}!`); 
+            document.getElementById('novoEmailEquipe').value = ''; 
+            carregarListaUsuarios(); 
+        } catch (e) { 
+            alert("Erro ao adicionar usuário."); 
+        }
+    }
+
+    async function carregarListaUsuarios() {
+        const container = document.getElementById('modalEquipeContent'); 
+        if (!container) return;
+        
+        let htmlForm = `
+        <div style="background: #e3f2fd; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #b3e5fc;">
+            <strong>➕ Liberar Acesso / Promover</strong>
+            <div style="display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;">
+                <input type="email" id="novoEmailEquipe" placeholder="email@gmail.com" style="flex: 2; height: 32px; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
+                <select id="novoNivelEquipe" style="flex: 1; height: 32px; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
+                    <option value="agente">Agente (Padrão)</option>
+                    <option value="supervisor">Supervisor</option>
+                    <option value="admin">Administrador</option>
+                </select>
+                <button onclick="adicionarUsuarioManual()" style="background: var(--success-color); color: white; border: none; border-radius: 3px; font-weight: bold; cursor: pointer; padding: 0 15px;">Salvar</button>
+            </div>
+        </div>`;
+        
+        try {
+            const snapshot = await db.collection('usuarios_capanema').get(); 
+            let usuarios = []; 
+            snapshot.forEach(doc => { 
+                let d = doc.data(); 
+                if (!usuarios.find(x => x.email === d.email)) {
+                    usuarios.push(d); 
+                }
+            });
+            
+            let htmlTabela = `
+            <div class="table-responsive">
+                <table class="report-table" style="font-size: 0.8rem; width: 100%; min-width: 400px;">
+                    <thead>
+                        <tr style="background-color: var(--primary-color); color: white;">
+                            <th>Nome/Email</th>
+                            <th>Nível</th>
+                            <th>Status / Último Acesso</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+            
+            if (usuarios.length === 0) { 
+                htmlTabela += `<tr><td colspan="4" style="text-align:center;">Nenhum usuário.</td></tr>`; 
+            } else {
+                usuarios.forEach(u => {
+                    let isOnline = false; 
+                    let lastSeenText = '<br><span style="font-size: 0.7rem; color: #999;">Sem registro de acesso</span>';
+                    
+                    Object.values(onlineUsersMap).forEach(ou => { 
+                        if(ou.email === u.email) { 
+                            if (ou.state === 'online') { 
+                                isOnline = true; 
+                            } else if (ou.last_changed) { 
+                                lastSeenText = `<br><span style="font-size: 0.75rem; color: #555;">Visto em: <strong>${formatarDataHora(ou.last_changed)}</strong></span>`; 
+                            } 
+                        } 
+                    });
+                    
+                    let statusLigacao = isOnline ? `<span style="color:var(--success-color); font-weight:bold;">🟢 Online Agora</span>` : `<span style="color:#777;">⚪ Offline</span>${lastSeenText}`;
+                    
+                    let selectNivel = `
+                    <select onchange="alterarNivelUsuario('${u.email}', this.value)" style="width:100%; padding:2px; font-size:0.75rem;">
+                        <option value="agente" ${u.nivel === 'agente' || !u.nivel ? 'selected' : ''}>Agente</option>
+                        <option value="supervisor" ${u.nivel === 'supervisor' ? 'selected' : ''}>Supervisor</option>
+                        <option value="admin" ${u.nivel === 'admin' || ADMIN_EMAILS.includes(u.email) ? 'selected' : ''}>Admin</option>
+                    </select>`;
+                    
+                    if (ADMIN_EMAILS.includes(u.email)) {
+                        selectNivel = `<strong>Administrador</strong>`; 
+                    }
+                    
+                    let botoes = `<div style="display: flex; flex-direction:column; gap: 4px; margin-top:4px;">`;
+                    
+                    if (u.status === 'bloqueado') {
+                        botoes += `<button class="btn-small" style="background-color: var(--success-color); width: 100%; padding: 4px;" onclick="alterarStatusUsuario('${u.email}', 'aprovado')">✅ Desbloquear</button>`;
+                    }
+                    if (u.status === 'aprovado' && !ADMIN_EMAILS.includes(u.email)) {
+                        botoes += `<button class="btn-small" style="background-color: #f0ad4e; width: 100%; padding: 4px;" onclick="alterarStatusUsuario('${u.email}', 'bloqueado')">🚫 Suspender</button>`;
+                    }
+                    if (!ADMIN_EMAILS.includes(u.email)) {
+                        botoes += `<button class="btn-small" style="background-color: var(--danger-color); width: 100%; padding: 4px;" onclick="excluirUsuarioDefinitivo('${u.email}')">🗑️ Excluir Agente</button>`;
+                    }
+                    
+                    botoes += `</div>`; 
+                    
+                    htmlTabela += `
+                    <tr>
+                        <td><strong>${u.nome}</strong><br><span style="word-break: break-all; font-size: 0.7rem; color: #555;">${u.email}</span></td>
+                        <td>${selectNivel}</td>
+                        <td>${statusLigacao}</td>
+                        <td>${botoes}</td>
+                    </tr>`;
+                });
+            }
+            htmlTabela += `</tbody></table></div>`; 
+            container.innerHTML = htmlForm + htmlTabela;
+        } catch (e) { 
+            container.innerHTML = `<p style="text-align:center; color:red;">Erro ao carregar usuários.</p>`; 
+        }
+    }
+
+    async function alterarStatusUsuario(email, novoStatus) { 
+        if(!confirm(`Mudar o acesso de ${email} para ${novoStatus.toUpperCase()}?`)) return; 
+        try { 
+            await db.collection('usuarios_capanema').doc(email).update({ status: novoStatus }); 
+            carregarListaUsuarios(); 
+        } catch (e) { alert("Erro ao atualizar o acesso do usuário."); } 
+    }
+    
+    async function alterarNivelUsuario(email, novoNivel) { 
+        if(!confirm(`Alterar permissão de ${email} para ${novoNivel.toUpperCase()}?`)) { 
+            carregarListaUsuarios(); 
+            return; 
+        } 
+        try { 
+            await db.collection('usuarios_capanema').doc(email).update({ nivel: novoNivel }); 
+            alert('Nível de permissão atualizado com sucesso!'); 
+            carregarListaUsuarios(); 
+        } catch (e) { alert("Erro ao atualizar a permissão do usuário."); } 
+    }
+    
+    async function excluirUsuarioDefinitivo(email) { 
+        if(!confirm(`⚠️ ATENÇÃO EXTREMA!\nTem certeza absoluta que deseja apagar o usuário ${email} do banco de dados?\nEle terá que se conectar e ser aprovado novamente.`)) return; 
+        try { 
+            await db.collection('usuarios_capanema').doc(email).delete(); 
+            alert('O usuário foi excluído com sucesso.'); 
+            carregarListaUsuarios(); 
+        } catch (e) { alert("Erro ao excluir usuário."); } 
+    }
 
 </script>
 </body>
 </html>
-
