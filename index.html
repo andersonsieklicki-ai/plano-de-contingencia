@@ -496,8 +496,7 @@
         } 
         if(btnLogin) btnLogin.innerText = "Logar Google";
     });
-
-    function loginGoogle() {
+function loginGoogle() {
         if (!navigator.onLine) { 
             alert("Sem internet. Conecte-se para fazer login."); 
             return; 
@@ -524,9 +523,7 @@
         auth.signOut().then(() => { location.reload(); }); 
     }
 
-
-
-   async function processarAcessoUsuario(user) {
+    async function processarAcessoUsuario(user) {
         currentUserEmail = user.email ? user.email.toLowerCase() : "sem-email@google.com";
         let isAdmim = ADMIN_EMAILS.includes(currentUserEmail);
 
@@ -608,6 +605,22 @@
                 if(blockedOverlay) blockedOverlay.style.display = 'none'; 
             }
         }
+    }
+
+    function updateOnlineStatus() {
+        if (navigator.onLine) {
+            if(dot) dot.className = "dot online"; 
+            if(text) text.innerText = "Online";
+            if (auth && auth.currentUser && currentUserStatus === 'aprovado') { 
+                if(typeof sincronizarFirebaseAutomatica === 'function') sincronizarFirebaseAutomatica(); 
+                if(typeof sincronizarLogsOffline === 'function') sincronizarLogsOffline(); 
+            }
+        } else { 
+            if(dot) dot.className = "dot offline"; 
+            if(text) text.innerText = "Offline"; 
+            if(btnSync) { btnSync.innerText = "☁️ S/ Internet"; btnSync.style.backgroundColor = "#777"; }
+        }
+        verificarAcesso();
     }
     window.addEventListener('online', updateOnlineStatus); 
     window.addEventListener('offline', updateOnlineStatus);
