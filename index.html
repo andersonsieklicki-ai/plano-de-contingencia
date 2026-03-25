@@ -2218,17 +2218,16 @@ async function apagarCadastrosPorEmail() {
     // ==========================================
     let listenerStatusRobo = null;
 
-   
-    function iniciarEscutaStatusRobo() {
+   function iniciarEscutaStatusRobo() {
         if (!navigator.onLine || !db) return;
         if (listenerStatusRobo) listenerStatusRobo(); 
         
         listenerStatusRobo = db.collection('config').doc('status_bot_defesa').onSnapshot(doc => {
             let elStatus = document.getElementById('statusRoboDisplay');
             let elQrContainer = document.getElementById('qrCodeContainer');
-            let elImgQr = document.getElementById('imgQrCode'); // Voltamos a usar a Imagem!
+            let elImgQr = document.getElementById('imgQrCode');
             
-            if (!elStatus || !elQrContainer) return; 
+            if (!elStatus || !elQrContainer || !elImgQr) return; 
             if (!doc.exists) return;
             let data = doc.data();
             
@@ -2240,19 +2239,22 @@ async function apagarCadastrosPorEmail() {
                 elStatus.innerHTML = '<span style="color:#d39e00;">📱 AGUARDANDO LEITURA DO QR CODE</span>';
                 elQrContainer.style.display = 'block'; 
                 
-               // A biblioteca robusta agora fabrica um arquivo de imagem na memória e coloca na tela
-                if (elImgQr) {
-                    QRCode.toDataURL(data.qrCode, {
-                        width: 260,
-                        margin: 1,
-                        color: { dark: '#000000', light: '#ffffff' }
-                    }, function (error, url) {
-                        if (error) {
-                            console.error("Erro interno ao gerar imagem:", error);
-                        } else {
-                            elImgQr.src = url; // Coloca a imagem gerada na tela
-                        }
-                    });
+                // Tenta gerar o QR Code. Se a biblioteca QRCode não existir, avisa no console.
+                try {
+                    if (typeof QRCode !== 'undefined') {
+                        QRCode.toDataURL(data.qrCode, {
+                            width: 260,
+                            margin: 1,
+                            color: { dark: '#000000', light: '#ffffff' }
+                        }, function (error, url) {
+                            if (!error) elImgQr.src = url;
+                        });
+                    } else {
+                        console.error("Biblioteca QRCode ainda não carregou.");
+                        elImgQr.alt = "Erro: Carregando biblioteca...";
+                    }
+                } catch (err) {
+                    console.error("Erro ao gerar QR Code visual:", err);
                 }
             } 
             else if (data.status === 'iniciando') {
