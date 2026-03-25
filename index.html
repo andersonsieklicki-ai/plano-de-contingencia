@@ -2181,7 +2181,7 @@ async function apagarCadastrosPorEmail() {
         }
         processarMovimentoEstoque(chave, tipo, qtd, motivo);
     }
-    // ==========================================
+  // ==========================================
     // PAINEL DE CONTROLE E QR CODE DO ROBÔ
     // ==========================================
     let listenerStatusRobo = null;
@@ -2189,21 +2189,22 @@ async function apagarCadastrosPorEmail() {
     function iniciarEscutaStatusRobo() {
         if (!navigator.onLine || !db) return;
         
-        // Evita que o listener seja criado duas vezes e trave o navegador
         if (listenerStatusRobo) listenerStatusRobo(); 
         
-        // Fica escutando as mudanças do Firebase em tempo real
         listenerStatusRobo = db.collection('config').doc('status_bot_defesa').onSnapshot(doc => {
-            if (!doc.exists) return;
-            let data = doc.data();
-            
             let elStatus = document.getElementById('statusRoboDisplay');
             let elQrContainer = document.getElementById('qrCodeContainer');
             let elImgQr = document.getElementById('imgQrCode');
             
-            if (!elStatus) return; // Garante que só rola se a aba estiver aberta
+            if (!elStatus) return; 
             
-            let textStatus = 'Desconhecido';
+            if (!doc.exists) {
+                elStatus.innerHTML = `<strong style="color: #666;">Aguardando Servidor...</strong>`;
+                return;
+            }
+            
+            let data = doc.data();
+            let textStatus = 'Sistema Ocioso ou Desconectado';
             let colorStatus = '#333';
             
             if (data.status === 'online') {
@@ -2215,8 +2216,8 @@ async function apagarCadastrosPorEmail() {
                 textStatus = '📱 AGUARDANDO LEITURA DO QR CODE';
                 colorStatus = '#f0ad4e';
                 elQrContainer.style.display = 'block';
-                // Cria a imagem usando a string segura do WhatsApp gerada no Firebase
-                elImgQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(data.qrCode)}`;
+                // Usando a API QuickChart (Mais robusta para códigos longos do WhatsApp)
+                elImgQr.src = `https://quickchart.io/qr?size=250x250&margin=1&text=${encodeURIComponent(data.qrCode)}`;
             } 
             else if (data.status === 'desconectado') {
                 textStatus = '❌ DESCONECTADO (Robô Offline)';
@@ -2224,7 +2225,7 @@ async function apagarCadastrosPorEmail() {
                 elQrContainer.style.display = 'none';
             } 
             else if (data.status === 'iniciando') {
-                textStatus = '⏳ LIGANDO O NAVEGADOR E O SISTEMA...';
+                textStatus = '⏳ LIGANDO NAVEGADOR E GERANDO QR...';
                 colorStatus = '#0275d8';
                 elQrContainer.style.display = 'none';
             }
@@ -2236,12 +2237,18 @@ async function apagarCadastrosPorEmail() {
     async function enviarComandoRobo(comando) {
         if (comando === 'desconectar') {
             if (!confirm("⚠️ TEM CERTEZA?\n\nIsso vai desconectar o WhatsApp do servidor, derrubar as entregas pendentes e o robô só voltará a funcionar se você escanear o QR Code de novo!")) return;
-        } else if (comando === 'conectar') {
-            alert("⏳ Solicitando inicialização do Robô.\nAguarde entre 10 e 20 segundos para a conexão do QR Code aparecer!");
-        }
+        } 
         
         try {
-            await db.collection('config').doc('status_bot_defesa').set({ comando: comando }, { merge: true });
+            // Envia para o Firebase PRIMEIRO, sem bloquear a tela
+            await db.collection('config').doc('status_bot_defesa').set({ comando: comando, status: 'iniciando' }, { merge: true });
+            
+            // Troquei o alert por um aviso no próprio botão para não travar o navegador
+            let btn = event.target;
+            let txtOriginal = btn.innerText;
+            btn.innerText = "⏳ Comando Enviado...";
+            setTimeout(() => { btn.innerText = txtOriginal; }, 3000);
+            
         } catch(e) {
             alert("Erro ao tentar comunicar com o servidor do Robô.");
         }
