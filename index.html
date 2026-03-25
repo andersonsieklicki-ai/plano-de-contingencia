@@ -1229,7 +1229,10 @@ function loginGoogle() {
     // ==========================================
     // WHATSAPP: MAPS DE ROTAS OFICIAL
     // ==========================================
-   let configZap = JSON.parse(localStorage.getItem('defesaCivilConfigZap')) || { emailSolicitante: '', telefonePipa: '', telefoneSocial: '', telefoneAdminNotif: '' };
+ // ==========================================
+    // WHATSAPP: MAPS DE ROTAS OFICIAL E ROBÔ
+    // ==========================================
+    let configZap = JSON.parse(localStorage.getItem('defesaCivilConfigZap')) || { emailSolicitante: '', telefonePipa: '', telefoneSocial: '', telefoneAdminNotif: '' };
     
     function carregarConfigZap() { 
         if(navigator.onLine && db) { 
@@ -1241,14 +1244,17 @@ function loginGoogle() {
             }).catch(e => { console.error("Erro ao carregar zap:", e); }); 
         } 
     }
-async function salvarConfigZap() {
-        // Verifica se os campos já existem na tela para evitar erro de leitura
+
+    async function salvarConfigZap() {
         let elEmail = document.getElementById('configZapEmail');
         let elAdmin = document.getElementById('configZapAdmin');
         let elPipa = document.getElementById('configZapPipa');
         let elSocial = document.getElementById('configZapSocial');
 
-        if (!elEmail || !elAdmin || !elPipa || !elSocial) return;
+        if (!elEmail || !elAdmin || !elPipa || !elSocial) {
+            alert("Erro: A tela do robô precisa estar aberta para salvar.");
+            return;
+        }
 
         const email = elEmail.value.toLowerCase().trim(); 
         const telAdmin = elAdmin.value.replace(/[^\d,]/g,''); 
@@ -1266,18 +1272,27 @@ async function salvarConfigZap() {
         
         if(navigator.onLine && db) { 
             try { 
+                let btn = event.target;
+                let txtOriginal = btn.innerText;
+                btn.innerText = "⏳ Salvando...";
+                btn.disabled = true;
+
                 await db.collection('configuracoes_capanema').doc('whatsapp').set(configZap, { merge: true }); 
                 
-                // Pisca a mensagem verde "Salvo automático" na tela e esconde logo depois
-                let aviso = document.getElementById('avisoSalvo');
-                if (aviso) {
-                    aviso.style.opacity = '1';
-                    setTimeout(() => { aviso.style.opacity = '0'; }, 2500);
-                }
+                btn.innerText = "✅ Salvo com Sucesso!";
+                btn.style.backgroundColor = "#28a745";
+                
+                setTimeout(() => { 
+                    btn.innerText = txtOriginal; 
+                    btn.disabled = false;
+                }, 3000);
+
             } catch(e) { 
-                console.error("Erro ao salvar configurações do robô na nuvem:", e); 
+                alert("Erro ao salvar contatos na nuvem: " + e.message);
             } 
-        } 
+        } else {
+            alert("Sem conexão com a internet ou banco de dados.");
+        }
     }
    async function reenviarZapMotorista(nome, bairro, loc, rua, num, ref, obs, tel, vol, tipo, temCesta) {
     let numDestino = tipo === 'agua' ? configZap.telefonePipa : configZap.telefoneSocial;
