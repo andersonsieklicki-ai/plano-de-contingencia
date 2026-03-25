@@ -1226,34 +1226,49 @@
         } 
     }
 
-    function reenviarZapMotorista(nome, bairro, loc, rua, num, ref, obs, tel, vol, tipo, temCesta) {
-        let numDestino = tipo === 'agua' ? configZap.telefonePipa : configZap.telefoneSocial;
-        if (!numDestino) { alert(`O telefone responsável por ${tipo === 'agua' ? 'ÁGUA' : 'TELHAS'} não está configurado na aba Auditoria.`); return; }
-        
-        let horaAtual = new Date().getHours(); let saudacao = "";
-        if (horaAtual >= 5 && horaAtual < 12) saudacao = "Bom dia"; else if (horaAtual >= 12 && horaAtual < 18) saudacao = "Boa tarde"; else saudacao = "Boa noite";
-        
-        let origemGPS = ""; let cabecalho = ""; let textMaterial = "";
+   async function reenviarZapMotorista(nome, bairro, loc, rua, num, ref, obs, tel, vol, tipo, temCesta) {
+    let numDestino = tipo === 'agua' ? configZap.telefonePipa : configZap.telefoneSocial;
+    if (!numDestino) { alert(`O telefone responsável por ${tipo === 'agua' ? 'ÁGUA' : 'TELHAS'} não está configurado na aba Auditoria.`); return; }
+    
+    let horaAtual = new Date().getHours(); let saudacao = "";
+    if (horaAtual >= 5 && horaAtual < 12) saudacao = "Bom dia"; else if (horaAtual >= 12 && horaAtual < 18) saudacao = "Boa tarde"; else saudacao = "Boa noite";
+    
+    let origemGPS = ""; let cabecalho = ""; let textMaterial = "";
 
-        if (tipo === 'agua') {
-            saudacao = `${saudacao}, Agente da Defesa Civil!`; origemGPS = encodeURIComponent("Corpo de Bombeiros, Capanema - PR");
-            cabecalho = `*Ordem de serviço Defesa Civil entrega de água potável 💧*`; textMaterial = `*Volume Solicitado:* ${Number(vol)} m³ 💧`;
-        } else {
-            saudacao = `${saudacao}, motorista!`; origemGPS = encodeURIComponent("CRAS - Rua Antônio Nieheus, 670, Centro, Capanema - PR");
-            if (temCesta) { cabecalho = `*Ordem de serviço Assistência Social: Entrega de telhas e cesta básica 🏠📦*`; textMaterial = `*Material Liberado:* ${vol} Telhas e Cesta(s) Básica(s).`; } 
-            else { cabecalho = `*Ordem de serviço Assistência Social: Entrega de telhas 🏠*`; textMaterial = `*Material Liberado:* ${vol} Telhas.`; }
-        }
+    if (tipo === 'agua') {
+        saudacao = `${saudacao}, Agente da Defesa Civil!`; origemGPS = encodeURIComponent("Corpo de Bombeiros, Capanema - PR");
+        cabecalho = `*Ordem de serviço Defesa Civil entrega de água potável 💧*`; textMaterial = `*Volume Solicitado:* ${Number(vol)} m³ 💧`;
+    } else {
+        saudacao = `${saudacao}, motorista!`; origemGPS = encodeURIComponent("CRAS - Rua Antônio Nieheus, 670, Centro, Capanema - PR");
+        if (temCesta) { cabecalho = `*Ordem de serviço Assistência Social: Entrega de telhas e cesta básica 🏠📦*`; textMaterial = `*Material Liberado:* ${vol} Telhas e Cesta(s) Básica(s).`; } 
+        else { cabecalho = `*Ordem de serviço Assistência Social: Entrega de telhas 🏠*`; textMaterial = `*Material Liberado:* ${vol} Telhas.`; }
+    }
 
-        let enderecoBusca = loc ? loc : (rua ? `${rua}, ${num||'S/N'}` : '');
-        let destinoMaps = encodeURIComponent(`${enderecoBusca} ${bairro} Capanema PR`.trim());
-        let linkMaps = `https://www.google.com/maps/dir/?api=1&origin=${origemGPS}&destination=${destinoMaps}`;
-        
-        let textEnd = loc ? `*Localização:* ${loc}` : ''; if(rua) textEnd += `\n*Rua:* ${rua}, Nº: ${num || 'S/N'}`;
-        let textRef = ref ? `*Ref:* ${ref}\n` : ''; let textObs = obs ? `\n*Observação:* ${obs}` : '';
-        
-        let msg = `${saudacao}\n\n${cabecalho}\n\n*Nome:* ${nome}\n*Bairro:* ${bairro}\n${textEnd}\n${textRef}*Telefone:* ${tel || 'Não informado'}${textObs}\n${textMaterial}\n\n*🗺️ Rota de Entrega (GPS Oficial):*\n${linkMaps}\n\n*⚠️ ATENÇÃO: Caso o GPS não consiga traçar a rota exata, por favor ligue para o solicitante!*`;
+    let enderecoBusca = loc ? loc : (rua ? `${rua}, ${num||'S/N'}` : '');
+    let destinoMaps = encodeURIComponent(`${enderecoBusca} ${bairro} Capanema PR`.trim());
+    let linkMaps = `https://www.google.com/maps/dir/?api=1&origin=${origemGPS}&destination=${destinoMaps}`;
+    
+    let textEnd = loc ? `*Localização:* ${loc}` : ''; if(rua) textEnd += `\n*Rua:* ${rua}, Nº: ${num || 'S/N'}`;
+    let textRef = ref ? `*Ref:* ${ref}\n` : ''; let textObs = obs ? `\n*Observação:* ${obs}` : '';
+    
+    let msg = `${saudacao}\n\n${cabecalho}\n\n*Nome:* ${nome}\n*Bairro:* ${bairro}\n${textEnd}\n${textRef}*Telefone:* ${tel || 'Não informado'}${textObs}\n${textMaterial}\n\n*🗺️ Rota de Entrega (GPS Oficial):*\n${linkMaps}\n\n*⚠️ ATENÇÃO: Caso o GPS não consiga traçar a rota exata, por favor ligue para o solicitante!*`;
+    
+    // NOVA LÓGICA: Envia para o Firebase para o Robô pegar
+    try {
+        await db.collection('mensagens_externas').add({
+            telefone: numDestino,
+            mensagem: msg,
+            status: 'pendente',
+            data_criacao: new Date().toISOString(),
+            tipo: 'defesa'
+        });
+        alert('✅ Rota enviada com sucesso para a fila do robô!');
+    } catch (e) {
+        console.error("Erro ao enviar para o robô: ", e);
+        // Fallback: se a internet falhar na hora de salvar, abre no navegador como era antes
         window.open(`https://api.whatsapp.com/send?phone=${numDestino}&text=${encodeURIComponent(msg)}`, '_blank');
     }
+}
 
     // ==========================================
     // LOGÍSTICA DE FROTAS
@@ -1338,7 +1353,7 @@
                               let zeroPad = pendentes.length < 10 ? '0' + pendentes.length : pendentes.length;
                 let txtPlural = pendentes.length === 1 ? 'ENTREGA PENDENTE' : 'ENTREGAS PENDENTES';
                 btnAlerta.innerHTML = `🚨 ATENÇÃO: 🚚 <span style="font-size: 1.3rem; font-weight: 900; background: rgba(255,255,255,0.3); padding: 0 6px; border-radius: 4px;">${zeroPad}</span> ${txtPlural}`;
-
+}
             
             let h = '';
             pendentes.sort((a,b) => new Date(a.dataISO) - new Date(b.dataISO)).forEach(r => {
