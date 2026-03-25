@@ -526,7 +526,7 @@
 
 
 
-    async function processarAcessoUsuario(user) {
+   async function processarAcessoUsuario(user) {
         currentUserEmail = user.email ? user.email.toLowerCase() : "sem-email@google.com";
         let isAdmim = ADMIN_EMAILS.includes(currentUserEmail);
 
@@ -540,10 +540,10 @@
             const doc = await docRef.get();
             
             if (!doc.exists) {
-                return 'pendente_dados'; // Exige o cadastro do WhatsApp
+                return 'pendente_dados'; 
             } else {
                 const data = doc.data(); 
-                if (!data.telefone) return 'pendente_dados'; // Exige o cadastro do WhatsApp
+                if (!data.telefone) return 'pendente_dados'; 
                 
                 currentUserNivel = isAdmim ? 'admin' : (data.nivel || 'padrao');
                 localStorage.setItem('permissao_' + currentUserEmail, data.status || 'aprovado'); 
@@ -569,7 +569,7 @@
             if(document.getElementById('tab-btn-robo')) document.getElementById('tab-btn-robo').style.display = 'none';
         }
 
-        const cadastroOverlay = document.getElementById('cadastroOverlay'); // Adiciona a nova tela
+        const cadastroOverlay = document.getElementById('cadastroOverlay'); 
 
         if (navigator.onLine) {
             if (!auth.currentUser) { 
@@ -609,7 +609,6 @@
             }
         }
     }
-    
     window.addEventListener('online', updateOnlineStatus); 
     window.addEventListener('offline', updateOnlineStatus);
 
