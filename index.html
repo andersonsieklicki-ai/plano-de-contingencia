@@ -1231,31 +1231,36 @@ function loginGoogle() {
     // ==========================================
     let configZap = JSON.parse(localStorage.getItem('defesaCivilConfigZap')) || { emailSolicitante: '', telefonePipa: '', telefoneSocial: '' };
     
-    function carregarConfigZap() { 
-        if(navigator.onLine && db) { 
-            db.collection('configuracoes_capanema').doc('whatsapp').get().then(doc => { 
-                if(doc.exists) { 
-                    configZap = doc.data(); 
-                    localStorage.setItem('defesaCivilConfigZap', JSON.stringify(configZap)); 
-                } 
-            }).catch(e => { console.error("Erro ao carregar zap:", e); }); 
-        } 
+    function carregarConfigZap() {
+        db.collection('configuracoes_capanema').doc('whatsapp').get().then(doc => {
+            if (doc.exists) {
+                let data = doc.data();
+                document.getElementById('configZapEmail').value = data.emailSolicitante || '';
+                document.getElementById('configZapAdmin').value = data.telefoneAdminNotif || ''; // NOVO CAMPO
+                document.getElementById('configZapPipa').value = data.telefonePipa || '';
+                document.getElementById('configZapSocial').value = data.telefoneSocial || '';
+            }
+        });
     }
 
     async function salvarConfigZap() {
-        const email = document.getElementById('configZapEmail').value.toLowerCase().trim(); 
-        const telPipa = document.getElementById('configZapTelPipa').value.replace(/\D/g,''); 
-        const telSocial = document.getElementById('configZapTelSocial').value.replace(/\D/g,''); 
+        let emailSolicitante = document.getElementById('configZapEmail').value;
+        let telefoneAdminNotif = document.getElementById('configZapAdmin').value; // NOVO CAMPO
+        let telefonePipa = document.getElementById('configZapPipa').value;
+        let telefoneSocial = document.getElementById('configZapSocial').value;
         
-        configZap = { emailSolicitante: email, telefonePipa: telPipa, telefoneSocial: telSocial }; 
-        localStorage.setItem('defesaCivilConfigZap', JSON.stringify(configZap)); 
-        
-        if(navigator.onLine && db) { 
-            try { await db.collection('configuracoes_capanema').doc('whatsapp').set(configZap); alert("Configurações Salvas com Sucesso!"); } 
-            catch(e) { alert("Erro ao salvar contatos na nuvem."); } 
-        } 
+        try {
+            await db.collection('configuracoes_capanema').doc('whatsapp').set({
+                emailSolicitante,
+                telefoneAdminNotif,
+                telefonePipa,
+                telefoneSocial
+            }, { merge: true });
+            alert("✅ Configurações e Números do WhatsApp Salvos!");
+        } catch (e) {
+            alert("Erro ao salvar: " + e.message);
+        }
     }
-
    async function reenviarZapMotorista(nome, bairro, loc, rua, num, ref, obs, tel, vol, tipo, temCesta) {
     let numDestino = tipo === 'agua' ? configZap.telefonePipa : configZap.telefoneSocial;
     if (!numDestino) { alert(`O telefone responsável por ${tipo === 'agua' ? 'ÁGUA' : 'TELHAS'} não está configurado na aba Auditoria.`); return; }
@@ -1857,13 +1862,28 @@ function loginGoogle() {
         if(currentUserNivel !== 'admin' && currentUserNivel !== 'supervisor') return;
         
         let h = `<div class="report-summary" style="background: #e8f5e9; border-color: #c8e6c9; color: #2e7d32;"><strong>🤖 Gestão do Robô e Automação</strong></div>
-        
-        <div style="background:#fff; border:1px solid #c8e6c9; padding:20px; border-radius:8px; margin-bottom:15px;">
-            <h3 style="margin: 0 0 15px 0; color: #2e7d32; border-bottom: 2px solid #e8f5e9; padding-bottom: 8px;">1. Configurar Telefones (Motoristas)</h3>
-            <div class="form-row"><div class="form-col" style="flex:1"><label>E-mail SOLICITANTES (Separe por vírgula):</label><input type="text" id="configZapEmail" value="${configZap.emailSolicitante || ''}" placeholder="email1@..., email2@..." class="nav-input"></div></div>
-            <div class="form-row"><div class="form-col" style="flex:1"><label>Zap Motorista ÁGUA (Ex: 55469...):</label><input type="tel" id="configZapTelPipa" value="${configZap.telefonePipa || ''}" placeholder="55469..." class="nav-input"></div><div class="form-col" style="flex:1"><label>Zap Social TELHAS (Ex: 55469...):</label><input type="tel" id="configZapTelSocial" value="${configZap.telefoneSocial || ''}" placeholder="55469..." class="nav-input"></div></div>
-            <div class="form-row" style="justify-content:flex-end; margin-top:10px;"><button class="btn-small" style="background:var(--success-color); height:45px; padding: 0 25px; font-size: 1.1rem;" onclick="salvarConfigZap()">💾 Salvar Números</button></div>
-        </div>
+       <div style="margin-bottom: 20px;">
+    <label style="font-weight: bold; color: var(--primary-color);">📧 E-mail SOLICITANTES (Separe por vírgula):</label>
+    <input type="text" id="configZapEmail" placeholder="exemplo@gmail.com, outro@gmail.com" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc;">
+</div>
+
+<div style="margin-bottom: 20px;">
+    <label style="font-weight: bold; color: var(--danger-color);">📱 Telefones ADMIN (Recebem a 'Missão Concluída'):</label>
+    <input type="text" id="configZapAdmin" placeholder="Ex: 46999999999, 46888888888" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc;">
+    <small style="color: #666;">Digite os números com DDD (sem o zero). Separe por vírgula se for mais de um.</small>
+</div>
+
+<div style="margin-bottom: 20px;">
+    <label style="font-weight: bold; color: var(--agua-color);">💧 Telefone Central Defesa Civil:</label>
+    <input type="text" id="configZapPipa" placeholder="Ex: 46999999999" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc;">
+    <small style="color: #666;">Digite apenas o DDD e o número (sem o zero inicial).</small>
+</div>
+
+<div style="margin-bottom: 20px;">
+    <label style="font-weight: bold; color: var(--lona-color);">🏠 Telefone Central CRAS:</label>
+    <input type="text" id="configZapSocial" placeholder="Ex: 46999999999" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc;">
+    <small style="color: #666;">Digite apenas o DDD e o número (sem o zero inicial).</small>
+</div>
 
         <div style="background:#fff; border:1px solid #c8e6c9; padding:20px; border-radius:8px; margin-bottom:15px;">
             <h3 style="margin: 0 0 15px 0; color: #2e7d32; border-bottom: 2px solid #e8f5e9; padding-bottom: 8px;">2. Conexão do Aparelho (WhatsApp Web)</h3>
