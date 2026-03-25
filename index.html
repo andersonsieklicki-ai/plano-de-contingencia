@@ -9,6 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
         :root {
@@ -1855,7 +1856,7 @@
                 <div id="qrCodeContainer" style="text-align: center; display: none; background: #fff; padding: 20px; border-radius: 8px; border: 2px dashed #28a745; min-width: 300px; flex: 1;">
                     <p style="font-size: 1.2rem; margin: 0 0 5px 0; color: #2e7d32; font-weight: bold;">📷 Escaneie o QR Code</p>
                     <p style="font-size: 0.9rem; margin: 0 0 15px 0; color: #555;">(Abra o WhatsApp > Aparelhos Conectados)</p>
-                    <img id="imgQrCode" src="" alt="Gerando QR Code..." style="width: 250px; height: 250px; border: 5px solid white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); margin: 0 auto;">
+                   <div id="imgQrCode" style="width: 250px; height: 250px; margin: 0 auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);"></div>
                 </div>
             </div>
         </div>`;
@@ -2232,7 +2233,6 @@ async function apagarCadastrosPorEmail() {
 
     function iniciarEscutaStatusRobo() {
         if (!navigator.onLine || !db) return;
-        
         if (listenerStatusRobo) listenerStatusRobo(); 
         
         listenerStatusRobo = db.collection('config').doc('status_bot_defesa').onSnapshot(doc => {
@@ -2241,7 +2241,6 @@ async function apagarCadastrosPorEmail() {
             let elImgQr = document.getElementById('imgQrCode');
             
             if (!elStatus || !elQrContainer || !elImgQr) return; 
-            
             if (!doc.exists) return;
             let data = doc.data();
             
@@ -2252,8 +2251,16 @@ async function apagarCadastrosPorEmail() {
             else if (data.status === 'aguardando_leitura' && data.qrCode) {
                 elStatus.innerHTML = '<span style="color:#d39e00;">📱 AGUARDANDO LEITURA DO QR CODE</span>';
                 elQrContainer.style.display = 'block'; 
-                // Usando a API oficial do Google Charts (Mais estável e suporta dados longos)
-                elImgQr.src = `https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=${encodeURIComponent(data.qrCode)}&choe=UTF-8`;
+                
+                // Apaga o QR Code anterior e desenha o novo instantaneamente no navegador
+                elImgQr.innerHTML = "";
+                new QRCode(elImgQr, {
+                    text: data.qrCode,
+                    width: 220,
+                    height: 220,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff"
+                });
             } 
             else if (data.status === 'iniciando') {
                 elStatus.innerHTML = '<span style="color:#0275d8;">⏳ LIGANDO NAVEGADOR NO SERVIDOR...</span>';
