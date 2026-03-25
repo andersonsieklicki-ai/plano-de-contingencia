@@ -1795,14 +1795,32 @@
     // ==========================================
    function renderPainelAuditoria() {
         let h = '';
-        if(currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
-            // Automação WhatsApp (Fechado por padrão)
+    if(currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
             h += `<details class="admin-card" style="background:#e8f5e9; border:1px solid #81c784; padding:10px; border-radius:5px; margin-bottom:15px;">
-                    <summary style="cursor:pointer; outline:none; color:#2e7d32; font-weight:bold; font-size:1.1rem; border-bottom:1px solid #c8e6c9; padding-bottom:5px; list-style-position: inside;">📱 Automação WhatsApp <small style="font-weight:normal; font-size:0.8rem;">(Clique para expandir)</small></summary>
+                    <summary style="cursor:pointer; outline:none; color:#2e7d32; font-weight:bold; font-size:1.1rem; border-bottom:1px solid #c8e6c9; padding-bottom:5px; list-style-position: inside;">📱 Automação e Conexão WhatsApp <small style="font-weight:normal; font-size:0.8rem;">(Clique para expandir)</small></summary>
                     <div style="margin-top:15px;">
                         <div class="form-row"><div class="form-col" style="flex:1"><label>E-mail SOLICITANTES (Separe por vírgula):</label><input type="text" id="configZapEmail" value="${configZap.emailSolicitante || ''}" placeholder="email1@..., email2@..."></div></div>
                         <div class="form-row"><div class="form-col" style="flex:1"><label>Zap Motorista ÁGUA:</label><input type="tel" id="configZapTelPipa" value="${configZap.telefonePipa || ''}" placeholder="55469..."></div><div class="form-col" style="flex:1"><label>Zap Social TELHAS:</label><input type="tel" id="configZapTelSocial" value="${configZap.telefoneSocial || ''}" placeholder="55469..."></div></div>
-                        <div class="form-row" style="justify-content:flex-end; margin-top:10px;"><button class="btn-small" style="background:var(--success-color); height:36px; padding: 0 20px;" onclick="salvarConfigZap()">💾 Salvar</button></div>
+                        <div class="form-row" style="justify-content:flex-end; margin-top:10px;"><button class="btn-small" style="background:var(--success-color); height:36px; padding: 0 20px;" onclick="salvarConfigZap()">💾 Salvar Números</button></div>
+                        
+                        <div style="margin-top: 15px; border-top: 2px dashed #81c784; padding-top: 15px;">
+                            <h4 style="margin: 0 0 10px 0; color: #2e7d32;">🤖 Status da Conexão do Robô</h4>
+                            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; background: #fff; padding: 15px; border-radius: 5px; border: 1px solid #c8e6c9;">
+                                <div style="flex: 1; min-width: 200px;">
+                                    <p style="margin: 0 0 10px 0; font-size: 1.1rem;"><strong>Status Atual:</strong> <span id="statusRoboDisplay">Aguardando info...</span></p>
+                                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                        <button onclick="enviarComandoRobo('conectar')" style="background: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; flex: 1;">🟢 Ligar Robô</button>
+                                        <button onclick="enviarComandoRobo('desconectar')" style="background: #dc3545; color: white; border: none; padding: 10px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; flex: 1;">🔴 Desconectar Conta</button>
+                                    </div>
+                                    <p style="font-size: 0.75rem; color: #666; margin-top: 8px;">* Ao clicar em Desconectar, o robô esquecerá sua conta e precisará do QR Code novamente.</p>
+                                </div>
+                                <div id="qrCodeContainer" style="text-align: center; display: none; background: #f8f9fa; padding: 10px; border-radius: 5px; border: 1px dashed #ccc; min-width: 220px;">
+                                    <p style="font-size: 0.85rem; margin: 0 0 5px 0; color: #333; font-weight: bold;">Escaneie o QR Code</p>
+                                    <p style="font-size: 0.7rem; margin: 0 0 8px 0; color: #777;">(Atualizado automaticamente a cada 20s)</p>
+                                    <img id="imgQrCode" src="" alt="Gerando QR Code..." style="width: 180px; height: 180px; border: 5px solid white; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+                                </div>
+                            </div>
+                        </div>
                     </div>
                   </details>`;
         }
@@ -1834,7 +1852,9 @@
                     </div>
                   </details>`; 
         }
-        document.getElementById('tab-log').innerHTML = h; filtrarTabelaAuditoria();
+        document.getElementById('tab-log').innerHTML = h; 
+        filtrarTabelaAuditoria();
+        iniciarEscutaStatusRobo(); // <--- Adicione esta linha no final de renderPainelAuditoria()
     }
 
 async function apagarCadastrosPorEmail() {
@@ -2161,7 +2181,71 @@ async function apagarCadastrosPorEmail() {
         }
         processarMovimentoEstoque(chave, tipo, qtd, motivo);
     }
-    
+    // ==========================================
+    // PAINEL DE CONTROLE E QR CODE DO ROBÔ
+    // ==========================================
+    let listenerStatusRobo = null;
+
+    function iniciarEscutaStatusRobo() {
+        if (!navigator.onLine || !db) return;
+        
+        // Evita que o listener seja criado duas vezes e trave o navegador
+        if (listenerStatusRobo) listenerStatusRobo(); 
+        
+        // Fica escutando as mudanças do Firebase em tempo real
+        listenerStatusRobo = db.collection('config').doc('status_bot_defesa').onSnapshot(doc => {
+            if (!doc.exists) return;
+            let data = doc.data();
+            
+            let elStatus = document.getElementById('statusRoboDisplay');
+            let elQrContainer = document.getElementById('qrCodeContainer');
+            let elImgQr = document.getElementById('imgQrCode');
+            
+            if (!elStatus) return; // Garante que só rola se a aba estiver aberta
+            
+            let textStatus = 'Desconhecido';
+            let colorStatus = '#333';
+            
+            if (data.status === 'online') {
+                textStatus = '✅ CONECTADO E PRONTO';
+                colorStatus = 'green';
+                elQrContainer.style.display = 'none';
+            } 
+            else if (data.status === 'aguardando_leitura' && data.qrCode) {
+                textStatus = '📱 AGUARDANDO LEITURA DO QR CODE';
+                colorStatus = '#f0ad4e';
+                elQrContainer.style.display = 'block';
+                // Cria a imagem usando a string segura do WhatsApp gerada no Firebase
+                elImgQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(data.qrCode)}`;
+            } 
+            else if (data.status === 'desconectado') {
+                textStatus = '❌ DESCONECTADO (Robô Offline)';
+                colorStatus = 'red';
+                elQrContainer.style.display = 'none';
+            } 
+            else if (data.status === 'iniciando') {
+                textStatus = '⏳ LIGANDO O NAVEGADOR E O SISTEMA...';
+                colorStatus = '#0275d8';
+                elQrContainer.style.display = 'none';
+            }
+            
+            elStatus.innerHTML = `<strong style="color: ${colorStatus};">${textStatus}</strong>`;
+        });
+    }
+
+    async function enviarComandoRobo(comando) {
+        if (comando === 'desconectar') {
+            if (!confirm("⚠️ TEM CERTEZA?\n\nIsso vai desconectar o WhatsApp do servidor, derrubar as entregas pendentes e o robô só voltará a funcionar se você escanear o QR Code de novo!")) return;
+        } else if (comando === 'conectar') {
+            alert("⏳ Solicitando inicialização do Robô.\nAguarde entre 10 e 20 segundos para a conexão do QR Code aparecer!");
+        }
+        
+        try {
+            await db.collection('config').doc('status_bot_defesa').set({ comando: comando }, { merge: true });
+        } catch(e) {
+            alert("Erro ao tentar comunicar com o servidor do Robô.");
+        }
+    }
     // Assegurar que o estoque inicie após o Firebase
     window.addEventListener('DOMContentLoaded', () => { 
         setTimeout(() => { carregarPainelDespacho(); if(typeof iniciarEscutaEstoque === 'function') iniciarEscutaEstoque(); }, 1000); 
