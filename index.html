@@ -2233,7 +2233,7 @@ async function apagarCadastrosPorEmail() {
     function iniciarEscutaStatusRobo() {
         if (!navigator.onLine || !db) return;
         
-        if (listenerStatusRobo) listenerStatusRobo(); // Limpa o escutador anterior
+        if (listenerStatusRobo) listenerStatusRobo(); 
         
         listenerStatusRobo = db.collection('config').doc('status_bot_defesa').onSnapshot(doc => {
             let elStatus = document.getElementById('statusRoboDisplay');
@@ -2251,8 +2251,9 @@ async function apagarCadastrosPorEmail() {
             } 
             else if (data.status === 'aguardando_leitura' && data.qrCode) {
                 elStatus.innerHTML = '<span style="color:#d39e00;">📱 AGUARDANDO LEITURA DO QR CODE</span>';
-                elQrContainer.style.display = 'block'; // Mostra o quadrado na tela
-                elImgQr.src = `https://quickchart.io/qr?size=250x250&margin=1&text=${encodeURIComponent(data.qrCode)}`;
+                elQrContainer.style.display = 'block'; 
+                // Usando a API oficial do Google Charts (Mais estável e suporta dados longos)
+                elImgQr.src = `https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=${encodeURIComponent(data.qrCode)}&choe=UTF-8`;
             } 
             else if (data.status === 'iniciando') {
                 elStatus.innerHTML = '<span style="color:#0275d8;">⏳ LIGANDO NAVEGADOR NO SERVIDOR...</span>';
