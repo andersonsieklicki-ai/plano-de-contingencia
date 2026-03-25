@@ -9,7 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
         :root {
@@ -2218,16 +2218,15 @@ async function apagarCadastrosPorEmail() {
     // ==========================================
     let listenerStatusRobo = null;
 
-   function iniciarEscutaStatusRobo() {
+  function iniciarEscutaStatusRobo() {
         if (!navigator.onLine || !db) return;
         if (listenerStatusRobo) listenerStatusRobo(); 
         
         listenerStatusRobo = db.collection('config').doc('status_bot_defesa').onSnapshot(doc => {
             let elStatus = document.getElementById('statusRoboDisplay');
             let elQrContainer = document.getElementById('qrCodeContainer');
-            let elImgQr = document.getElementById('imgQrCode');
             
-            if (!elStatus || !elQrContainer || !elImgQr) return; 
+            if (!elStatus || !elQrContainer) return; 
             if (!doc.exists) return;
             let data = doc.data();
             
@@ -2239,22 +2238,28 @@ async function apagarCadastrosPorEmail() {
                 elStatus.innerHTML = '<span style="color:#d39e00;">📱 AGUARDANDO LEITURA DO QR CODE</span>';
                 elQrContainer.style.display = 'block'; 
                 
-                // Tenta gerar o QR Code. Se a biblioteca QRCode não existir, avisa no console.
+                // Limpa o contentor para não duplicar o QR Code
+                elQrContainer.innerHTML = `<p style="font-size: 1.2rem; margin: 0 0 5px 0; color: #2e7d32; font-weight: bold;">📷 Escaneie o QR Code</p>
+                                           <p style="font-size: 0.9rem; margin: 0 0 15px 0; color: #555;">(Abra o WhatsApp > Aparelhos Conectados)</p>
+                                           <div id="qrcode_canvas" style="display: flex; justify-content: center;"></div>`;
+
                 try {
+                    // Verifica se a biblioteca QRCode (versão Cloudflare) está ativa
                     if (typeof QRCode !== 'undefined') {
-                        QRCode.toDataURL(data.qrCode, {
-                            width: 260,
-                            margin: 1,
-                            color: { dark: '#000000', light: '#ffffff' }
-                        }, function (error, url) {
-                            if (!error) elImgQr.src = url;
+                        new QRCode(document.getElementById("qrcode_canvas"), {
+                            text: data.qrCode,
+                            width: 256,
+                            height: 256,
+                            colorDark : "#000000",
+                            colorLight : "#ffffff",
+                            correctLevel : QRCode.CorrectLevel.H
                         });
                     } else {
-                        console.error("Biblioteca QRCode ainda não carregou.");
-                        elImgQr.alt = "Erro: Carregando biblioteca...";
+                        document.getElementById("qrcode_canvas").innerHTML = "⏳ Carregando motor visual...";
+                        console.warn("Aguardando biblioteca QRCode...");
                     }
                 } catch (err) {
-                    console.error("Erro ao gerar QR Code visual:", err);
+                    console.error("Erro ao desenhar QR:", err);
                 }
             } 
             else if (data.status === 'iniciando') {
