@@ -406,7 +406,7 @@
 <div class="app-footer no-print" style="text-align: center; margin-top: 10px; padding-bottom: 10px; color: #bbb; font-size: 0.7rem;">@Sieklicki</div>
 
 <input type="file" id="importBackupFile" style="display:none;" accept=".json" onchange="processarImportacaoBackup(event)">
-    <script>
+<script>
     // ============================================================================
     // ⏳ SISTEMA DE TIMEOUT POR INATIVIDADE (30 MINUTOS) E AUTO-DESLOGAR
     // ============================================================================
@@ -423,6 +423,7 @@
         }, TEMPO_MAXIMO_INATIVO);
     }
 
+    // Ouve todas as interações do utilizador como atividade (reseta o relógio)
     window.addEventListener('mousemove', resetarTempoInatividade);
     window.addEventListener('keypress', resetarTempoInatividade);
     window.addEventListener('click', resetarTempoInatividade);
@@ -431,19 +432,30 @@
     resetarTempoInatividade();
 
     // ============================================================================
-    // ATALHOS DE TECLADO (ESC PARA LIMPAR) E NAVEGAÇÃO BACK
+    // ATALHOS DE TECLADO E PREVENÇÃO DE SAÍDA (BACKSPACE)
     // ============================================================================
     document.addEventListener('keydown', function(event) {
         if (event.key === "Escape") {
             const formSection = document.getElementById('formSection');
-            if (formSection && !formSection.classList.contains('hidden')) clearFormFields();
+            if (formSection && !formSection.classList.contains('hidden')) {
+                clearFormFields();
+            }
         }
         if (event.key === "Backspace") {
             const reportSection = document.getElementById('reportSection');
             if (reportSection && !reportSection.classList.contains('hidden')) {
                 const tag = event.target.tagName.toLowerCase();
-                if (tag !== 'input' && tag !== 'textarea') { event.preventDefault(); history.back(); }
+                if (tag !== 'input' && tag !== 'textarea') {
+                    event.preventDefault();
+                    history.back(); 
+                }
             }
+        }
+    });
+
+    window.addEventListener('popstate', function(event) {
+        if (!document.getElementById('reportSection').classList.contains('hidden')) {
+            showForm(); 
         }
     });
 
@@ -476,10 +488,13 @@
     let unsubscribeSnapshot = null; 
     let unsubscribeLogs = null; 
     let unsubRoboStatus = null; 
+    
     let timerConexaoInterval = null;
     let tempoConectadoSegundos = 0;
     
+    // E-mails dos Administradores Mestres
     const ADMIN_EMAILS = ['andersonsieklicki@gmail.com', 'vanderleipettenon@gmail.com']; 
+    
     let currentUserStatus = 'deslogado'; 
     let currentUserEmail = ''; 
     let currentUserNivel = 'padrao'; 
@@ -487,6 +502,7 @@
     let configZap = {}; 
     let estoqueAtual = { lona: 0, telha: 0, cesta: 0, agua: 0 };
     let allUsersCache = [];
+    
     let auditLogs = JSON.parse(localStorage.getItem('defesaCivilLogs')) || [];
     let records = JSON.parse(localStorage.getItem('defesaCivilRecords')) || [];
     let editandoId = null;
@@ -499,15 +515,26 @@
     });
 
     // ============================================================================
-    // SISTEMA DE LOGIN E HIERARQUIA DE ACESSO
+    // SISTEMA DE LOGIN E HIERARQUIA
     // ==============================================================================
     function loginGoogle() {
-        if (!navigator.onLine) return alert("Sem internet. Conecte-se para fazer login."); 
+        if (!navigator.onLine) { alert("Sem internet. Conecte-se para fazer login."); return; }
         if(btnLogin) btnLogin.innerText = "Carregando..."; 
         const provider = new firebase.auth.GoogleAuthProvider();
+        
         auth.signInWithPopup(provider).catch(error => {
-            if (error.code === 'auth/popup-blocked' || error.code === 'auth/web-storage-unsupported') auth.signInWithRedirect(provider); 
-            else { alert("Falha no login: " + error.message); if(btnLogin) btnLogin.innerText = "Logar Google"; }
+            console.warn("Popup bloqueado. Acionando rota alternativa...", error);
+            if (error.code === 'auth/popup-blocked' || error.code === 'auth/web-storage-unsupported') { 
+                auth.signInWithRedirect(provider); 
+            } else if (error.code === 'auth/unauthorized-domain') { 
+                alert("⛔ ERRO: Este site não está liberado no Firebase."); 
+                if(btnLogin) btnLogin.innerText = "Logar Google"; 
+            } else if (error.code === 'auth/popup-closed-by-user') { 
+                if(btnLogin) btnLogin.innerText = "Logar Google"; 
+            } else { 
+                alert("Falha no login: " + error.message); 
+                if(btnLogin) btnLogin.innerText = "Logar Google"; 
+            }
         });
     }
 
@@ -533,6 +560,7 @@
         try {
             const docRef = db.collection('usuarios_capanema').doc(currentUserEmail); 
             const doc = await docRef.get();
+            
             if (!doc.exists) {
                 await docRef.set({ email: currentUserEmail, nome: user.displayName || 'Sem Nome', status: 'aprovado', nivel: 'padrao', dataRegistro: new Date().toLocaleString('pt-BR') });
                 localStorage.setItem('permissao_' + currentUserEmail, 'aprovado'); 
@@ -707,12 +735,109 @@
     window.desconectarRoboDefesa = async () => { if(confirm("🛑 Deseja desligar o robô de envio de mensagens para os motoristas?")) { await db.collection("config").doc("status_bot_defesa").set({ comando: "desconectar" }, { merge: true }); } };
 
     // ============================================================================
-    // AUDITORIA, CONFIGURAÇÕES E E-MAILS SPAMMERS
+    // AUDITORIA E PAINEL EXCLUSIVO (Aba 'Log')
     // ============================================================================
     function renderPainelAuditoria() {
         if(currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
+            let h = '';
+            
+            // 1. PAINEL DO ROBÔ WHATSAPP
+            h += `
+            <div class="admin-card" style="background:#f0fdf4; border:1px solid #bbf7d0; padding:20px; border-radius:10px; margin-bottom:20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                <div style="display:flex; align-items:center; gap:10px; border-bottom:2px solid #bbf7d0; padding-bottom:10px; margin-bottom:15px;">
+                    <i class="fa-brands fa-whatsapp" style="font-size:2rem; color:#25D366;"></i>
+                    <h3 style="margin:0; color:#166534; font-size:1.3rem;">Conexão do Robô WhatsApp (Defesa Civil)</h3>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #bbf7d0;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div id="defesa-bolinha-status" style="width: 16px; height: 16px; border-radius: 50%; background-color: #94a3b8; transition: all 0.3s;"></div>
+                            <span id="defesa-texto-status" style="font-weight: 900; color: #374151; font-size: 1.1rem; text-transform: uppercase;">Verificando...</span>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="font-size: 0.8rem; color: #6b7280; font-weight: bold; display: block;">Tempo de Conexão</span>
+                            <span id="defesa-tempo-conexao" style="font-size: 1rem; color: #166534; font-weight: 900;">00:00:00</span>
+                        </div>
+                    </div>
+
+                    <div id="defesa-area-botoes" style="display: flex; gap: 10px; justify-content: flex-end;"></div>
+                    
+                    <div id="defesa-area-qr" style="display: none; text-align: center; background: #fff; padding: 20px; border-radius: 8px; border: 2px dashed #25D366;">
+                        <p style="margin: 0 0 15px 0; font-weight: 900; color: #166534; font-size: 1.1rem;">Aponte o celular e leia o QR Code</p>
+                        <div style="display: flex; justify-content: center; margin-bottom: 10px;">
+                            <img id="defesa-qrcode-img" style="width: 220px; height: 220px; border-radius: 8px; border: 1px solid #e5e7eb; padding: 5px; background: #fff;" src="" />
+                        </div>
+                        <p style="font-size: 0.85rem; color: #6b7280; font-weight: bold; margin-top: 10px;">Para o robô oficial da Defesa Civil de Capanema</p>
+                    </div>
+                    
+                    <div id="defesa-area-fila" style="display: none; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #bbf7d0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="color: #166534; font-weight: 900;"><i class="fa-solid fa-list-ol mr-2"></i> Fila de Envios:</span>
+                            <span id="defesa-qtd-fila" style="background: #25D366; color: #fff; padding: 4px 10px; border-radius: 12px; font-size: 0.85rem; font-weight: bold;">0 Pendentes</span>
+                        </div>
+                        <p id="defesa-status-fila" style="margin: 0; font-size: 0.9rem; color: #374151; font-weight: bold; background: #f3f4f6; padding: 8px; border-radius: 4px;">Ocioso</p>
+                    </div>
+                </div>
+            </div>`;
+
+            // 2. PAINEL DE CONTATOS DA LOGÍSTICA
+            h += `<div class="admin-card" style="background:#e8f5e9; border:1px solid #81c784; padding:10px; border-radius:5px; margin-bottom:15px;">
+                    <p style="margin-top:0; color:#2e7d32; font-weight:bold; font-size:1.1rem; border-bottom:1px solid #c8e6c9; padding-bottom:5px;">📱 Automação WhatsApp (Contatos)</p>
+                    <div class="form-row">
+                        <div class="form-col" style="flex:1"><label>E-mail SOLICITANTES (Separe por vírgula):</label><input type="text" id="configZapEmail" value="${configZap.emailSolicitante || ''}" placeholder="email1@..., email2@..."></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-col" style="flex:1"><label>Zap Motorista ÁGUA:</label><input type="tel" id="configZapTelPipa" value="${configZap.telefonePipa || ''}" placeholder="55469..."></div>
+                        <div class="form-col" style="flex:1"><label>Zap Social TELHAS:</label><input type="tel" id="configZapTelSocial" value="${configZap.telefoneSocial || ''}" placeholder="55469..."></div>
+                    </div>
+                    <div class="form-row" style="justify-content:flex-end; margin-top:10px;">
+                        <button class="btn-small" style="background:var(--success-color); height:36px; padding: 0 20px;" onclick="salvarConfigZap()">💾 Salvar</button>
+                    </div>
+                  </div>`;
+                  
+            // 3. BACKUP (SÓ ADMIN)
+            if(currentUserNivel === 'admin') {
+                h += `<div style="display:flex; gap:10px; margin-bottom:15px;">
+                        <button onclick="exportarBackup()" style="flex:1; background:#007bff; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; cursor:pointer;">💾 Salvar Backup da Base</button>
+                        <button onclick="document.getElementById('importBackupFile').click()" style="flex:1; background:#17a2b8; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; cursor:pointer;">📂 Importar Backup</button>
+                     </div>`;
+            }
+
+            // 4. AUDITORIA AO VIVO
+            h += `<div class="admin-card" style="background:#fff; border:1px solid #ccc; padding:10px; border-radius:5px; margin-bottom:15px;">
+                <p style="margin-top:0; color:var(--primary-color); font-weight:bold; font-size:1.1rem; border-bottom:1px solid #ccc; padding-bottom:5px;">🔍 Auditoria Ao Vivo</p>
+                <div class="filter-group" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+                    <label><input type="checkbox" class="fLogAcaoCb" value="NOVO CADASTRO" checked onchange="filtrarTabelaAuditoria()"> Novo</label>
+                    <label><input type="checkbox" class="fLogAcaoCb" value="EDIÇÃO" checked onchange="filtrarTabelaAuditoria()"> Edição</label>
+                    <label><input type="checkbox" class="fLogAcaoCb" value="ENTREGA ÁGUA" checked onchange="filtrarTabelaAuditoria()"> Água</label>
+                    <label><input type="checkbox" class="fLogAcaoCb" value="ENTREGA TELHA" checked onchange="filtrarTabelaAuditoria()"> Telha</label>
+                    <label><input type="checkbox" class="fLogAcaoCb" value="EXCLUSÃO" checked onchange="filtrarTabelaAuditoria()"> Exclusão</label>
+                </div>
+                <input type="text" id="fLogAge" placeholder="Filtrar Agente..." onkeyup="filtrarTabelaAuditoria()" style="width:100%; margin-bottom:10px;">
+                <div id="logTableContainer"></div>
+              </div>`;
+            
+            // 5. ZONA DE RISCO (SÓ ADMIN)
+            if(currentUserNivel === 'admin') { 
+                h += `<div class="admin-card danger-zone" style="background:#ffebee; border:1px solid var(--danger-color); padding:10px; border-radius:5px; margin-bottom:15px;">
+                        <p style="margin-top:0; color:var(--danger-color); font-weight:bold; font-size:1.1rem; border-bottom:1px solid #ffcdd2; padding-bottom:5px;">⚠️ ZONA DE RISCO</p>
+                        <label style="font-size:0.9rem; color:#b71c1c; font-weight:bold; display:block; margin-top:5px;">Apagar TODOS os cadastros de um E-mail (Anti-Spam):</label>
+                        <div style="display:flex; gap:5px; margin-bottom: 15px; margin-top: 5px;">
+                            <input type="text" id="emailSpamDelete" placeholder="Digite apenas o nome (Ex: andersonsieklicki)" style="flex:2; padding:8px; border:1px solid #ef9a9a; border-radius:4px;">
+                            <button onclick="apagarCadastrosPorEmail()" style="flex:1; background:var(--danger-color); color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">🗑️ Nuke E-mail</button>
+                        </div>
+                        <label style="font-size:0.9rem; color:#b71c1c; font-weight:bold; display:block; border-top:1px solid #ffcdd2; padding-top:10px;">Reset Completo do Sistema:</label>
+                        <button class="btn-print" style="background:var(--danger-color); width:100%; margin-top: 5px;" onclick="limparBancoDeDados()">🚨 LIMPAR BASE INTEIRA (CADASTROS E LOGS)</button>
+                      </div>`; 
+            }
+
+            document.getElementById('tab-log').innerHTML = h; 
             filtrarTabelaAuditoria();
-            if(typeof window.iniciarListenerRobo === 'function') window.iniciarListenerRobo();
+            
+            if(typeof window.iniciarListenerRobo === 'function') {
+                window.iniciarListenerRobo();
+            }
         }
     }
 
@@ -962,7 +1087,7 @@
         try { await db.collection('usuarios_capanema').doc(email).delete(); alert('Usuário excluído com sucesso.'); carregarListaUsuarios(); } catch (e) { alert("Erro ao excluir usuário."); } }
 
     // ============================================================================
-    // VIGIA ANTI-FRAUDE, AUTO-PREENCHIMENTO E GPS
+    // VIGIA ANTI-FRAUDE E AUTO-PREENCHIMENTO
     // ============================================================================
     async function obterIP() { if (!navigator.onLine) return "Offline";
         try { const response = await fetch('https://api.ipify.org?format=json'); const data = await response.json(); return data.ip; } catch (error) { return "IP Indisponível"; } 
@@ -1039,22 +1164,6 @@
 
     function prepararImpressao() { setTimeout(function() { window.print(); }, 300); }
     function togglePrintPhotos() { document.body.classList.toggle('print-photos', document.getElementById('chkPrintPhotos').checked); }
-
-    const navInputs = document.querySelectorAll('.nav-input');
-    navInputs.forEach((input, index) => {
-        input.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' || e.keyCode === 13) {
-                e.preventDefault(); 
-                if(['dataFim', 'filtroRelBairro', 'filtroRg', 'filtroNome'].includes(this.id)) { if(typeof generateReport === 'function') generateReport(); return; }
-                if (['nome', 'bairro', 'rua', 'localizacaoAgua', 'referenciaAgua'].includes(this.id)) { if (typeof formatarNomeProprio === 'function') this.value = formatarNomeProprio(this.value); }
-                if (typeof buscarCadastroExistente === 'function') { buscarCadastroExistente(this.id); }
-
-                let proximoInput = null;
-                for (let i = index + 1; i < navInputs.length; i++) { if (!navInputs[i].closest('.hidden') && navInputs[i].offsetParent !== null) { proximoInput = navInputs[i]; break; } }
-                if (proximoInput && this.id !== 'observacao') { proximoInput.focus(); } else { const btnSalvar = document.getElementById('btnSalvarCadastro'); if (btnSalvar) { this.blur(); btnSalvar.focus(); } }
-            }
-        });
-    });
 
     function aplicarPrivacidade(r) {
         let temPermissao = (currentUserNivel === 'admin' || currentUserNivel === 'supervisor' || currentUserNivel === 'agente' || r.emailCriador === currentUserEmail);
@@ -1143,7 +1252,7 @@
     }
     
     // ============================================================================
-    // LOGÍSTICA DE DESPACHO E WHATSAPP (MODAIS E CARDS)
+    // LOGÍSTICA DE DESPACHO E WHATSAPP MANUAL
     // ============================================================================
     function abrirModalLogistica() {
         const container = document.getElementById('listaDespachoContainer'); container.innerHTML = "<p>A carregar rotas pendentes...</p>"; document.getElementById('modalLogistica').style.display = 'flex';
@@ -1210,7 +1319,7 @@
     }
 
     // ============================================================================
-    // SINCRONIZAÇÃO NUVEM E LOGS DE AUDITORIA
+    // SINCRONIZAÇÃO NUVEM, LOGS E BACKUP
     // ============================================================================
     async function sincronizarFirebaseAutomatica() {
         if (!navigator.onLine || !db || !auth.currentUser || currentUserStatus !== 'aprovado') return;
@@ -1273,6 +1382,38 @@
             rLogs.sort((a,b) => b.id - a.id); auditLogs = rLogs; localStorage.setItem('defesaCivilLogs', JSON.stringify(auditLogs));
             if (document.getElementById('tab-log').classList.contains('active')) renderPainelAuditoria();
         }, (error) => {});
+    }
+
+    function exportarBackup() {
+        if(currentUserNivel !== 'admin') { alert("Apenas Administradores."); return; }
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ records: records, logs: auditLogs }));
+        const downloadAnchorNode = document.createElement('a'); downloadAnchorNode.setAttribute("href", dataStr);
+        let now = new Date(); let ds = `${now.getDate()}-${now.getMonth()+1}-${now.getFullYear()}_${now.getHours()}h${now.getMinutes()}`;
+        downloadAnchorNode.setAttribute("download", `Backup_DefesaCivil_${ds}.json`); document.body.appendChild(downloadAnchorNode); downloadAnchorNode.click(); downloadAnchorNode.remove();
+        if(typeof registrarLog === 'function') registrarLog("BACKUP", "Download manual da base realizado.");
+    }
+
+    async function processarImportacaoBackup(event) {
+        if(currentUserNivel !== 'admin') return;
+        const file = event.target.files[0]; if (!file) return;
+        if (!confirm("⚠️ ATENÇÃO: Deseja RESTAURAR este backup? Isso pode sobrescrever dados recentes!")) { event.target.value = ''; return; }
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                let backupData = JSON.parse(e.target.result);
+                if(backupData.records) {
+                    let mapId = new Map(records.map(r => [r.id, r]));
+                    backupData.records.forEach(br => { mapId.set(br.id, br); br.synced = false; }); records = Array.from(mapId.values()); localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
+                }
+                if(backupData.logs) {
+                    let mapLogs = new Map(auditLogs.map(l => [l.id, l]));
+                    backupData.logs.forEach(bl => { mapLogs.set(bl.id, bl); bl.synced = false; }); auditLogs = Array.from(mapLogs.values()).sort((a,b) => b.id - a.id); localStorage.setItem('defesaCivilLogs', JSON.stringify(auditLogs));
+                }
+                alert("✅ Backup restaurado/mesclado com sucesso! Sincronizando com a nuvem...");
+                if(typeof registrarLog === 'function') await registrarLog("RESTORE", `Importou arquivo: ${file.name}`);
+                sincronizarFirebaseAutomatica(); sincronizarLogsOffline(); generateReport(); carregarPainelDespacho(); if(document.getElementById('tab-btn-log').classList.contains('active')) renderPainelAuditoria();
+            } catch (err) { alert("Erro ao ler o arquivo JSON de Backup."); }
+        }; reader.readAsText(file); event.target.value = '';
     }
 
     // ============================================================================
@@ -1398,9 +1539,29 @@
         await registrarLog("EXCLUSÃO", `Apagou Cód: [${r.codigo}]. Motivo: ${motivo}`);
         generateReport(); carregarPainelDespacho();
     }
+    
+    function checkBulkDelete() { const cx = document.querySelectorAll('.bulk-checkbox:checked');
+        const b = document.getElementById('btnBulkDelete'); if(cx.length>0) { b.style.display='block'; b.innerText=`🗑️ Excluir ${cx.length}`; } else { b.style.display='none'; } }
+    
+    async function executarExclusaoEmLote() {
+        const cx = document.querySelectorAll('.bulk-checkbox:checked');
+        if(cx.length===0) return;
+        
+        let motivo = prompt("⚠️ Informe o motivo da exclusão em LOTE (Mínimo de 5 letras):");
+        if(!motivo || motivo.trim().length < 5) { alert("Cancelado. Motivo inválido!"); return; }
+        if(!confirm(`⚠️ Apagar DEFINITIVAMENTE os ${cx.length} registros selecionados?`)) return;
+        
+        let b = document.getElementById('btnBulkDelete');
+        b.innerText = "⏳ Apagando..."; b.disabled = true; 
+        let ids = Array.from(cx).map(c => parseInt(c.value)); records = records.filter(r => !ids.includes(r.id)); localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
+        if (navigator.onLine && db) { let batch = db.batch(); let c=0;
+        for (let id of ids) { let ref = db.collection("doacoes_capanema").doc(id.toString()); batch.delete(ref); c++; if(c===490) { await batch.commit(); batch = db.batch(); c=0; } } if(c>0) await batch.commit(); }
+        await registrarLog("EXCLUSÃO EM LOTE", `Apagou ${ids.length} registros. Motivo: ${motivo}`);
+        alert(`${ids.length} apagados!`); b.disabled = false; b.style.display = 'none'; generateReport(); carregarPainelDespacho();
+    }
 
     // ============================================================================
-    // RELATÓRIOS INTELIGENTES, FORMATADOS E COM LGPD
+    // RELATÓRIOS INTELIGENTES E TABELAS
     // ============================================================================
     function showReport() { document.getElementById('formSection').classList.add('hidden'); document.getElementById('reportSection').classList.remove('hidden'); generateReport(); }
     function showForm() { document.getElementById('reportSection').classList.add('hidden'); document.getElementById('formSection').classList.remove('hidden'); }
@@ -1437,17 +1598,10 @@
             if(!p[k]) p[k] = {n:r.nome, rg:r.rg, locais: {}, t:0, em:r.emailCriador, tel:r.telefone, ae:0, entregasBrutas: [], isPriv: priv}; 
             if(priv) p[k].isPriv = true; 
             
-            // ESCUDO DE DADOS (LGPD)
-            let ruaM = priv ? r.rua : (r.rua ? r.rua.substring(0,3) + '***' : '');
-            let numM = priv ? r.numero : (r.numero ? '***' : '');
-            let locM = priv ? r.localizacaoAgua : (r.localizacaoAgua ? '***' : '');
-
-            let endArr = [];
-            if(r.bairro) endArr.push(r.bairro); if(r.rua) endArr.push(`${ruaM}, ${numM||'S/N'}`); if(r.localizacaoAgua) endArr.push(locM);
-            let nomeLocal = endArr.length > 0 ? endArr.join(' - ') : 'Local Não Informado';
+            let ruaM = priv ? r.rua : (r.rua ? r.rua.substring(0,3) + '***' : ''); let numM = priv ? r.numero : (r.numero ? '***' : ''); let locM = priv ? r.localizacaoAgua : (r.localizacaoAgua ? '***' : '');
+            let endArr = []; if(r.bairro) endArr.push(r.bairro); if(r.rua) endArr.push(`${ruaM}, ${numM||'S/N'}`); if(r.localizacaoAgua) endArr.push(locM); let nomeLocal = endArr.length > 0 ? endArr.join(' - ') : 'Local Não Informado';
 
             if(!p[k].locais[nomeLocal]) p[k].locais[nomeLocal] = { t: 0, ae: 0 };
-
             let v = isA ? r.qtdAgua : (isL ? r.qtdLona : (isT ? r.qtdTelha : r.qtdCesta)); 
             p[k].t += v; p[k].locais[nomeLocal].t += v; grandTotalSol += v;
             
@@ -1461,36 +1615,19 @@
         });
         
         let h = `<div class="report-summary"><strong>Relatório Individual: ${iconeMat}</strong></div><table class="report-table"><tbody>`;
-        
         Object.values(p).sort((a, b) => b.t - a.t).forEach(i => { 
             let rgD = i.isPriv ? i.rg||'N/I' : '***'; 
             let locaisHtml = '';
-            Object.keys(i.locais).forEach(loc => {
-                let locSol = i.locais[loc].t; let locEmp = i.locais[loc].ae;
-                if(isA) { locaisHtml += `<div style="margin-bottom:4px; font-size:0.85rem; color:#333;">📍 ${loc}:<br><strong>${Number(locSol.toFixed(2))}${u}</strong> <span style="color:green;">(Entregue: ${Number(locEmp.toFixed(2))}${u})</span></div>`; } else { locaisHtml += `<div style="margin-bottom:4px; font-size:0.85rem; color:#333;">📍 ${loc}: <strong>${Number(locSol.toFixed(2))}${u}</strong></div>`; }
-            });
+            Object.keys(i.locais).forEach(loc => { let locSol = i.locais[loc].t; let locEmp = i.locais[loc].ae; if(isA) { locaisHtml += `<div style="margin-bottom:4px; font-size:0.85rem; color:#333;">📍 ${loc}:<br><strong>${Number(locSol.toFixed(2))}${u}</strong> <span style="color:green;">(Entregue: ${Number(locEmp.toFixed(2))}${u})</span></div>`; } else { locaisHtml += `<div style="margin-bottom:4px; font-size:0.85rem; color:#333;">📍 ${loc}: <strong>${Number(locSol.toFixed(2))}${u}</strong></div>`; } });
 
             let statusTotal = '';
-            if (isA) {
-                statusTotal = `Solicitado: <strong>${Number(i.t.toFixed(2))}${u}</strong> &nbsp;|&nbsp; Entregue: <strong style="color:green;">${Number(i.ae.toFixed(2))}${u}</strong>`;
-                if (i.t > i.ae) statusTotal += ` &nbsp;|&nbsp; Falta: <strong style="color:var(--danger-color);">${Number((i.t - i.ae).toFixed(2))}${u}</strong>`;
-            } else {
-                statusTotal = `Total Solicitado: <strong>${Number(i.t.toFixed(2))}${u}</strong>`;
-            }
+            if (isA) { statusTotal = `Solicitado: <strong>${Number(i.t.toFixed(2))}${u}</strong> &nbsp;|&nbsp; Entregue: <strong style="color:green;">${Number(i.ae.toFixed(2))}${u}</strong>`; if (i.t > i.ae) statusTotal += ` &nbsp;|&nbsp; Falta: <strong style="color:var(--danger-color);">${Number((i.t - i.ae).toFixed(2))}${u}</strong>`; } else { statusTotal = `Total Solicitado: <strong>${Number(i.t.toFixed(2))}${u}</strong>`; }
             
             let ih = ''; 
             if (i.entregasBrutas.length > 0) { 
                 let g = {};
-                i.entregasBrutas.forEach(e => {
-                    let dAp = e.data ? e.data.substring(0, 10) : "S/D"; let hM = e.data ? e.data.match(/\d{2}:\d{2}/) : null; let hAp = hM ? hM[0] : ""; let agL = e.agente ? e.agente.split('@')[0] : "Agente"; let cG = `${dAp}_${agL}`;
-                    if(!g[cG]) g[cG] = { data: dAp, agente: agL, totalQtd: 0, viagens: 0, hI: hAp, hF: hAp };
-                    g[cG].totalQtd += parseFloat(e.qtd); g[cG].viagens++;
-                    if (hAp) { if (!g[cG].hI || hAp < g[cG].hI) g[cG].hI = hAp; if (!g[cG].hF || hAp > g[cG].hF) g[cG].hF = hAp; }
-                });
-                Object.values(g).forEach(x => { 
-                    let infoH = (x.hI && x.hF && x.hI !== x.hF) ? `(das ${x.hI} às ${x.hF})` : (x.hI ? `(às ${x.hI})` : ""); let infoV = x.viagens > 1 ? `[${x.viagens} viagens]` : `[1 lançamento]`;
-                    ih += `<div style="margin-bottom: 4px; font-size:0.8rem; color:#444; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">• ${x.data}: <strong style="color:var(--primary-color);">${Number(x.totalQtd.toFixed(2))}${u}</strong> por <strong>${x.agente}</strong> <br><span style="color:#777; font-size:0.75rem;">${infoV} ${infoH}</span></div>`; 
-                }); 
+                i.entregasBrutas.forEach(e => { let dAp = e.data ? e.data.substring(0, 10) : "S/D"; let hM = e.data ? e.data.match(/\d{2}:\d{2}/) : null; let hAp = hM ? hM[0] : ""; let agL = e.agente ? e.agente.split('@')[0] : "Agente"; let cG = `${dAp}_${agL}`; if(!g[cG]) g[cG] = { data: dAp, agente: agL, totalQtd: 0, viagens: 0, hI: hAp, hF: hAp }; g[cG].totalQtd += parseFloat(e.qtd); g[cG].viagens++; if (hAp) { if (!g[cG].hI || hAp < g[cG].hI) g[cG].hI = hAp; if (!g[cG].hF || hAp > g[cG].hF) g[cG].hF = hAp; } });
+                Object.values(g).forEach(x => { let infoH = (x.hI && x.hF && x.hI !== x.hF) ? `(das ${x.hI} às ${x.hF})` : (x.hI ? `(às ${x.hI})` : ""); let infoV = x.viagens > 1 ? `[${x.viagens} viagens]` : `[1 lançamento]`; ih += `<div style="margin-bottom: 4px; font-size:0.8rem; color:#444; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">• ${x.data}: <strong style="color:var(--primary-color);">${Number(x.totalQtd.toFixed(2))}${u}</strong> por <strong>${x.agente}</strong> <br><span style="color:#777; font-size:0.75rem;">${infoV} ${infoH}</span></div>`; }); 
             } else { ih = `<div style="font-size:0.8rem; color:#777;">Nenhuma entrega registrada.</div>`; }
 
             h += `<tr style="background-color: #e2e8f0; border-top: 2px solid #aaa;"><td colspan="2" style="padding: 6px 10px;"><div style="display:flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px;"><span style="font-size: 1.05rem; color: var(--primary-color);">👤 <strong>${i.n}</strong> <small style="color:#555;">(RG: ${rgD})</small></span><span style="font-size: 0.95rem; background: #fff; padding: 3px 8px; border-radius: 4px; border: 1px solid #cbd5e1;">${statusTotal}</span></div></td></tr><tr><td style="width: 50%; vertical-align: top; padding: 8px;"><div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">📍 Endereços de Destino</div>${locaisHtml}</td><td style="width: 50%; vertical-align: top; padding: 8px; background: #fafafa;"><div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">🚛 Histórico de Entregas</div>${ih}</td></tr>`; 
@@ -1551,10 +1688,14 @@
         } document.getElementById('reportContent').innerHTML = h; checkBulkDelete(); 
     }
 
-    // Carregamento da página para não iniciar em ecrã branco
+    function openTab(t) { 
+        document.querySelectorAll('.tab-content, .tab-btn').forEach(e => e.classList.remove('active')); 
+        document.getElementById('tab-'+t).classList.add('active'); 
+        document.getElementById('tab-btn-'+t).classList.add('active'); 
+        if (t==='log') { renderPainelAuditoria(); } 
+    }
+    
     window.addEventListener('DOMContentLoaded', () => { setTimeout(carregarPainelDespacho, 1000); });
-
 </script>
 </body>
 </html>
-
