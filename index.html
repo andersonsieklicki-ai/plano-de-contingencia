@@ -2303,7 +2303,7 @@ async function apagarCadastrosPorEmail() {
     window.addEventListener('DOMContentLoaded', () => { 
         setTimeout(() => { carregarPainelDespacho(); if(typeof iniciarEscutaEstoque === 'function') iniciarEscutaEstoque(); }, 1000); 
     });
-	// ==========================================
+// ==========================================
     // FUNÇÃO QUE SALVA O CADASTRO INICIAL DO AGENTE
     // ==========================================
     async function salvarCadastroComplementar() {
@@ -2312,6 +2312,8 @@ async function apagarCadastrosPorEmail() {
         
         if (nome.length < 5) { alert("Por favor, informe seu Nome Completo."); return; }
         if (tel.length < 10) { alert("Por favor, informe um Telefone / WhatsApp válido com DDD."); return; }
+        
+        document.getElementById('cadastroOverlay').style.opacity = '0.5'; // Efeito de carregando
         
         try {
             const email = auth.currentUser.email.toLowerCase();
@@ -2323,17 +2325,18 @@ async function apagarCadastrosPorEmail() {
                 nome: nome, 
                 telefone: tel,
                 status: 'aprovado', 
-                nivel: 'padrao', // Entra com o nível de segurança básico
+                nivel: 'padrao', 
                 dataRegistro: new Date().toLocaleString('pt-BR') 
             }, { merge: true });
             
             alert("Cadastro concluído com sucesso! Bem-vindo(a).");
             document.getElementById('cadastroOverlay').style.display = 'none';
+            document.getElementById('cadastroOverlay').style.opacity = '1';
             
-            // Recarrega a página para puxar as credenciais e liberar a logística
-            location.reload(); 
+            location.reload(); // Entra no sistema!
         } catch (e) {
             console.error(e);
+            document.getElementById('cadastroOverlay').style.opacity = '1';
             alert("Erro ao salvar cadastro no banco de dados. Tente novamente.");
         }
     }
