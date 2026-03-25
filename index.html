@@ -2234,22 +2234,20 @@ async function apagarCadastrosPorEmail() {
         });
     }
 
-    async function enviarComandoRobo(comando) {
+   async function enviarComandoRobo(comando) {
         if (comando === 'desconectar') {
             if (!confirm("⚠️ TEM CERTEZA?\n\nIsso vai desconectar o WhatsApp do servidor, derrubar as entregas pendentes e o robô só voltará a funcionar se você escanear o QR Code de novo!")) return;
         } 
         
         try {
-            // Envia para o Firebase PRIMEIRO, sem bloquear a tela
+            // Envia para o Firebase PRIMEIRO
             await db.collection('config').doc('status_bot_defesa').set({ comando: comando, status: 'iniciando' }, { merge: true });
             
-            // Troquei o alert por um aviso no próprio botão para não travar o navegador
-            let btn = event.target;
-            let txtOriginal = btn.innerText;
-            btn.innerText = "⏳ Comando Enviado...";
-            setTimeout(() => { btn.innerText = txtOriginal; }, 3000);
+            // Removemos a lógica do 'event.target' que estava causando o bug na tela.
+            // O próprio onSnapshot já vai atualizar a tela informando o status perfeitamente!
             
         } catch(e) {
+            console.error("Detalhes do erro:", e);
             alert("Erro ao tentar comunicar com o servidor do Robô.");
         }
     }
