@@ -9,7 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
     <style>
         :root {
@@ -1856,7 +1856,7 @@
                 <div id="qrCodeContainer" style="text-align: center; display: none; background: #fff; padding: 20px; border-radius: 8px; border: 2px dashed #28a745; min-width: 300px; flex: 1;">
                     <p style="font-size: 1.2rem; margin: 0 0 5px 0; color: #2e7d32; font-weight: bold;">📷 Escaneie o QR Code</p>
                     <p style="font-size: 0.9rem; margin: 0 0 15px 0; color: #555;">(Abra o WhatsApp > Aparelhos Conectados)</p>
-                    <div id="imgQrCode" style="width: 250px; height: 250px; margin: 0 auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);"></div>
+                   <canvas id="qrCanvas" style="margin: 0 auto; display: block; border: 10px solid white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);"></canvas>
                 </div>
             </div>
         </div>`;
@@ -2202,9 +2202,9 @@ async function apagarCadastrosPorEmail() {
         listenerStatusRobo = db.collection('config').doc('status_bot_defesa').onSnapshot(doc => {
             let elStatus = document.getElementById('statusRoboDisplay');
             let elQrContainer = document.getElementById('qrCodeContainer');
-            let elImgQr = document.getElementById('imgQrCode');
+            let elCanvas = document.getElementById('qrCanvas'); // Agora usamos o Canvas!
             
-            if (!elStatus || !elQrContainer || !elImgQr) return; 
+            if (!elStatus || !elQrContainer) return; 
             if (!doc.exists) return;
             let data = doc.data();
             
@@ -2216,15 +2216,15 @@ async function apagarCadastrosPorEmail() {
                 elStatus.innerHTML = '<span style="color:#d39e00;">📱 AGUARDANDO LEITURA DO QR CODE</span>';
                 elQrContainer.style.display = 'block'; 
                 
-                // Apaga o QR Code anterior e desenha o novo instantaneamente no navegador
-                elImgQr.innerHTML = "";
-                new QRCode(elImgQr, {
-                    text: data.qrCode,
-                    width: 220,
-                    height: 220,
-                    colorDark : "#000000",
-                    colorLight : "#ffffff"
-                });
+                // Usa a biblioteca QRious para desenhar o código gigante do WhatsApp sem travar
+                if (elCanvas) {
+                    new QRious({
+                        element: elCanvas,
+                        value: data.qrCode,
+                        size: 250,
+                        level: 'L' // Importante: Nível Low permite dados gigantes como os do WhatsApp
+                    });
+                }
             } 
             else if (data.status === 'iniciando') {
                 elStatus.innerHTML = '<span style="color:#0275d8;">⏳ LIGANDO NAVEGADOR NO SERVIDOR...</span>';
@@ -2236,7 +2236,6 @@ async function apagarCadastrosPorEmail() {
             }
         });
     }
-
     async function enviarComandoRobo(comando, btnOrigem) {
         if (comando === 'desconectar') {
             if (!confirm("⚠️ TEM CERTEZA?\n\nIsso vai desconectar o WhatsApp do servidor e derrubar as entregas!")) return;
