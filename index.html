@@ -528,20 +528,22 @@
 
     async function processarAcessoUsuario(user) {
         currentUserEmail = user.email ? user.email.toLowerCase() : "sem-email@google.com";
-        if (!navigator.onLine) { currentUserNivel = localStorage.getItem('nivel_' + currentUserEmail) || 'padrao'; return localStorage.getItem('permissao_' + currentUserEmail) || 'aprovado'; }
+        let isAdmim = ADMIN_EMAILS.includes(currentUserEmail);
+
+        if (!navigator.onLine) { 
+            currentUserNivel = localStorage.getItem('nivel_' + currentUserEmail) || (isAdmim ? 'admin' : 'padrao'); 
+            return localStorage.getItem('permissao_' + currentUserEmail) || 'aprovado'; 
+        }
         
         try {
             const docRef = db.collection('usuarios_capanema').doc(currentUserEmail); 
             const doc = await docRef.get();
-            let isAdmim = ADMIN_EMAILS.includes(currentUserEmail);
             
             if (!doc.exists) {
-                // Se for o primeiro login, trava na tela de cadastro
-                return 'pendente_dados';
+                return 'pendente_dados'; // Exige o cadastro do WhatsApp
             } else {
                 const data = doc.data(); 
-                // Se já existe mas falta o telefone, trava na tela de cadastro
-                if (!data.telefone) return 'pendente_dados'; 
+                if (!data.telefone) return 'pendente_dados'; // Exige o cadastro do WhatsApp
                 
                 currentUserNivel = isAdmim ? 'admin' : (data.nivel || 'padrao');
                 localStorage.setItem('permissao_' + currentUserEmail, data.status || 'aprovado'); 
@@ -549,12 +551,25 @@
                 return data.status || 'aprovado';
             }
         } catch (e) { 
-            currentUserNivel = localStorage.getItem('nivel_' + currentUserEmail) || 'padrao'; 
+            currentUserNivel = localStorage.getItem('nivel_' + currentUserEmail) || (isAdmim ? 'admin' : 'padrao'); 
             return localStorage.getItem('permissao_' + currentUserEmail) || 'aprovado'; 
         }
     }
 
- const cadastroOverlay = document.getElementById('cadastroOverlay'); // Adiciona a nova tela
+    function verificarAcesso() {
+        if (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') { 
+            if(btnEquipe && currentUserNivel === 'admin') btnEquipe.style.display = 'inline-block';
+            if(document.getElementById('tab-btn-log')) document.getElementById('tab-btn-log').style.display = 'block'; 
+            if(document.getElementById('tab-btn-estoque')) document.getElementById('tab-btn-estoque').style.display = 'block'; 
+            if(document.getElementById('tab-btn-robo')) document.getElementById('tab-btn-robo').style.display = 'block';
+        } else { 
+            if(btnEquipe) btnEquipe.style.display = 'none'; 
+            if(document.getElementById('tab-btn-log')) document.getElementById('tab-btn-log').style.display = 'none'; 
+            if(document.getElementById('tab-btn-estoque')) document.getElementById('tab-btn-estoque').style.display = 'none'; 
+            if(document.getElementById('tab-btn-robo')) document.getElementById('tab-btn-robo').style.display = 'none';
+        }
+
+        const cadastroOverlay = document.getElementById('cadastroOverlay'); // Adiciona a nova tela
 
         if (navigator.onLine) {
             if (!auth.currentUser) { 
@@ -564,12 +579,10 @@
             } else { 
                 if(loginOverlay) loginOverlay.style.display = 'none';
                 
-                // NOVO STATUS: PENDENTE DE DADOS
                 if (currentUserStatus === 'pendente_dados') {
                     if(blockedOverlay) blockedOverlay.style.display = 'none';
                     if(cadastroOverlay) {
                         cadastroOverlay.style.display = 'flex';
-                        // Puxa o nome do Google automaticamente para facilitar a vida da pessoa
                         if (!document.getElementById('cadNome').value && auth.currentUser.displayName) {
                             document.getElementById('cadNome').value = auth.currentUser.displayName;
                         }
@@ -581,13 +594,11 @@
                     if(cadastroOverlay) cadastroOverlay.style.display = 'none';
                 } 
                 else { 
-                    // Aprovado e com cadastro preenchido: Libera o sistema!
                     if(blockedOverlay) blockedOverlay.style.display = 'none'; 
                     if(cadastroOverlay) cadastroOverlay.style.display = 'none';
                 }
             }
         } else {
-            // Lógica offline padrão (esconde a tela de cadastro por precaução)
             if(loginOverlay) loginOverlay.style.display = 'none';
             if(cadastroOverlay) cadastroOverlay.style.display = 'none';
             if (auth.currentUser && currentUserStatus === 'bloqueado') { 
@@ -597,50 +608,6 @@
                 if(blockedOverlay) blockedOverlay.style.display = 'none'; 
             }
         }
-        // ... (Mantenha o resto da função igualzinho)
-
-        if (navigator.onLine) {
-            if (!auth.currentUser) { 
-                if(loginOverlay) loginOverlay.style.display = 'flex'; 
-                if(blockedOverlay) blockedOverlay.style.display = 'none'; 
-            } else { 
-                if(loginOverlay) loginOverlay.style.display = 'none';
-                if (currentUserStatus === 'bloqueado') { 
-                    if(document.getElementById('blockedEmailDisplay')) {
-                        document.getElementById('blockedEmailDisplay').innerText = auth.currentUser.email || 'Usuário'; 
-                    }
-                    if(blockedOverlay) blockedOverlay.style.display = 'flex'; 
-                } else { 
-                    if(blockedOverlay) blockedOverlay.style.display = 'none'; 
-                }
-            }
-        } else {
-            if(loginOverlay) loginOverlay.style.display = 'none';
-            if (auth.currentUser && currentUserStatus === 'bloqueado') { 
-                if(document.getElementById('blockedEmailDisplay')) {
-                    document.getElementById('blockedEmailDisplay').innerText = auth.currentUser.email || 'Usuário'; 
-                }
-                if(blockedOverlay) blockedOverlay.style.display = 'flex'; 
-            } else { 
-                if(blockedOverlay) blockedOverlay.style.display = 'none'; 
-            }
-        }
-    }
-
-    function updateOnlineStatus() {
-        if (navigator.onLine) {
-            if(dot) dot.className = "dot online"; 
-            if(text) text.innerText = "Online";
-            if (auth && auth.currentUser && currentUserStatus === 'aprovado') { 
-                if(typeof sincronizarFirebaseAutomatica === 'function') sincronizarFirebaseAutomatica(); 
-                if(typeof sincronizarLogsOffline === 'function') sincronizarLogsOffline(); 
-            }
-        } else { 
-            if(dot) dot.className = "dot offline"; 
-            if(text) text.innerText = "Offline"; 
-            if(btnSync) { btnSync.innerText = "☁️ S/ Internet"; btnSync.style.backgroundColor = "#777"; }
-        }
-        verificarAcesso();
     }
     
     window.addEventListener('online', updateOnlineStatus); 
