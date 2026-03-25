@@ -1828,6 +1828,25 @@
                     </div>
                   </details>`; 
         }
+	   // ==========================================
+        // TELA DO ROBÔ E QUADRADO DO QR CODE
+        // ==========================================
+        if(currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
+            h += `<div style="background:#fff; border:2px solid #28a745; padding:20px; border-radius:8px; margin-top:15px; margin-bottom:15px; text-align:center;">
+                    <h3 style="color:#28a745; margin-top:0; font-size: 1.3rem;">🤖 Conexão do Robô WhatsApp</h3>
+                    <p style="font-size: 1.1rem; margin-bottom: 15px;">Status: <span id="statusRoboDisplay" style="font-weight:bold; color:#666;">Aguardando informação...</span></p>
+                    
+                    <div style="margin-bottom: 20px; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
+                        <button onclick="enviarComandoRobo('conectar', this)" style="background:#28a745; color:white; padding:12px 25px; border:none; border-radius:4px; font-weight:bold; font-size: 1.1rem; cursor:pointer; min-width: 150px;">🟢 Ligar Robô</button>
+                        <button onclick="enviarComandoRobo('desconectar', this)" style="background:#dc3545; color:white; padding:12px 25px; border:none; border-radius:4px; font-weight:bold; font-size: 1.1rem; cursor:pointer; min-width: 150px;">🔴 Desconectar Conta</button>
+                    </div>
+
+                    <div id="qrCodeContainer" style="display:none; margin: 0 auto; padding: 20px; background: #f8f9fa; border: 3px dashed #28a745; border-radius: 8px; width: 260px;">
+                        <p style="margin: 0 0 10px 0; font-weight: bold; color:#2e7d32;">📷 Escaneie o QR Code</p>
+                        <img id="imgQrCode" src="" style="width: 250px; height: 250px; border: 5px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.15);">
+                    </div>
+                  </div>`;
+        }
         document.getElementById('tab-log').innerHTML = h; 
         filtrarTabelaAuditoria();
     }
@@ -2197,51 +2216,45 @@ async function apagarCadastrosPorEmail() {
     // ==========================================
     let listenerStatusRobo = null;
 
+  // ==========================================
+    // FUNÇÃO QUE DESENHA O QR CODE NO QUADRADO
+    // ==========================================
+    let listenerStatusRobo = null;
+
     function iniciarEscutaStatusRobo() {
         if (!navigator.onLine || !db) return;
         
-        if (listenerStatusRobo) listenerStatusRobo(); 
+        if (listenerStatusRobo) listenerStatusRobo(); // Limpa o escutador anterior
         
         listenerStatusRobo = db.collection('config').doc('status_bot_defesa').onSnapshot(doc => {
             let elStatus = document.getElementById('statusRoboDisplay');
             let elQrContainer = document.getElementById('qrCodeContainer');
             let elImgQr = document.getElementById('imgQrCode');
             
-            if (!elStatus) return; 
+            if (!elStatus || !elQrContainer || !elImgQr) return; // Só funciona se a tela do robô estiver aberta
             
-            if (!doc.exists) {
-                elStatus.innerHTML = `<strong style="color: #666;">Aguardando Servidor...</strong>`;
-                return;
-            }
-            
+            if (!doc.exists) return;
             let data = doc.data();
-            let textStatus = 'Sistema Ocioso ou Desconectado';
-            let colorStatus = '#333';
             
             if (data.status === 'online') {
-                textStatus = '✅ CONECTADO E PRONTO';
-                colorStatus = 'green';
-                elQrContainer.style.display = 'none';
+                elStatus.innerHTML = '<span style="color:green;">✅ CONECTADO E PRONTO</span>';
+                elQrContainer.style.display = 'none'; // Esconde o quadrado
             } 
             else if (data.status === 'aguardando_leitura' && data.qrCode) {
-                textStatus = '📱 AGUARDANDO LEITURA DO QR CODE';
-                colorStatus = '#f0ad4e';
-                elQrContainer.style.display = 'block';
-                // Usando a API QuickChart (Mais robusta para códigos longos do WhatsApp)
+                elStatus.innerHTML = '<span style="color:#d39e00;">📱 AGUARDANDO LEITURA DO QR CODE</span>';
+                elQrContainer.style.display = 'block'; // Mostra o quadrado na tela
+                
+                // API que desenha a imagem do QR Code usando os dados que o servidor Node gerou
                 elImgQr.src = `https://quickchart.io/qr?size=250x250&margin=1&text=${encodeURIComponent(data.qrCode)}`;
             } 
-            else if (data.status === 'desconectado') {
-                textStatus = '❌ DESCONECTADO (Robô Offline)';
-                colorStatus = 'red';
-                elQrContainer.style.display = 'none';
-            } 
             else if (data.status === 'iniciando') {
-                textStatus = '⏳ LIGANDO NAVEGADOR E GERANDO QR...';
-                colorStatus = '#0275d8';
-                elQrContainer.style.display = 'none';
+                elStatus.innerHTML = '<span style="color:#0275d8;">⏳ LIGANDO NAVEGADOR NO SERVIDOR...</span>';
+                elQrContainer.style.display = 'none'; // Esconde o quadrado
             }
-            
-            elStatus.innerHTML = `<strong style="color: ${colorStatus};">${textStatus}</strong>`;
+            else {
+                elStatus.innerHTML = '<span style="color:red;">❌ DESCONECTADO (Robô Offline)</span>';
+                elQrContainer.style.display = 'none'; // Esconde o quadrado
+            }
         });
     }
 
