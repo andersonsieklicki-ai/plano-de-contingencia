@@ -1856,7 +1856,7 @@
                 <div id="qrCodeContainer" style="text-align: center; display: none; background: #fff; padding: 20px; border-radius: 8px; border: 2px dashed #28a745; min-width: 300px; flex: 1;">
                     <p style="font-size: 1.2rem; margin: 0 0 5px 0; color: #2e7d32; font-weight: bold;">📷 Escaneie o QR Code</p>
                     <p style="font-size: 0.9rem; margin: 0 0 15px 0; color: #555;">(Abra o WhatsApp > Aparelhos Conectados)</p>
-                   <canvas id="qrCanvas" style="margin: 0 auto; display: block; border: 10px solid white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);"></canvas>
+                  <img id="imgQrCode" alt="Aguardando QR Code..." style="margin: 0 auto; display: block; border: 10px solid white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); width: 260px; height: 260px; background: #fff;">
                 </div>
             </div>
         </div>`;
@@ -2195,6 +2195,7 @@ async function apagarCadastrosPorEmail() {
     // ==========================================
     let listenerStatusRobo = null;
 
+   
     function iniciarEscutaStatusRobo() {
         if (!navigator.onLine || !db) return;
         if (listenerStatusRobo) listenerStatusRobo(); 
@@ -2202,7 +2203,7 @@ async function apagarCadastrosPorEmail() {
         listenerStatusRobo = db.collection('config').doc('status_bot_defesa').onSnapshot(doc => {
             let elStatus = document.getElementById('statusRoboDisplay');
             let elQrContainer = document.getElementById('qrCodeContainer');
-            let elCanvas = document.getElementById('qrCanvas'); // Agora usamos o Canvas!
+            let elImgQr = document.getElementById('imgQrCode'); // Voltamos a usar a Imagem!
             
             if (!elStatus || !elQrContainer) return; 
             if (!doc.exists) return;
@@ -2215,14 +2216,19 @@ async function apagarCadastrosPorEmail() {
             else if (data.status === 'aguardando_leitura' && data.qrCode) {
                 elStatus.innerHTML = '<span style="color:#d39e00;">📱 AGUARDANDO LEITURA DO QR CODE</span>';
                 elQrContainer.style.display = 'block'; 
-               // Usando a biblioteca definitiva e super-robusta (a mesma do NPM)
-                if (elCanvas) {
-                    QRCode.toCanvas(elCanvas, data.qrCode, {
+                
+               // A biblioteca robusta agora fabrica um arquivo de imagem na memória e coloca na tela
+                if (elImgQr) {
+                    QRCode.toDataURL(data.qrCode, {
                         width: 260,
                         margin: 1,
                         color: { dark: '#000000', light: '#ffffff' }
-                    }, function (error) {
-                        if (error) console.error("Erro interno ao desenhar o QR Code:", error);
+                    }, function (error, url) {
+                        if (error) {
+                            console.error("Erro interno ao gerar imagem:", error);
+                        } else {
+                            elImgQr.src = url; // Coloca a imagem gerada na tela
+                        }
                     });
                 }
             } 
