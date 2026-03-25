@@ -1696,6 +1696,218 @@
     }
     
     window.addEventListener('DOMContentLoaded', () => { setTimeout(carregarPainelDespacho, 1000); });
+    // ============================================================================
+    // GESTÃO DE ABAS (CORREÇÃO DA NAVEGAÇÃO)
+    // ============================================================================
+    function openTab(t) { 
+        document.querySelectorAll('.tab-content, .tab-btn').forEach(e => e.classList.remove('active')); 
+        document.getElementById('tab-'+t).classList.add('active'); 
+        document.getElementById('tab-btn-'+t).classList.add('active'); 
+        
+        if (t === 'log') { renderPainelAuditoria(); } 
+        if (t === 'estoque') { renderPainelEstoque(); }
+    }
+
+    // ============================================================================
+    // ESTOQUE: GESTÃO DETALHADA E PAINEL ADMIN
+    // ============================================================================
+    function renderPainelEstoque() {
+        if(currentUserNivel !== 'admin' && currentUserNivel !== 'supervisor') return;
+        
+        let h = `<div class="report-summary"><strong>📦 Gestão Central de Estoque</strong></div>`;
+
+        const gerarCard = (nome, chave, qtd, limiteBaixo, unidade) => {
+            let cor = qtd <= limiteBaixo ? (qtd < 0 ? 'var(--danger-color)' : '#f0ad4e') : 'var(--success-color)';
+            let status = qtd < 0 ? '⚠️ ESTOQUE NEGATIVO' : (qtd <= limiteBaixo ? '⚠️ ESTOQUE BAIXO' : '✅ NORMAL');
+            let fundo = qtd < 0 ? '#ffebee' : (qtd <= limiteBaixo ? '#fff8e1' : '#f1f8e9');
+            
+            return `<div style="background:${fundo}; border:2px solid ${cor}; padding:15px; border-radius:8px; flex:1; min-width:280px; text-align:center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h3 style="margin-top:0; color:var(--primary-color); border-bottom:1px solid #ccc; padding-bottom:5px;">${nome}</h3>
+                <div style="font-size:2.5rem; font-weight:bold; color:${cor}; margin: 10px 0;">${parseInt(qtd || 0)} <small style="font-size:1.2rem; color:#555;">${unidade}</small></div>
+                <div style="font-size:0.9rem; color:#555; margin-bottom:15px; font-weight:bold; background:#fff; padding:4px; border-radius:4px; border:1px solid #ddd;">Status: ${status}</div>
+                <div style="display:flex; gap:10px;">
+                    <button style="background:#28a745; color:#fff; border:none; border-radius:4px; flex:1; padding:10px; font-weight:bold; cursor:pointer;" onclick="abrirModalEstoque('${chave}', 'entrada')">📥 Repor</button>
+                    <button style="background:#d9534f; color:#fff; border:none; border-radius:4px; flex:1; padding:10px; font-weight:bold; cursor:pointer;" onclick="abrirModalEstoque('${chave}', 'saida')">📤 Retirar</button>
+                </div>
+                <button style="background:#6c757d; color:#fff; border:none; border-radius:4px; width:100%; padding:8px; font-weight:bold; cursor:pointer; margin-top:8px;" onclick="zerarModalEstoque('${chave}')">🪫 Zerar Estoque</button>
+            </div>`;
+        };
+        
+        h += `<div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom:20px;">
+                ${gerarCard('⛺ Lonas (Rolo ~400m²)', 'lona', estoqueAtual.lona, 100, 'm²')}
+                ${gerarCard('🏠 Telhas (Unidades)', 'telha', estoqueAtual.telha, 10, 'un')}
+                ${gerarCard('📦 Cestas Básicas', 'cesta', estoqueAtual.cesta, 10, 'un')}
+              </div>
+              <p style="font-size: 0.85rem; color: #666; text-align: center; background: #eee; padding: 10px; border-radius: 4px;">As baixas são debitadas automaticamente no cadastro. O botão ZERAR anula o valor atual do item.</p>`;
+        
+        document.getElementById('tab-estoque').innerHTML = h;
+    }
+
+    function zerarModalEstoque(chave) {
+        let motivo = prompt(`⚠️ Você está prestes a ZERAR o estoque de ${chave.toUpperCase()}.\nQual a justificativa? (Mínimo 5 letras):`);
+        if(!motivo || motivo.trim().length < 5) { 
+            alert("Cancelado. Justificativa inválida!"); 
+            return;
+        }
+        if(!confirm(`Tem certeza absoluta que deseja ZERAR O ESTOQUE de ${chave.toUpperCase()}?`)) return;
+        
+        if(navigator.onLine && typeof db !== 'undefined') {
+            db.collection('configuracoes_capanema').doc('estoque').set({ [chave]: 0 }, { merge: true }).then(() => {
+                if(typeof registrarLog === 'function') registrarLog("ZEROU ESTOQUE", `Estoque de ${chave.toUpperCase()} zerado. Motivo: ${motivo}`);
+                alert(`Estoque de ${chave.toUpperCase()} zerado com sucesso!`);
+            }).catch(e => alert("Erro ao zerar."));
+        }
+    }
+
+    async function processarMovimentoEstoque(chave, tipo, qtd, motivo) {
+        if(qtd <= 0) return;
+        let diff = tipo === 'entrada' ? qtd : -qtd;
+        
+        try {
+            await db.collection('configuracoes_capanema').doc('estoque').set({ 
+                [chave]: firebase.firestore.FieldValue.increment(diff) 
+            }, { merge: true });
+            
+            if(typeof registrarLog === 'function') {
+                await registrarLog("AJUSTE DE ESTOQUE", `${tipo.toUpperCase()} MANUAL: ${qtd} ${chave}. Motivo: ${motivo}`);
+            }
+            alert(`Estoque atualizado com sucesso!`);
+        } catch(e) { 
+            alert("Erro ao atualizar estoque."); 
+        }
+    }
+    
+    function abrirModalEstoque(chave, tipo) {
+        let acaoText = tipo === 'entrada' ? 'REPOR / DAR ENTRADA' : 'RETIRADA AVULSA';
+        let qtdStr = prompt(`Digite a quantidade para ${acaoText} de ${chave.toUpperCase()}:`);
+        
+        if(!qtdStr) return;
+        let qtd = parseFloat(qtdStr.replace(',','.'));
+        
+        if(isNaN(qtd) || qtd <= 0) { 
+            alert("Valor inválido."); 
+            return; 
+        }
+        
+        let motivo = prompt(`Qual o motivo/destino desta ${tipo}? \n(Ex: Para Realeza, Compra Nota 123, Ajuste contábil...)`);
+        if(!motivo || motivo.trim().length < 4) { 
+            alert("Você precisa justificar com um motivo válido!"); 
+            return; 
+        }
+        
+        if (tipo === 'saida' && (estoqueAtual[chave] || 0) - qtd < 0) {
+            if(!confirm(`⚠️ ALERTA: O estoque atual é ${(estoqueAtual[chave] || 0)}. Essa retirada vai deixar o estoque NEGATIVO.\n\nDeseja continuar mesmo assim?`)) {
+                return;
+            }
+        }
+        
+        processarMovimentoEstoque(chave, tipo, qtd, motivo);
+    }
+
+    // ============================================================================
+    // CORREÇÃO DA GESTÃO DE EQUIPE
+    // ============================================================================
+    async function carregarListaUsuarios() {
+        const container = document.getElementById('modalEquipeContent'); 
+        if(!container) return;
+        
+        let htmlForm = `
+        <div style="background: #e3f2fd; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #b3e5fc;">
+            <strong>➕ Liberar Acesso / Promover</strong>
+            <div style="display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;">
+                <input type="email" id="novoEmailEquipe" placeholder="email@gmail.com" style="flex: 2; height: 32px; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
+                <select id="novoNivelEquipe" style="flex: 1; height: 32px; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
+                    <option value="padrao">Padrão</option>
+                    <option value="agente">Agente</option>
+                    <option value="supervisor">Supervisor</option>
+                    <option value="admin">Administrador</option>
+                </select>
+                <button onclick="adicionarUsuarioManual()" style="background: var(--success-color); color: white; border: none; border-radius: 3px; font-weight: bold; cursor: pointer; padding: 0 15px;">Salvar</button>
+            </div>
+        </div>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; background: #f8f9fa; padding: 10px; border-radius: 4px; border: 1px solid #ddd;">
+            <div style="flex: 2; min-width: 150px;">
+                <label style="font-size: 0.8rem; color: #555; font-weight: bold;">🔍 Buscar E-mail ou Nome:</label>
+                <input type="text" id="filtroEquipe" placeholder="Digite para filtrar..." oninput="renderTabelaUsuarios()" style="width: 100%; height: 32px; padding: 4px 8px; border: 1px solid #ccc; border-radius: 3px; margin-top:4px;">
+            </div>
+            <div style="flex: 1; min-width: 130px;">
+                <label style="font-size: 0.8rem; color: #555; font-weight: bold;">↕️ Organizar por:</label>
+                <select id="ordenarEquipe" onchange="renderTabelaUsuarios()" style="width: 100%; height: 32px; padding: 4px; border: 1px solid #ccc; border-radius: 3px; margin-top:4px;">
+                    <option value="nome">Nome (A - Z)</option>
+                    <option value="status">Status (Online Primeiro)</option>
+                </select>
+            </div>
+        </div>
+        <div id="tabelaEquipeContainer">Buscando agentes...</div>`;
+        
+        container.innerHTML = htmlForm;
+        
+        try { 
+            const snapshot = await db.collection('usuarios_capanema').get(); 
+            allUsersCache = []; 
+            snapshot.forEach(doc => { 
+                let d = doc.data(); 
+                if(!allUsersCache.find(x => x.email === d.email)) allUsersCache.push(d); 
+            }); 
+            renderTabelaUsuarios(); 
+        } catch (e) { 
+            document.getElementById('tabelaEquipeContainer').innerHTML = `<p style="text-align:center; color:red;">Erro ao carregar usuários da nuvem.</p>`; 
+        }
+    }
+
+    function renderTabelaUsuarios() {
+        const container = document.getElementById('tabelaEquipeContainer'); 
+        if(!container) return;
+        
+        let termo = document.getElementById('filtroEquipe') ? document.getElementById('filtroEquipe').value.toLowerCase().trim() : ''; 
+        let ordenacao = document.getElementById('ordenarEquipe') ? document.getElementById('ordenarEquipe').value : 'nome';
+        
+        let filtrados = allUsersCache.filter(u => (u.nome && u.nome.toLowerCase().includes(termo)) || (u.email && u.email.toLowerCase().includes(termo)));
+        
+        filtrados.forEach(u => { 
+            u.isOnline = false; 
+            Object.values(onlineUsersMap).forEach(ou => { 
+                if(ou.email === u.email && ou.state === 'online') u.isOnline = true; 
+            }); 
+        });
+        
+        if (ordenacao === 'nome') { 
+            filtrados.sort((a, b) => (a.nome || '').localeCompare(b.nome || '')); 
+        } else { 
+            filtrados.sort((a, b) => (a.isOnline === b.isOnline) ? (a.nome || '').localeCompare(b.nome || '') : (a.isOnline ? -1 : 1)); 
+        }
+
+        let htmlTabela = `<div class="table-responsive"><table class="report-table" style="font-size: 0.8rem; width: 100%; min-width: 400px;"><thead><tr style="background-color: var(--primary-color); color: white;"><th>Nome/Email</th><th>Nível</th><th>Status / Último Acesso</th><th>Ações</th></tr></thead><tbody>`;
+        
+        if(filtrados.length === 0) { 
+            htmlTabela += `<tr><td colspan="4" style="text-align:center;">Nenhum usuário localizado.</td></tr>`; 
+        } else {
+            filtrados.forEach(u => {
+                let lastSeenText = '<br><span style="font-size: 0.7rem; color: #999;">Sem registro de acesso</span>'; 
+                Object.values(onlineUsersMap).forEach(ou => { 
+                    if(ou.email === u.email) { 
+                        if (!u.isOnline && ou.last_changed) { 
+                            lastSeenText = `<br><span style="font-size: 0.75rem; color: #555;">Visto em: <strong>${formatarDataHora(ou.last_changed)}</strong></span>`; 
+                        } 
+                    } 
+                });
+                
+                let statusLigacao = u.isOnline ? `<span style="color:var(--success-color); font-weight:bold;">🟢 Online Agora</span>` : `<span style="color:#777;">⚪ Offline</span>${lastSeenText}`;
+                let selectNivel = `<select onchange="alterarNivelUsuario('${u.email}', this.value)" style="width:100%; padding:2px; font-size:0.75rem;"><option value="padrao" ${u.nivel === 'padrao' || !u.nivel ? 'selected' : ''}>Padrão</option><option value="agente" ${u.nivel === 'agente' ? 'selected' : ''}>Agente</option><option value="supervisor" ${u.nivel === 'supervisor' ? 'selected' : ''}>Supervisor</option><option value="admin" ${u.nivel === 'admin' || ADMIN_EMAILS.includes(u.email) ? 'selected' : ''}>Admin</option></select>`;
+                if (ADMIN_EMAILS.includes(u.email)) selectNivel = `<strong>Administrador</strong>`;
+                
+                let botoes = `<div style="display: flex; flex-direction:column; gap: 4px; margin-top:4px;">`;
+                if (u.status === 'bloqueado') { botoes += `<button class="btn-small" style="background-color: var(--success-color); width: 100%; padding: 4px;" onclick="alterarStatusUsuario('${u.email}', 'aprovado')">✅ Desbloquear</button>`; }
+                if (u.status === 'aprovado' && !ADMIN_EMAILS.includes(u.email)) { botoes += `<button class="btn-small" style="background-color: #f0ad4e; width: 100%; padding: 4px;" onclick="alterarStatusUsuario('${u.email}', 'bloqueado')">🚫 Suspender</button>`; }
+                if (!ADMIN_EMAILS.includes(u.email)) { botoes += `<button class="btn-small" style="background-color: var(--danger-color); width: 100%; padding: 4px;" onclick="excluirUsuarioDefinitivo('${u.email}')">🗑️ Excluir Agente</button>`; }
+                botoes += `</div>`; 
+                
+                htmlTabela += `<tr><td><strong>${u.nome}</strong><br><span style="word-break: break-all; font-size: 0.7rem; color: #555;">${u.email}</span></td><td>${selectNivel}</td><td>${statusLigacao}</td><td>${botoes}</td></tr>`;
+            });
+        }
+        htmlTabela += `</tbody></table></div>`; 
+        container.innerHTML = htmlTabela;
+    }
 </script>
 </body>
 </html>
