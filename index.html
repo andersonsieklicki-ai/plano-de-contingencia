@@ -177,11 +177,19 @@
     <button class="btn-small" style="padding: 10px 20px; font-size: 1rem; border: 1px solid #ccc; background: #fff; color: #333; cursor: pointer; font-weight: bold; border-radius: 5px;" onclick="logoutGoogle()">Sair / Trocar de Conta</button>
 </div>
 
-<div id="blockedOverlay" class="login-overlay" style="z-index: 10001; display: none;">
+<div id="cadastroOverlay" class="login-overlay" style="z-index: 10002; display: none;">
     <img src="1001145756.png" alt="Defesa Civil" style="width: 80px; margin-bottom: 15px;">
-    <h2 style="color: var(--danger-color); margin-bottom: 10px;">Acesso Suspenso</h2>
-    <p style="margin-bottom: 15px; font-size: 1.1rem; max-width: 350px;">O e-mail <strong id="blockedEmailDisplay"></strong> foi bloqueado pelo Administrador do sistema.</p>
-    <button onclick="logoutGoogle()" style="padding: 10px 20px; background: #777; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">Sair / Trocar de Conta</button>
+    <h2 style="color: var(--primary-color); margin-bottom: 10px;">Completar Cadastro</h2>
+    <p style="margin-bottom: 15px; font-size: 1.1rem; max-width: 350px; color: #555;">Para acessar o sistema e o setor de logística, é obrigatório informar seu nome e número de WhatsApp.</p>
+    
+    <label style="text-align: left; width: 100%; max-width: 300px; font-size: 0.9rem;">Seu Nome Completo:</label>
+    <input type="text" id="cadNome" placeholder="Digite seu nome..." style="width: 100%; max-width: 300px; margin-bottom: 10px; padding: 12px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px;">
+    
+    <label style="text-align: left; width: 100%; max-width: 300px; font-size: 0.9rem;">Telefone (WhatsApp):</label>
+    <input type="tel" id="cadTelefone" placeholder="(46) 9..." style="width: 100%; max-width: 300px; margin-bottom: 20px; padding: 12px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px;">
+    
+    <button onclick="salvarCadastroComplementar()" style="padding: 12px 25px; background: var(--success-color); color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 1.1rem; margin-bottom: 10px; width: 100%; max-width: 300px;">✅ Salvar e Acessar</button>
+    <button onclick="logoutGoogle()" style="padding: 10px 20px; background: #777; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; width: 100%; max-width: 300px;">Sair</button>
 </div>
 
 <div id="modalLogistica" class="modal" onclick="if(event.target === this) fecharModalLogistica()">
@@ -409,6 +417,40 @@
 
 <input type="file" id="importBackupFile" style="display:none;" accept=".json" onchange="processarImportacaoBackup(event)">
 
+// ==========================================
+    // FUNÇÃO QUE SALVA O CADASTRO INICIAL DO AGENTE
+    // ==========================================
+    async function salvarCadastroComplementar() {
+        const nome = document.getElementById('cadNome').value.trim();
+        const tel = document.getElementById('cadTelefone').value.replace(/\D/g, ''); // Guarda só números
+        
+        if (nome.length < 5) { alert("Por favor, informe seu Nome Completo."); return; }
+        if (tel.length < 10) { alert("Por favor, informe um Telefone / WhatsApp válido com DDD."); return; }
+        
+        try {
+            const email = auth.currentUser.email.toLowerCase();
+            const docRef = db.collection('usuarios_capanema').doc(email);
+            
+            // Grava os dados no Firebase
+            await docRef.set({ 
+                email: email, 
+                nome: nome, 
+                telefone: tel,
+                status: 'aprovado', 
+                nivel: 'padrao', // Entra com o nível de segurança básico
+                dataRegistro: new Date().toLocaleString('pt-BR') 
+            }, { merge: true });
+            
+            alert("Cadastro concluído com sucesso! Bem-vindo(a).");
+            document.getElementById('cadastroOverlay').style.display = 'none';
+            
+            // Recarrega a página para puxar as credenciais e liberar a logística
+            location.reload(); 
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao salvar cadastro no banco de dados. Tente novamente.");
+        }
+    }
 <script>
   // ==========================================
     // ATALHOS GLOBAIS (ESC, BACKSPACE E VOLTAR DO CELULAR)
@@ -521,37 +563,74 @@
 
     async function processarAcessoUsuario(user) {
         currentUserEmail = user.email ? user.email.toLowerCase() : "sem-email@google.com";
-        if (ADMIN_EMAILS.includes(currentUserEmail)) { currentUserNivel = 'admin'; return 'aprovado'; }
         if (!navigator.onLine) { currentUserNivel = localStorage.getItem('nivel_' + currentUserEmail) || 'padrao'; return localStorage.getItem('permissao_' + currentUserEmail) || 'aprovado'; }
         
         try {
             const docRef = db.collection('usuarios_capanema').doc(currentUserEmail); 
             const doc = await docRef.get();
+            let isAdmim = ADMIN_EMAILS.includes(currentUserEmail);
             
             if (!doc.exists) {
-                await docRef.set({ email: currentUserEmail, nome: user.displayName || 'Sem Nome', status: 'aprovado', nivel: 'padrao', dataRegistro: new Date().toLocaleString('pt-BR') });
-                localStorage.setItem('permissao_' + currentUserEmail, 'aprovado'); 
-                localStorage.setItem('nivel_' + currentUserEmail, 'padrao'); 
-                currentUserNivel = 'padrao'; return 'aprovado';
+                // Se for o primeiro login, trava na tela de cadastro
+                return 'pendente_dados';
             } else {
-                const data = doc.data(); currentUserNivel = data.nivel || 'padrao';
+                const data = doc.data(); 
+                // Se já existe mas falta o telefone, trava na tela de cadastro
+                if (!data.telefone) return 'pendente_dados'; 
+                
+                currentUserNivel = isAdmim ? 'admin' : (data.nivel || 'padrao');
                 localStorage.setItem('permissao_' + currentUserEmail, data.status || 'aprovado'); 
-                localStorage.setItem('nivel_' + currentUserEmail, currentUserNivel); return data.status || 'aprovado';
+                localStorage.setItem('nivel_' + currentUserEmail, currentUserNivel); 
+                return data.status || 'aprovado';
             }
-        } catch (e) { currentUserNivel = localStorage.getItem('nivel_' + currentUserEmail) || 'padrao'; return localStorage.getItem('permissao_' + currentUserEmail) || 'aprovado'; }
+        } catch (e) { 
+            currentUserNivel = localStorage.getItem('nivel_' + currentUserEmail) || 'padrao'; 
+            return localStorage.getItem('permissao_' + currentUserEmail) || 'aprovado'; 
+        }
     }
 
- function verificarAcesso() {
-        if (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') { 
-            if(btnEquipe && currentUserNivel === 'admin') btnEquipe.style.display = 'inline-block';
-            if(document.getElementById('tab-btn-log')) document.getElementById('tab-btn-log').style.display = 'block'; 
-            if(document.getElementById('tab-btn-estoque')) document.getElementById('tab-btn-estoque').style.display = 'block'; 
-			if(document.getElementById('tab-btn-robo')) document.getElementById('tab-btn-robo').style.display = 'block'; // <--- ADICIONE AQUI
-        } else { 
-            if(btnEquipe) btnEquipe.style.display = 'none'; 
-            if(document.getElementById('tab-btn-log')) document.getElementById('tab-btn-log').style.display = 'none'; 
-            if(document.getElementById('tab-btn-estoque')) document.getElementById('tab-btn-estoque').style.display = 'none'; 
-			if(document.getElementById('tab-btn-robo')) document.getElementById('tab-btn-robo').style.display = 'none';
+ const cadastroOverlay = document.getElementById('cadastroOverlay'); // Adiciona a nova tela
+
+        if (navigator.onLine) {
+            if (!auth.currentUser) { 
+                if(loginOverlay) loginOverlay.style.display = 'flex'; 
+                if(blockedOverlay) blockedOverlay.style.display = 'none'; 
+                if(cadastroOverlay) cadastroOverlay.style.display = 'none';
+            } else { 
+                if(loginOverlay) loginOverlay.style.display = 'none';
+                
+                // NOVO STATUS: PENDENTE DE DADOS
+                if (currentUserStatus === 'pendente_dados') {
+                    if(blockedOverlay) blockedOverlay.style.display = 'none';
+                    if(cadastroOverlay) {
+                        cadastroOverlay.style.display = 'flex';
+                        // Puxa o nome do Google automaticamente para facilitar a vida da pessoa
+                        if (!document.getElementById('cadNome').value && auth.currentUser.displayName) {
+                            document.getElementById('cadNome').value = auth.currentUser.displayName;
+                        }
+                    }
+                } 
+                else if (currentUserStatus === 'bloqueado') { 
+                    if(document.getElementById('blockedEmailDisplay')) document.getElementById('blockedEmailDisplay').innerText = auth.currentUser.email || 'Usuário'; 
+                    if(blockedOverlay) blockedOverlay.style.display = 'flex'; 
+                    if(cadastroOverlay) cadastroOverlay.style.display = 'none';
+                } 
+                else { 
+                    // Aprovado e com cadastro preenchido: Libera o sistema!
+                    if(blockedOverlay) blockedOverlay.style.display = 'none'; 
+                    if(cadastroOverlay) cadastroOverlay.style.display = 'none';
+                }
+            }
+        } else {
+            // Lógica offline padrão (esconde a tela de cadastro por precaução)
+            if(loginOverlay) loginOverlay.style.display = 'none';
+            if(cadastroOverlay) cadastroOverlay.style.display = 'none';
+            if (auth.currentUser && currentUserStatus === 'bloqueado') { 
+                if(document.getElementById('blockedEmailDisplay')) document.getElementById('blockedEmailDisplay').innerText = auth.currentUser.email || 'Usuário'; 
+                if(blockedOverlay) blockedOverlay.style.display = 'flex'; 
+            } else { 
+                if(blockedOverlay) blockedOverlay.style.display = 'none'; 
+            }
         }
         // ... (Mantenha o resto da função igualzinho)
 
