@@ -2262,7 +2262,35 @@ async function enviarComandoRobo(comando, btnOrigem) {
             alert("Erro ao tentar comunicar com o servidor do Robô.");
         }
     }
+// ==========================================
+    // AUTO-LOGOUT DE SEGURANÇA (30 MINUTOS DE INATIVIDADE)
+    // ==========================================
+    let tempoInativo = 0;
+    const TEMPO_MAXIMO_INATIVO = 30 * 60 * 1000; // 30 minutos em milissegundos
 
+    function resetarTempoInativo() {
+        tempoInativo = 0; // Zera o cronômetro se o usuário mexer na tela
+    }
+
+    // Fica escutando qualquer interação na tela para saber se o usuário está ativo
+    window.addEventListener('mousemove', resetarTempoInativo);
+    window.addEventListener('keypress', resetarTempoInativo);
+    window.addEventListener('click', resetarTempoInativo);
+    window.addEventListener('touchstart', resetarTempoInativo);
+    window.addEventListener('scroll', resetarTempoInativo);
+
+    // A cada 1 minuto (60000 ms), o sistema verifica se estourou o tempo
+    setInterval(() => {
+        // Só faz a contagem se a pessoa estiver logada no sistema
+        if (auth && auth.currentUser && currentUserStatus === 'aprovado') { 
+            tempoInativo += 60000; 
+            
+            if (tempoInativo >= TEMPO_MAXIMO_INATIVO) {
+                alert("⏳ Por segurança, sua sessão expirou após 30 minutos de inatividade. Você foi desconectado.");
+                logoutGoogle(); // Expulsa o usuário para a tela de login
+            }
+        }
+    }, 60000);
     // Assegurar que o estoque inicie após o Firebase
     window.addEventListener('DOMContentLoaded', () => { 
         setTimeout(() => { carregarPainelDespacho(); if(typeof iniciarEscutaEstoque === 'function') iniciarEscutaEstoque(); }, 1000); 
