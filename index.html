@@ -1830,7 +1830,7 @@
         filtrarTabelaAuditoria();
     }
 
-    function renderPainelRobo() {
+   function renderPainelRobo() {
         if(currentUserNivel !== 'admin' && currentUserNivel !== 'supervisor') return;
         
         let h = `<div class="report-summary" style="background: #e8f5e9; border-color: #c8e6c9; color: #2e7d32;"><strong>🤖 Gestão do Robô e Automação</strong></div>
@@ -1856,7 +1856,7 @@
                 <div id="qrCodeContainer" style="text-align: center; display: none; background: #fff; padding: 20px; border-radius: 8px; border: 2px dashed #28a745; min-width: 300px; flex: 1;">
                     <p style="font-size: 1.2rem; margin: 0 0 5px 0; color: #2e7d32; font-weight: bold;">📷 Escaneie o QR Code</p>
                     <p style="font-size: 0.9rem; margin: 0 0 15px 0; color: #555;">(Abra o WhatsApp > Aparelhos Conectados)</p>
-                   <div id="imgQrCode" style="width: 250px; height: 250px; margin: 0 auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);"></div>
+                    <div id="imgQrCode" style="width: 250px; height: 250px; margin: 0 auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);"></div>
                 </div>
             </div>
         </div>`;
@@ -1865,42 +1865,6 @@
         // Inicia a escuta apenas quando a aba é aberta
         iniciarEscutaStatusRobo();
     }
-	function renderPainelRobo() {
-        if(currentUserNivel !== 'admin' && currentUserNivel !== 'supervisor') return;
-        
-        let h = `<div class="report-summary" style="background: #e8f5e9; border-color: #c8e6c9; color: #2e7d32;"><strong>🤖 Gestão do Robô e Automação</strong></div>
-        
-        <div style="background:#fff; border:1px solid #c8e6c9; padding:20px; border-radius:8px; margin-bottom:15px;">
-            <h3 style="margin: 0 0 15px 0; color: #2e7d32; border-bottom: 2px solid #e8f5e9; padding-bottom: 8px;">1. Configurar Telefones (Motoristas)</h3>
-            <div class="form-row"><div class="form-col" style="flex:1"><label>E-mail SOLICITANTES (Separe por vírgula):</label><input type="text" id="configZapEmail" value="${configZap.emailSolicitante || ''}" placeholder="email1@..., email2@..." class="nav-input"></div></div>
-            <div class="form-row"><div class="form-col" style="flex:1"><label>Zap Motorista ÁGUA (Ex: 55469...):</label><input type="tel" id="configZapTelPipa" value="${configZap.telefonePipa || ''}" placeholder="55469..." class="nav-input"></div><div class="form-col" style="flex:1"><label>Zap Social TELHAS (Ex: 55469...):</label><input type="tel" id="configZapTelSocial" value="${configZap.telefoneSocial || ''}" placeholder="55469..." class="nav-input"></div></div>
-            <div class="form-row" style="justify-content:flex-end; margin-top:10px;"><button class="btn-small" style="background:var(--success-color); height:45px; padding: 0 25px; font-size: 1.1rem;" onclick="salvarConfigZap()">💾 Salvar Números</button></div>
-        </div>
-
-        <div style="background:#fff; border:1px solid #c8e6c9; padding:20px; border-radius:8px; margin-bottom:15px;">
-            <h3 style="margin: 0 0 15px 0; color: #2e7d32; border-bottom: 2px solid #e8f5e9; padding-bottom: 8px;">2. Conexão do Aparelho (WhatsApp Web)</h3>
-            <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
-                <div style="flex: 1; min-width: 300px; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
-                    <p style="margin: 0 0 15px 0; font-size: 1.2rem;"><strong>Status do Servidor:</strong> <br><span id="statusRoboDisplay" style="display: block; margin-top: 10px; padding: 15px; background: #fff; border: 1px solid #ccc; border-radius: 4px; text-align: center; font-size: 1.1rem;">Aguardando info...</span></p>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button onclick="enviarComandoRobo('conectar', this)" style="background: #28a745; color: white; border: none; padding: 15px; border-radius: 4px; font-weight: bold; cursor: pointer; flex: 1; font-size: 1.1rem;">🟢 Ligar Robô</button>
-                        <button onclick="enviarComandoRobo('desconectar', this)" style="background: #dc3545; color: white; border: none; padding: 15px; border-radius: 4px; font-weight: bold; cursor: pointer; flex: 1; font-size: 1.1rem;">🔴 Desconectar Conta</button>
-                    </div>
-                </div>
-                
-                <div id="qrCodeContainer" style="text-align: center; display: none; background: #fff; padding: 20px; border-radius: 8px; border: 2px dashed #28a745; min-width: 300px; flex: 1;">
-                    <p style="font-size: 1.2rem; margin: 0 0 5px 0; color: #2e7d32; font-weight: bold;">📷 Escaneie o QR Code</p>
-                    <p style="font-size: 0.9rem; margin: 0 0 15px 0; color: #555;">(Abra o WhatsApp > Aparelhos Conectados)</p>
-                    <img id="imgQrCode" src="" alt="Gerando QR Code..." style="width: 250px; height: 250px; border: 5px solid white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); margin: 0 auto;">
-                </div>
-            </div>
-        </div>`;
-        
-        document.getElementById('tab-robo').innerHTML = h;
-        // Inicia a escuta apenas quando a aba é aberta
-        iniciarEscutaStatusRobo();
-    }
-
 async function apagarCadastrosPorEmail() {
         let emailDigitado = document.getElementById('emailSpamDelete').value.trim().toLowerCase();
         if(!emailDigitado) { alert("Digite o e-mail (ou começo dele) do usuário spammer."); return; }
