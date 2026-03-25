@@ -1799,12 +1799,10 @@
     // ==========================================
     // CONFIGS E LIMPEZA ANTI-SPAM
     // ==========================================
-   function renderPainelAuditoria() {
+  function renderPainelAuditoria() {
         let h = '';
-        
         let btnBackup = currentUserNivel === 'admin' ? `<div style="display:flex; gap:10px; margin-bottom:15px;"><button onclick="exportarBackup()" style="flex:1; background:#007bff; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; cursor:pointer;">💾 Salvar Backup da Base</button><button onclick="document.getElementById('importBackupFile').click()" style="flex:1; background:#17a2b8; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; cursor:pointer;">📂 Importar Backup</button></div>` : ``;
 
-        // Auditoria Ao Vivo (Aberto por padrão com a tag "open")
         h += `${btnBackup}
               <details class="admin-card" open style="background:#fff; border:1px solid #ccc; padding:10px; border-radius:5px; margin-bottom:15px;">
                 <summary style="cursor:pointer; outline:none; color:var(--primary-color); font-weight:bold; font-size:1.1rem; border-bottom:1px solid #ccc; padding-bottom:5px; list-style-position: inside;">🔍 Auditoria Ao Vivo <small style="font-weight:normal; font-size:0.8rem;">(Clique para encolher)</small></summary>
@@ -1813,7 +1811,6 @@
                 </div>
               </details>`;
         
-        // Zona de Risco (Fechado por padrão, mais segurança)
         if(currentUserNivel === 'admin') { 
             h += `<details class="admin-card danger-zone" style="background:#ffebee; border:1px solid var(--danger-color); padding:10px; border-radius:5px; margin-bottom:15px;">
                     <summary style="cursor:pointer; outline:none; color:var(--danger-color); font-weight:bold; font-size:1.1rem; border-bottom:1px solid #ffcdd2; padding-bottom:5px; list-style-position: inside;">⚠️ ZONA DE RISCO <small style="font-weight:normal; font-size:0.8rem;">(Clique para expandir)</small></summary>
@@ -1828,27 +1825,44 @@
                     </div>
                   </details>`; 
         }
-	   // ==========================================
-        // TELA DO ROBÔ E QUADRADO DO QR CODE
-        // ==========================================
-        if(currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
-            h += `<div style="background:#fff; border:2px solid #28a745; padding:20px; border-radius:8px; margin-top:15px; margin-bottom:15px; text-align:center;">
-                    <h3 style="color:#28a745; margin-top:0; font-size: 1.3rem;">🤖 Conexão do Robô WhatsApp</h3>
-                    <p style="font-size: 1.1rem; margin-bottom: 15px;">Status: <span id="statusRoboDisplay" style="font-weight:bold; color:#666;">Aguardando informação...</span></p>
-                    
-                    <div style="margin-bottom: 20px; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
-                        <button onclick="enviarComandoRobo('conectar', this)" style="background:#28a745; color:white; padding:12px 25px; border:none; border-radius:4px; font-weight:bold; font-size: 1.1rem; cursor:pointer; min-width: 150px;">🟢 Ligar Robô</button>
-                        <button onclick="enviarComandoRobo('desconectar', this)" style="background:#dc3545; color:white; padding:12px 25px; border:none; border-radius:4px; font-weight:bold; font-size: 1.1rem; cursor:pointer; min-width: 150px;">🔴 Desconectar Conta</button>
-                    </div>
-
-                    <div id="qrCodeContainer" style="display:none; margin: 0 auto; padding: 20px; background: #f8f9fa; border: 3px dashed #28a745; border-radius: 8px; width: 260px;">
-                        <p style="margin: 0 0 10px 0; font-weight: bold; color:#2e7d32;">📷 Escaneie o QR Code</p>
-                        <img id="imgQrCode" src="" style="width: 250px; height: 250px; border: 5px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.15);">
-                    </div>
-                  </div>`;
-        }
         document.getElementById('tab-log').innerHTML = h; 
         filtrarTabelaAuditoria();
+    }
+
+    function renderPainelRobo() {
+        if(currentUserNivel !== 'admin' && currentUserNivel !== 'supervisor') return;
+        
+        let h = `<div class="report-summary" style="background: #e8f5e9; border-color: #c8e6c9; color: #2e7d32;"><strong>🤖 Gestão do Robô e Automação</strong></div>
+        
+        <div style="background:#fff; border:1px solid #c8e6c9; padding:20px; border-radius:8px; margin-bottom:15px;">
+            <h3 style="margin: 0 0 15px 0; color: #2e7d32; border-bottom: 2px solid #e8f5e9; padding-bottom: 8px;">1. Configurar Telefones (Motoristas)</h3>
+            <div class="form-row"><div class="form-col" style="flex:1"><label>E-mail SOLICITANTES (Separe por vírgula):</label><input type="text" id="configZapEmail" value="${configZap.emailSolicitante || ''}" placeholder="email1@..., email2@..." class="nav-input"></div></div>
+            <div class="form-row"><div class="form-col" style="flex:1"><label>Zap Motorista ÁGUA (Ex: 55469...):</label><input type="tel" id="configZapTelPipa" value="${configZap.telefonePipa || ''}" placeholder="55469..." class="nav-input"></div><div class="form-col" style="flex:1"><label>Zap Social TELHAS (Ex: 55469...):</label><input type="tel" id="configZapTelSocial" value="${configZap.telefoneSocial || ''}" placeholder="55469..." class="nav-input"></div></div>
+            <div class="form-row" style="justify-content:flex-end; margin-top:10px;"><button class="btn-small" style="background:var(--success-color); height:45px; padding: 0 25px; font-size: 1.1rem;" onclick="salvarConfigZap()">💾 Salvar Números</button></div>
+        </div>
+
+        <div style="background:#fff; border:1px solid #c8e6c9; padding:20px; border-radius:8px; margin-bottom:15px;">
+            <h3 style="margin: 0 0 15px 0; color: #2e7d32; border-bottom: 2px solid #e8f5e9; padding-bottom: 8px;">2. Conexão do Aparelho (WhatsApp Web)</h3>
+            <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 300px; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
+                    <p style="margin: 0 0 15px 0; font-size: 1.2rem;"><strong>Status do Servidor:</strong> <br><span id="statusRoboDisplay" style="display: block; margin-top: 10px; padding: 15px; background: #fff; border: 1px solid #ccc; border-radius: 4px; text-align: center; font-size: 1.1rem;">Aguardando info...</span></p>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="enviarComandoRobo('conectar', this)" style="background: #28a745; color: white; border: none; padding: 15px; border-radius: 4px; font-weight: bold; cursor: pointer; flex: 1; font-size: 1.1rem;">🟢 Ligar Robô</button>
+                        <button onclick="enviarComandoRobo('desconectar', this)" style="background: #dc3545; color: white; border: none; padding: 15px; border-radius: 4px; font-weight: bold; cursor: pointer; flex: 1; font-size: 1.1rem;">🔴 Desconectar Conta</button>
+                    </div>
+                </div>
+                
+                <div id="qrCodeContainer" style="text-align: center; display: none; background: #fff; padding: 20px; border-radius: 8px; border: 2px dashed #28a745; min-width: 300px; flex: 1;">
+                    <p style="font-size: 1.2rem; margin: 0 0 5px 0; color: #2e7d32; font-weight: bold;">📷 Escaneie o QR Code</p>
+                    <p style="font-size: 0.9rem; margin: 0 0 15px 0; color: #555;">(Abra o WhatsApp > Aparelhos Conectados)</p>
+                    <img id="imgQrCode" src="" alt="Gerando QR Code..." style="width: 250px; height: 250px; border: 5px solid white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); margin: 0 auto;">
+                </div>
+            </div>
+        </div>`;
+        
+        document.getElementById('tab-robo').innerHTML = h;
+        // Inicia a escuta apenas quando a aba é aberta
+        iniciarEscutaStatusRobo();
     }
 	function renderPainelRobo() {
         if(currentUserNivel !== 'admin' && currentUserNivel !== 'supervisor') return;
@@ -2211,13 +2225,8 @@ async function apagarCadastrosPorEmail() {
         }
         processarMovimentoEstoque(chave, tipo, qtd, motivo);
     }
-  // ==========================================
+// ==========================================
     // PAINEL DE CONTROLE E QR CODE DO ROBÔ
-    // ==========================================
-    let listenerStatusRobo = null;
-
-  // ==========================================
-    // FUNÇÃO QUE DESENHA O QR CODE NO QUADRADO
     // ==========================================
     let listenerStatusRobo = null;
 
@@ -2231,34 +2240,32 @@ async function apagarCadastrosPorEmail() {
             let elQrContainer = document.getElementById('qrCodeContainer');
             let elImgQr = document.getElementById('imgQrCode');
             
-            if (!elStatus || !elQrContainer || !elImgQr) return; // Só funciona se a tela do robô estiver aberta
+            if (!elStatus || !elQrContainer || !elImgQr) return; 
             
             if (!doc.exists) return;
             let data = doc.data();
             
             if (data.status === 'online') {
                 elStatus.innerHTML = '<span style="color:green;">✅ CONECTADO E PRONTO</span>';
-                elQrContainer.style.display = 'none'; // Esconde o quadrado
+                elQrContainer.style.display = 'none'; 
             } 
             else if (data.status === 'aguardando_leitura' && data.qrCode) {
                 elStatus.innerHTML = '<span style="color:#d39e00;">📱 AGUARDANDO LEITURA DO QR CODE</span>';
                 elQrContainer.style.display = 'block'; // Mostra o quadrado na tela
-                
-                // API que desenha a imagem do QR Code usando os dados que o servidor Node gerou
                 elImgQr.src = `https://quickchart.io/qr?size=250x250&margin=1&text=${encodeURIComponent(data.qrCode)}`;
             } 
             else if (data.status === 'iniciando') {
                 elStatus.innerHTML = '<span style="color:#0275d8;">⏳ LIGANDO NAVEGADOR NO SERVIDOR...</span>';
-                elQrContainer.style.display = 'none'; // Esconde o quadrado
+                elQrContainer.style.display = 'none'; 
             }
             else {
                 elStatus.innerHTML = '<span style="color:red;">❌ DESCONECTADO (Robô Offline)</span>';
-                elQrContainer.style.display = 'none'; // Esconde o quadrado
+                elQrContainer.style.display = 'none'; 
             }
         });
     }
 
-async function enviarComandoRobo(comando, btnOrigem) {
+    async function enviarComandoRobo(comando, btnOrigem) {
         if (comando === 'desconectar') {
             if (!confirm("⚠️ TEM CERTEZA?\n\nIsso vai desconectar o WhatsApp do servidor e derrubar as entregas!")) return;
         } 
@@ -2275,7 +2282,8 @@ async function enviarComandoRobo(comando, btnOrigem) {
             alert("Erro ao tentar comunicar com o servidor do Robô.");
         }
     }
-// ==========================================
+
+    // ==========================================
     // AUTO-LOGOUT DE SEGURANÇA (30 MINUTOS DE INATIVIDADE)
     // ==========================================
     let tempoInativo = 0;
@@ -2285,14 +2293,12 @@ async function enviarComandoRobo(comando, btnOrigem) {
         tempoInativo = 0; // Zera o cronômetro se o usuário mexer na tela
     }
 
-    // Fica escutando qualquer interação na tela para saber se o usuário está ativo
     window.addEventListener('mousemove', resetarTempoInativo);
     window.addEventListener('keypress', resetarTempoInativo);
     window.addEventListener('click', resetarTempoInativo);
     window.addEventListener('touchstart', resetarTempoInativo);
     window.addEventListener('scroll', resetarTempoInativo);
 
-    // A cada 1 minuto (60000 ms), o sistema verifica se estourou o tempo
     setInterval(() => {
         // Só faz a contagem se a pessoa estiver logada no sistema
         if (auth && auth.currentUser && currentUserStatus === 'aprovado') { 
@@ -2304,11 +2310,11 @@ async function enviarComandoRobo(comando, btnOrigem) {
             }
         }
     }, 60000);
+
     // Assegurar que o estoque inicie após o Firebase
     window.addEventListener('DOMContentLoaded', () => { 
         setTimeout(() => { carregarPainelDespacho(); if(typeof iniciarEscutaEstoque === 'function') iniciarEscutaEstoque(); }, 1000); 
     });
 </script>
 </body>
-
 </html>
