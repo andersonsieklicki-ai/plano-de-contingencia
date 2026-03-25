@@ -1241,12 +1241,19 @@ function loginGoogle() {
             }).catch(e => { console.error("Erro ao carregar zap:", e); }); 
         } 
     }
+async function salvarConfigZap() {
+        // Verifica se os campos já existem na tela para evitar erro de leitura
+        let elEmail = document.getElementById('configZapEmail');
+        let elAdmin = document.getElementById('configZapAdmin');
+        let elPipa = document.getElementById('configZapPipa');
+        let elSocial = document.getElementById('configZapSocial');
 
-    async function salvarConfigZap() {
-        const email = document.getElementById('configZapEmail').value.toLowerCase().trim(); 
-        const telAdmin = document.getElementById('configZapAdmin').value.replace(/[^\d,]/g,''); // Deixa passar vírgulas para múltiplos números
-        const telPipa = document.getElementById('configZapPipa').value.replace(/\D/g,''); 
-        const telSocial = document.getElementById('configZapSocial').value.replace(/\D/g,''); 
+        if (!elEmail || !elAdmin || !elPipa || !elSocial) return;
+
+        const email = elEmail.value.toLowerCase().trim(); 
+        const telAdmin = elAdmin.value.replace(/[^\d,]/g,''); 
+        const telPipa = elPipa.value.replace(/\D/g,''); 
+        const telSocial = elSocial.value.replace(/\D/g,''); 
         
         configZap = { 
             emailSolicitante: email, 
@@ -1260,9 +1267,15 @@ function loginGoogle() {
         if(navigator.onLine && db) { 
             try { 
                 await db.collection('configuracoes_capanema').doc('whatsapp').set(configZap, { merge: true }); 
-                alert("✅ Configurações e Números do WhatsApp Salvos com Sucesso!"); 
+                
+                // Pisca a mensagem verde "Salvo automático" na tela e esconde logo depois
+                let aviso = document.getElementById('avisoSalvo');
+                if (aviso) {
+                    aviso.style.opacity = '1';
+                    setTimeout(() => { aviso.style.opacity = '0'; }, 2500);
+                }
             } catch(e) { 
-                alert("Erro ao salvar contatos na nuvem."); 
+                console.error("Erro ao salvar configurações do robô na nuvem:", e); 
             } 
         } 
     }
