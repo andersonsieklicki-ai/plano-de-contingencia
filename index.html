@@ -9,7 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 
     <style>
         :root {
@@ -2215,14 +2215,14 @@ async function apagarCadastrosPorEmail() {
             else if (data.status === 'aguardando_leitura' && data.qrCode) {
                 elStatus.innerHTML = '<span style="color:#d39e00;">📱 AGUARDANDO LEITURA DO QR CODE</span>';
                 elQrContainer.style.display = 'block'; 
-                
-                // Usa a biblioteca QRious para desenhar o código gigante do WhatsApp sem travar
+               // Usando a biblioteca definitiva e super-robusta (a mesma do NPM)
                 if (elCanvas) {
-                    new QRious({
-                        element: elCanvas,
-                        value: data.qrCode,
-                        size: 250,
-                        level: 'L' // Importante: Nível Low permite dados gigantes como os do WhatsApp
+                    QRCode.toCanvas(elCanvas, data.qrCode, {
+                        width: 260,
+                        margin: 1,
+                        color: { dark: '#000000', light: '#ffffff' }
+                    }, function (error) {
+                        if (error) console.error("Erro interno ao desenhar o QR Code:", error);
                     });
                 }
             } 
