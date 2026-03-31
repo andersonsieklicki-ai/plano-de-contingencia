@@ -1074,13 +1074,26 @@ function loginGoogle() {
         iniciarAutocomplete(document.getElementById('localizacaoAgua'), 'localizacaoAgua');
     });
   
-  // ==========================================
+ // ==========================================
     // NAVEGAÇÃO COM ENTER E FUNÇÃO DE PRIVACIDADE
     // ==========================================
     const navInputs = document.querySelectorAll('.nav-input');
     navInputs.forEach((input, index) => {
         input.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' || e.keyCode === 13) {
+                
+                // VERIFICA SE O AUTOCOMPLETE (LEQUE) ESTÁ ABERTO E COM ITEM SELECIONADO
+                let listaAberta = document.getElementById(this.id + "autocomplete-list");
+                let itemSelecionado = listaAberta ? listaAberta.querySelector('.autocomplete-active') : null;
+                
+                if (itemSelecionado) {
+                    // Se o usuário usou a setinha, o autocomplete resolve o Enter. NÃO pula de campo ainda.
+                    return; 
+                }
+
+                // Se o leque estava aberto mas ele digitou e deu Enter direto, nós fechamos o leque.
+                if(typeof fecharListasAutocomplete === 'function') fecharListasAutocomplete();
+
                 e.preventDefault(); 
                 
                 if(['dataFim', 'filtroRelBairro', 'filtroRg', 'filtroNome'].includes(this.id)) { 
@@ -1088,7 +1101,7 @@ function loginGoogle() {
                     return; 
                 }
 
-                // 1. FORÇA A FORMATAÇÃO E A BUSCA IMEDIATA (Resolve o atraso do Computador)
+                // 1. FORÇA A FORMATAÇÃO E A BUSCA IMEDIATA
                 if (['nome', 'bairro', 'rua', 'localizacaoAgua', 'referenciaAgua'].includes(this.id)) {
                     if (typeof formatarNomeProprio === 'function') this.value = formatarNomeProprio(this.value);
                 }
