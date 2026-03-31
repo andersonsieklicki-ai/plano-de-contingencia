@@ -353,7 +353,23 @@
 
         <div class="section-title" style="margin-top: 4px;">3. Quantidades e Material</div>
         <div class="form-row">
-            <div class="form-col hidden" id="aguaFieldsQtd"><label>Água Pedida (m³):</label><input type="number" id="qtdAgua" min="0.1" step="0.1" placeholder="Ex: 5" tabindex="9" class="nav-input"><input type="hidden" id="qtdAguaEntregue" value="0"></div>
+          <div class="form-col hidden" id="aguaFieldsQtd" style="flex: 1.5;">
+            <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                <span>Água Pedida:</span>
+                <select id="tipoPedidoAgua" onchange="toggleTipoAgua()" style="width: auto; height: 22px; font-size: 0.75rem; padding: 0 4px; border: 1px solid #aaa; border-radius: 3px; cursor: pointer; background: #fff;">
+                    <option value="volume">Fixo (m³)</option>
+                    <option value="periodo">Período Contínuo</option>
+                </select>
+            </label>
+            <div id="boxAguaVolume">
+                <input type="number" id="qtdAgua" min="0.1" step="0.1" placeholder="Ex: 5" tabindex="9" class="nav-input">
+            </div>
+            <div id="boxAguaPeriodo" class="hidden" style="display: flex; gap: 4px;">
+                <div style="flex:1;"><span style="font-size:0.65rem; color:#666; display:block; margin-bottom:1px;">Início:</span><input type="date" id="dataInicioAgua" class="nav-input" style="padding: 4px; font-size: 0.85rem; height: 32px;"></div>
+                <div style="flex:1;"><span style="font-size:0.65rem; color:#666; display:block; margin-bottom:1px;">Fim:</span><input type="date" id="dataFimAgua" class="nav-input" style="padding: 4px; font-size: 0.85rem; height: 32px;"></div>
+            </div>
+            <input type="hidden" id="qtdAguaEntregue" value="0">
+        </div>
             <div class="form-col hidden" id="lonaFields"><label>Lonas (m²):</label><input type="number" id="qtdLona" min="0.1" step="0.1" placeholder="Ex: 5" tabindex="11" class="nav-input"></div>
             <div class="form-col hidden" id="telhaFieldsQtd"><label>Telhas (Un):</label><input type="number" id="qtdTelha" min="1" placeholder="Ex: 10" tabindex="12" class="nav-input"></div>
             <div class="form-col hidden" id="cestaFieldsQtd"><label>Cestas (Un):</label><input type="number" id="qtdCesta" min="1" placeholder="Ex: 1" tabindex="13" class="nav-input"></div>
@@ -1248,7 +1264,16 @@ function loginGoogle() {
         document.getElementById('aguaFieldsQtd').classList.toggle('hidden', !agua);
         if (requireFull) setTimeout(resizeCanvas, 50);
     }
-
+function toggleTipoAgua() {
+        const tipo = document.getElementById('tipoPedidoAgua').value;
+        if (tipo === 'volume') {
+            document.getElementById('boxAguaVolume').classList.remove('hidden');
+            document.getElementById('boxAguaPeriodo').classList.add('hidden');
+        } else {
+            document.getElementById('boxAguaVolume').classList.add('hidden');
+            document.getElementById('boxAguaPeriodo').classList.remove('hidden');
+        }
+    }
     function getCoordinates(e, cvs) { if (e.touches && e.touches.length > 0) { const rect = cvs.getBoundingClientRect(); return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top }; } return { x: e.offsetX, y: e.offsetY }; }
     
     if(canvas) {
@@ -1488,17 +1513,24 @@ function loginGoogle() {
 
     let modalAguaId = null; let modalAguaFalta = 0;
 
-    function adicionarAgua(id) {
+   function adicionarAgua(id) {
         const index = records.findIndex(r => r.id === id); if (index === -1) return;
-        let r = records[index]; let falta = r.qtdAgua - (r.qtdAguaEntregue || 0);
+        let r = records[index]; 
+        let isPer = r.tipoAgua === 'periodo'; // Verifica se é contínuo
+        let falta = isPer ? 9999 : r.qtdAgua - (r.qtdAguaEntregue || 0);
         
-        if (falta <= 0) { alert("Toda a água solicitada já foi entregue!"); return; }
+        if (!isPer && falta <= 0) { alert("Toda a água solicitada já foi entregue!"); return; }
         
         modalAguaId = id; modalAguaFalta = falta;
-        document.getElementById('descAguaTexto').innerHTML = `Faltam entregar <strong>${Number(falta.toFixed(2))} m³</strong> para <strong>${r.nome}</strong>.`;
+        if (isPer) {
+            document.getElementById('descAguaTexto').innerHTML = `Entrega Contínua para <strong>${r.nome}</strong>.<br><small style="color:var(--primary-color);">Já entregue acumulado: ${Number((r.qtdAguaEntregue||0).toFixed(2))}m³</small>`;
+        } else {
+            document.getElementById('descAguaTexto').innerHTML = `Faltam entregar <strong>${Number(falta.toFixed(2))} m³</strong> para <strong>${r.nome}</strong>.`;
+        }
         document.getElementById('inputDescAgua').value = ''; document.getElementById('modalDescarregarAgua').style.display = 'flex';
         setTimeout(() => document.getElementById('inputDescAgua').focus(), 100);
     }
+
 
     function fecharModalDescarregar() { document.getElementById('modalDescarregarAgua').style.display = 'none'; modalAguaId = null; }
 
@@ -1507,13 +1539,19 @@ function loginGoogle() {
         let novaQtd = parseFloat(document.getElementById('inputDescAgua').value.replace(',','.'));
         
         if (isNaN(novaQtd) || novaQtd <= 0) { alert("Valor inválido."); return; }
-        if (novaQtd > modalAguaFalta) { alert(`Atenção: Não pode entregar mais do que o solicitado! Faltam apenas ${Number(modalAguaFalta.toFixed(2))} m³.`); return; }
         
         const index = records.findIndex(r => r.id === modalAguaId); if (index === -1) return; 
+        let r = records[index];
+        let isPer = r.tipoAgua === 'periodo';
+
+        if (!isPer && novaQtd > modalAguaFalta) { alert(`Atenção: Não pode entregar mais do que o solicitado! Faltam apenas ${Number(modalAguaFalta.toFixed(2))} m³.`); return; }
         
-        let r = records[index]; r.qtdAguaEntregue = (r.qtdAguaEntregue || 0) + novaQtd; 
+        r.qtdAguaEntregue = (r.qtdAguaEntregue || 0) + novaQtd; 
+        
+        // MÁGICA: Se for período contínuo, o volume "solicitado" se iguala ao que foi entregue para o Relatório ficar perfeito!
+        if (isPer) r.qtdAgua = r.qtdAguaEntregue; 
+
         if (!r.entregasAgua) r.entregasAgua = [];
-        
         let nomeAgente = auth.currentUser ? (auth.currentUser.email || auth.currentUser.displayName) : "Desconhecido";
         r.entregasAgua.push({ data: new Date().toLocaleString('pt-BR'), agente: nomeAgente, qtd: novaQtd });
         r.synced = false; records[index] = r; localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
@@ -1522,7 +1560,6 @@ function loginGoogle() {
         sincronizarFirebaseAutomatica(); carregarPainelDespacho(); 
         if (!document.getElementById('reportSection').classList.contains('hidden')) generateReport();
     }
-
     async function marcarEntregaTelha(id) {
         const index = records.findIndex(r => r.id === id); if (index === -1) return;
         if(!confirm("Deseja marcar estas telhas como ENTREGUES NO LOCAL? O alerta sairá do painel do motorista.")) return;
@@ -1553,26 +1590,49 @@ function loginGoogle() {
 
     function carregarPainelDespacho() {
         const btnAlerta = document.getElementById('btnLogisticaAlerta'); const container = document.getElementById('listaDespachoContainer'); 
-        if(!container) return; let pendentes = records.filter(r => (r.qtdAgua > (r.qtdAguaEntregue || 0)) || (r.telhaRequerEntrega && !r.telhaEntregue));
+        if(!container) return; 
+        
+        let hoje = new Date().toISOString().split('T')[0];
+        
+        // Nova Inteligência para puxar entregas de Água pendentes (Por volume OU se a data final do período não expirou)
+        let pendentes = records.filter(r => {
+            let isPendenteAgua = false;
+            if (r.tipoAgua === 'periodo') {
+                isPendenteAgua = (r.dataFimAgua >= hoje && !r.logisticaPausada);
+            } else {
+                isPendenteAgua = (r.qtdAgua > (r.qtdAguaEntregue || 0));
+            }
+            return isPendenteAgua || (r.telhaRequerEntrega && !r.telhaEntregue);
+        });
         
         if(pendentes.length === 0) { 
             if(btnAlerta) btnAlerta.classList.add('hidden'); container.innerHTML = "<p style='text-align:center; padding: 20px; font-size: 1.1rem; color:#555;'>Nenhuma entrega pendente! A equipe está em dia. ✅</p>";
         } else {
             if(btnAlerta) { 
                 btnAlerta.classList.remove('hidden'); 
-                              let zeroPad = pendentes.length < 10 ? '0' + pendentes.length : pendentes.length;
+                let zeroPad = pendentes.length < 10 ? '0' + pendentes.length : pendentes.length;
                 let txtPlural = pendentes.length === 1 ? 'ENTREGA PENDENTE' : 'ENTREGAS PENDENTES';
                 btnAlerta.innerHTML = `🚨 ATENÇÃO: 🚚 <span style="font-size: 1.3rem; font-weight: 900; background: rgba(255,255,255,0.3); padding: 0 6px; border-radius: 4px;">${zeroPad}</span> ${txtPlural}`;
-}
+            }
             
             let h = '';
             pendentes.sort((a,b) => new Date(a.dataISO) - new Date(b.dataISO)).forEach(r => {
                 let pData = aplicarPrivacidade(r);
-                let isAgua = r.qtdAgua > (r.qtdAguaEntregue || 0); let faltaAgua = isAgua ? (r.qtdAgua - (r.qtdAguaEntregue || 0)) : 0;
+                
+                let isAgua = (r.tipoAgua === 'periodo' && r.dataFimAgua >= hoje) || (r.tipoAgua !== 'periodo' && r.qtdAgua > (r.qtdAguaEntregue || 0));
+                let faltaAgua = r.tipoAgua === 'periodo' ? 0 : (r.qtdAgua - (r.qtdAguaEntregue || 0));
                 let classeCard = isAgua ? '' : 'telha'; let icone = isAgua ? '💧' : '🏠';
+                
                 let isPausado = r.logisticaPausada === true; let estiloCard = isPausado ? `style="border-left-color: #f0ad4e; background-color: #fff3cd;"` : ``;
                 let statusPausa = isPausado ? `<div style="color:#856404; font-weight:bold; background:#ffeeba; padding:5px; border-radius:4px; margin:6px 0; border: 1px dashed #f0ad4e;">⚠️ ATENÇÃO - PAUSADO:<br><span style="font-weight:normal;">${r.logisticaMotivo}</span></div>` : '';
-                let mat = isAgua ? `<span style="color:var(--danger-color); font-weight:bold;">Falta levar: ${Number(faltaAgua.toFixed(2))} m³</span> (Solicitou ${Number(r.qtdAgua)})` : `Entregar: <strong>${r.qtdTelha} Telhas</strong>`;
+                
+                let mat = '';
+                if (isAgua) {
+                    if (r.tipoAgua === 'periodo') mat = `<span style="color:var(--agua-color); font-weight:bold;">Rota Contínua até ${r.dataFimAgua.split('-').reverse().join('/')}</span> <br>(Acumulado entregue: ${Number((r.qtdAguaEntregue||0).toFixed(2))}m³)`;
+                    else mat = `<span style="color:var(--danger-color); font-weight:bold;">Falta levar: ${Number(faltaAgua.toFixed(2))} m³</span> (Solicitou ${Number(r.qtdAgua)})`;
+                } else {
+                    mat = `Entregar: <strong>${r.qtdTelha} Telhas</strong>`;
+                }
                 
                 let btnHtml = '';
                 if (isPausado) { btnHtml = `<button class="btn-small" style="background:#f0ad4e; color:#333; margin-bottom: 4px; border: 1px solid #d39e00; width: 100%; font-size: 1.1rem; height: 38px;" onclick="retomarEntrega(${r.id})">▶️ Retomar Entrega</button>`; } 
@@ -1586,13 +1646,12 @@ function loginGoogle() {
                 
                 let endCompleto = `📍 ${pData.bairro}`; 
                 if(pData.temPermissao) { if(r.localizacaoAgua) endCompleto += ` - ${r.localizacaoAgua}`; if(r.rua) endCompleto += ` - ${r.rua}, ${r.numero||'S/N'}`; } else { if(r.localizacaoAgua || r.rua) endCompleto += ` - ***`; }
-                let emailCriadorFormatado = r.emailCriador || "Desconhecido"; if (ADMIN_EMAILS.includes(emailCriadorFormatado.toLowerCase())) emailCriadorFormatado = "Administrador"; else if (emailCriadorFormatado.includes('@')) emailCriadorFormatado = emailCriadorFormatado.split('@')[0];
+                let emailCriadorFormatado = r.emailCriador || "Desconhecido"; if (emailCriadorFormatado.includes('@')) emailCriadorFormatado = emailCriadorFormatado.split('@')[0];
 
-                // NOVO LAYOUT DO CÓDIGO (UMA LINHA SÓ) E INCLUSÃO DO TELEFONE
                 let telDisplay = pData.temPermissao ? (r.telefone || 'Não informado') : '***';
                 let codOneLine = `<span style="white-space: nowrap;">${r.codigo.replace(/DC[-:]?/, '<strong style="color:var(--danger-color);">DC:</strong>')}</span>`;
 
-                h += `<div class="dispatch-card ${classeCard}" ${estiloCard}><div class="dispatch-info"><strong>${icone} ${pData.nome}</strong><div style="font-size:0.85rem; color:#0275d8; margin: 2px 0 4px 0; font-weight: bold;">📞 ${telDisplay}</div><p>${endCompleto}</p><p>${mat}</p>${statusPausa}<div style="font-size:0.75rem; color:#888; margin-top: 8px; border-top: 1px dashed #ccc; padding-top: 6px; line-height: 1.3;"><strong>Cód:</strong> ${codOneLine}<br><strong>Lançado por:</strong> <span style="color:var(--primary-color); font-weight:bold;">${emailCriadorFormatado}</span><br><span style="font-size: 0.65rem;">Data: ${r.dataHoraFormatada}</span></div></div><div class="dispatch-actions" style="min-width: 120px;">${btnHtml}${mapsBtn}</div></div>`;
+                h += `<div class="dispatch-card ${classeCard}" ${estiloCard}><div class="dispatch-info"><strong>${icone} ${pData.nome}</strong><div style="font-size:0.85rem; color:#0275d8; margin: 2px 0 4px 0; font-weight: bold;">📞 ${telDisplay}</div><p>${endCompleto}</p><p>${mat}</p>${statusPausa}<div style="font-size:0.75rem; color:#888; margin-top: 8px; border-top: 1px dashed #ccc; padding-top: 6px; line-height: 1.3;"><strong>Cód:</strong> ${codOneLine}<br><strong>Lançado por:</strong> <span style="color:var(--primary-color); font-weight:bold;">${emailCriadorFormatado}</span></div></div><div class="dispatch-actions" style="min-width: 120px;">${btnHtml}${mapsBtn}</div></div>`;
             });
             container.innerHTML = h;
         }
@@ -1600,10 +1659,13 @@ function loginGoogle() {
     // ==========================================
     // SALVAMENTO E EXCLUSÃO DE DADOS
     // ==========================================
-    function clearFormFields() {
-        ['nome','rg','telefone','bairro','rua','numero','localizacaoAgua','referenciaAgua','observacao','qtdLona','qtdTelha','qtdCesta','qtdAgua'].forEach(id => document.getElementById(id).value = '');
+ function clearFormFields() {
+        ['nome','rg','telefone','bairro','rua','numero','localizacaoAgua','referenciaAgua','observacao','qtdLona','qtdTelha','qtdCesta','qtdAgua','dataInicioAgua','dataFimAgua'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
         if(document.getElementById('qtdAguaEntregue')) document.getElementById('qtdAguaEntregue').value = '0';
         ['checkLona','checkTelha','checkCesta','checkAgua','checkTelhaEntrega'].forEach(id => document.getElementById(id).checked = false);
+        
+        if(document.getElementById('tipoPedidoAgua')) { document.getElementById('tipoPedidoAgua').value = 'volume'; toggleTipoAgua(); }
+        
         resetPhoto(); toggleFields(); clearSignature(); clearFullscreenSignature(); editandoId = null; 
         const bs = document.getElementById('btnSalvarCadastro'); bs.innerText = "Salvar Lançamento"; bs.style.backgroundColor = "#5cb85c"; bs.disabled = false;
     }
@@ -1616,15 +1678,23 @@ function loginGoogle() {
         document.getElementById('checkLona').checked = r.qtdLona>0; document.getElementById('qtdLona').value = r.qtdLona||'';
         document.getElementById('checkTelha').checked = r.qtdTelha>0; document.getElementById('qtdTelha').value = r.qtdTelha||''; document.getElementById('checkTelhaEntrega').checked = r.telhaRequerEntrega||false;
         document.getElementById('checkCesta').checked = r.qtdCesta>0; document.getElementById('qtdCesta').value = r.qtdCesta||'';
-        document.getElementById('checkAgua').checked = r.qtdAgua>0; document.getElementById('qtdAgua').value = r.qtdAgua||'';
+        
+        document.getElementById('checkAgua').checked = r.qtdAgua>0 || r.tipoAgua === 'periodo'; 
+        if(document.getElementById('tipoPedidoAgua')) {
+            document.getElementById('tipoPedidoAgua').value = r.tipoAgua || 'volume'; toggleTipoAgua();
+            document.getElementById('dataInicioAgua').value = r.dataInicioAgua || '';
+            document.getElementById('dataFimAgua').value = r.dataFimAgua || '';
+        }
+        document.getElementById('qtdAgua').value = r.qtdAgua||'';
         if(document.getElementById('qtdAguaEntregue')) document.getElementById('qtdAguaEntregue').value = r.qtdAguaEntregue||'0';
+        
         toggleFields();
         if(r.fotoRg) { document.getElementById('rgPhotoBase64').value = r.fotoRg; rgPreview.src = r.fotoRg; rgPreview.style.display='block'; cameraBtnLabel.innerHTML='✅ OK!'; cameraBtnLabel.appendChild(rgPreview); cameraBtnLabel.classList.add('has-photo'); } else { resetPhoto(); }
         clearSignature(); clearFullscreenSignature(); if(r.signatureData) { const i = new Image(); i.src = r.signatureData; i.onload = () => { ctx.drawImage(i, 0, 0, canvas.width, canvas.height); }; }
         const bs = document.getElementById('btnSalvarCadastro'); bs.innerText = "Atualizar Lançamento"; bs.style.backgroundColor = "#0275d8"; showForm(); 
     }
 
-  async function saveRecord() {
+    async function saveRecord() {
         const bs = document.getElementById('btnSalvarCadastro');
         try {
             if(!verificarVigiaAntifraude()) return;
@@ -1632,6 +1702,12 @@ function loginGoogle() {
             const cC = document.getElementById('checkCesta').checked; const cA = document.getElementById('checkAgua').checked;
             if(!cL && !cT && !cC && !cA) { alert('Selecione material/água!'); return; }
             
+            // Leitura da Água
+            let tA = document.getElementById('tipoPedidoAgua') ? document.getElementById('tipoPedidoAgua').value : 'volume';
+            let dtIniA = tA === 'periodo' ? document.getElementById('dataInicioAgua').value : '';
+            let dtFimA = tA === 'periodo' ? document.getElementById('dataFimAgua').value : '';
+            if (cA && tA === 'periodo' && (!dtIniA || !dtFimA)) { alert('Para água por período, informe a data de Início e Fim.'); return; }
+
             let nm = ""; if (typeof formatarNomeProprio === 'function') { nm = formatarNomeProprio(document.getElementById('nome').value.trim()); } else { nm = document.getElementById('nome').value.trim(); }
             if(nm.split(' ').length < 2) { alert('NOME COMPLETO obrigatório.'); document.getElementById('nome').focus(); return; }
             let rg = document.getElementById('rg').value.trim(); let tel = document.getElementById('telefone').value.trim(); 
@@ -1662,7 +1738,13 @@ function loginGoogle() {
             }
             
             const qL = cL?parseFloat(document.getElementById('qtdLona').value)||0:0; const qT = cT?parseInt(document.getElementById('qtdTelha').value)||0:0; 
-            const qC = cC?parseInt(document.getElementById('qtdCesta').value)||0:0; const qA = cA?parseFloat(document.getElementById('qtdAgua').value)||0:0; 
+            const qC = cC?parseInt(document.getElementById('qtdCesta').value)||0:0; 
+            
+            let qA = 0;
+            if (cA) {
+                if (tA === 'volume') qA = parseFloat(document.getElementById('qtdAgua').value) || 0;
+            }
+            
             const qAe = document.getElementById('qtdAguaEntregue') ? (parseFloat(document.getElementById('qtdAguaEntregue').value)||0) : 0;
             let sig = (cT || cC) ? canvas.toDataURL() : null; let nAg = (auth && auth.currentUser) ? (auth.currentUser.email || auth.currentUser.displayName) : "Offline";
             
@@ -1672,7 +1754,7 @@ function loginGoogle() {
                 const idx = records.findIndex(x => x.id === editandoId);
                 if (idx !== -1) {
                     diffL = qL - (records[idx].qtdLona || 0); diffT = qT - (records[idx].qtdTelha || 0); diffC = qC - (records[idx].qtdCesta || 0);
-                    records[idx] = { ...records[idx], nome:nm, rg, telefone:tel, bairro:bai, rua:ru, numero:nu, localizacaoAgua:lAg, referenciaAgua:rAg, observacao:ob, qtdLona:qL, qtdTelha:qT, telhaRequerEntrega:rEnt, qtdCesta:qC, qtdAgua:qA, qtdAguaEntregue:qAe, signatureData:sig, fotoRg:fo, synced:false, agente:nAg };
+                    records[idx] = { ...records[idx], nome:nm, rg, telefone:tel, bairro:bai, rua:ru, numero:nu, localizacaoAgua:lAg, referenciaAgua:rAg, observacao:ob, qtdLona:qL, qtdTelha:qT, telhaRequerEntrega:rEnt, qtdCesta:qC, qtdAgua:qA, tipoAgua:tA, dataInicioAgua:dtIniA, dataFimAgua:dtFimA, qtdAguaEntregue:qAe, signatureData:sig, fotoRg:fo, synced:false, agente:nAg };
                     if(typeof registrarLog === 'function') await registrarLog("EDIÇÃO", `Alterou Cód: [${records[idx].codigo}]`); 
                     alert('Atualizado!');
                 }
@@ -1680,15 +1762,14 @@ function loginGoogle() {
                 diffL = qL; diffT = qT; diffC = qC; 
                 let cd = gerarCodigoRegistro(nm);
                 
-                // DETALHAMENTO NO LOG (REQ 6)
                 let detLog = [];
-                if(qA>0) detLog.push(`${qA}m³ Água`); 
+                if(cA) detLog.push(tA === 'periodo' ? `Água (Período)` : `${qA}m³ Água`); 
                 if(qL>0) detLog.push(`${qL} Lona`); 
                 if(qT>0) detLog.push(`${qT} Telhas`); 
                 if(qC>0) detLog.push(`${qC} Cestas`);
                 let descLog = detLog.length > 0 ? detLog.join(' | ') : 'Nada';
 
-                records.push({ id: Date.now(), codigo: cd, dataISO: new Date().toISOString(), dataHoraFormatada: new Date().toLocaleString('pt-BR'), nome:nm, rg, telefone:tel, bairro:bai, rua:ru, numero:nu, localizacaoAgua:lAg, referenciaAgua:rAg, observacao:ob, qtdLona:qL, qtdTelha:qT, telhaRequerEntrega:rEnt, telhaEntregue:false, qtdCesta:qC, qtdAgua:qA, qtdAguaEntregue:qAe, entregasAgua:[], signatureData:sig, fotoRg:fo, synced:false, agente:nAg, emailCriador: currentUserEmail, logisticaPausada: false, logisticaMotivo: "" });
+                records.push({ id: Date.now(), codigo: cd, dataISO: new Date().toISOString(), dataHoraFormatada: new Date().toLocaleString('pt-BR'), nome:nm, rg, telefone:tel, bairro:bai, rua:ru, numero:nu, localizacaoAgua:lAg, referenciaAgua:rAg, observacao:ob, qtdLona:qL, qtdTelha:qT, telhaRequerEntrega:rEnt, telhaEntregue:false, qtdCesta:qC, qtdAgua:qA, tipoAgua:tA, dataInicioAgua:dtIniA, dataFimAgua:dtFimA, qtdAguaEntregue:qAe, entregasAgua:[], signatureData:sig, fotoRg:fo, synced:false, agente:nAg, emailCriador: currentUserEmail, logisticaPausada: false, logisticaMotivo: "" });
                 
                 if(typeof registrarLog === 'function') await registrarLog("NOVO CADASTRO", `Cód: [${cd}] - Doado: ${descLog}`, cd); 
                 
