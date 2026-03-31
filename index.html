@@ -71,6 +71,34 @@
 
         .form-row { display: flex; gap: 6px; margin-bottom: 5px; align-items: flex-end; }
         .form-col { flex: 1; display: flex; flex-direction: column; }
+		/* CSS DO AUTOCOMPLETE (LEQUE) */
+        .autocomplete-wrapper { position: relative; display: flex; flex: 1; width: 100%; }
+        .autocomplete-items {
+            position: absolute;
+            border: 1px solid #ccc;
+            border-top: none;
+            z-index: 9999;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: #fff;
+            max-height: 250px;
+            overflow-y: auto;
+            border-radius: 0 0 4px 4px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .autocomplete-items div {
+            padding: 10px;
+            cursor: pointer;
+            background-color: #fff;
+            border-bottom: 1px solid #eee;
+            font-size: 0.95rem;
+            color: #333;
+        }
+        .autocomplete-items div:hover, .autocomplete-active {
+            background-color: var(--primary-color) !important;
+            color: #ffffff !important;
+        }
 
         label { display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 2px; color: #222; }
         input[type="text"], input[type="number"], input[type="tel"], input[type="date"], select { width: 100%; padding: 6px 8px; font-size: 0.95rem; border: 1px solid #aaa; border-radius: 4px; background: rgba(255,255,255,0.9); height: 32px; transition: all 0.3s; }
@@ -946,14 +974,140 @@ function loginGoogle() {
     function prepararImpressao() { setTimeout(function() { window.print(); }, 300); }
     function togglePrintPhotos() { document.body.classList.toggle('print-photos', document.getElementById('chkPrintPhotos').checked); }
 
-  
   // ==========================================
+    // AUTOCOMPLETAR (Nome, Localização, Rua)
+    // ==========================================
+    function fecharListasAutocomplete() {
+        document.querySelectorAll(".autocomplete-items").forEach(l => l.remove());
+    }
+
+    document.addEventListener("click", function (e) {
+        fecharListasAutocomplete(); 
+    });
+
+    function iniciarAutocomplete(inputEle, campoBusca) {
+        if(!inputEle) return;
+
+        // Cria o "envelope" para segurar a lista embaixo do campo
+        let wrapper = document.createElement("div");
+        wrapper.setAttribute("class", "autocomplete-wrapper");
+        inputEle.parentNode.insertBefore(wrapper, inputEle);
+        wrapper.appendChild(inputEle);
+
+        let currentFocus = -1;
+
+        inputEle.addEventListener("input", function(e) {
+            let val = this.value;
+            fecharListasAutocomplete();
+            
+            // Requisito: Só abre o leque se tiver 3 ou mais letras
+            if (!val || val.length < 3) return false;
+            currentFocus = -1;
+
+            let a = document.createElement("DIV");
+            a.setAttribute("id", this.id + "autocomplete-list");
+            a.setAttribute("class", "autocomplete-items");
+            wrapper.appendChild(a); // Prende a lista no envelope
+
+            let matches = [];
+            let valSemAcento = val.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            let reversedRecords = [...records].reverse();
+
+            for (let i = 0; i < reversedRecords.length; i++) {
+                let r = reversedRecords[i];
+                let valorBanco = r[campoBusca];
+                
+                if (valorBanco) {
+                    let bancoSemAcento = valorBanco.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
+                    if (bancoSemAcento.includes(valSemAcento)) {
+                        if (!matches.some(m => m.toLowerCase() === valorBanco.toLowerCase())) {
+                            matches.push(valorBanco);
+                            
+                            let b = document.createElement("DIV");
+                            // Deixa em negrito a parte que bate com a digitação
+                            let matchIndex = bancoSemAcento.indexOf(valSemAcento);
+                            if (matchIndex !== -1) {
+                                let matchReal = valorBanco.substring(matchIndex, matchIndex + val.length);
+                                b.innerHTML = valorBanco.replace(matchReal, `<strong style="color:var(--primary-color);">${matchReal}</strong>`);
+                            } else {
+                                b.innerHTML = valorBanco;
+                            }
+                            
+                            // O SEGREDO: 'mousedown' impede o conflito que fechava a lista antes do clique
+                            b.addEventListener("mousedown", function(e) {
+                                e.preventDefault(); 
+                                inputEle.value = valorBanco;
+                                fecharListasAutocomplete();
+                                
+                                // Puxa os dados (bairro, telefone, etc) automaticamente
+                                if(typeof buscarCadastroExistente === 'function') {
+                                    buscarCadastroExistente(inputEle.id);
+                                }
+                            });
+                            a.appendChild(b);
+                        }
+                    }
+                }
+                if (matches.length >= 8) break; // Mostra até 8 opções
+            }
+        });
+
+        // Setinhas para cima/baixo e Enter
+        inputEle.addEventListener("keydown", function(e) {
+            let x = document.getElementById(this.id + "autocomplete-list");
+            if (x) x = x.getElementsByTagName("div");
+            
+            if (e.keyCode === 40) { // Baixo
+                currentFocus++; addActive(x);
+            } else if (e.keyCode === 38) { // Cima
+                currentFocus--; addActive(x);
+            } else if (e.keyCode === 13) { // Enter
+                if (currentFocus > -1 && x) {
+                    e.preventDefault(); 
+                    let event = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+                    x[currentFocus].dispatchEvent(event);
+                }
+            }
+        });
+
+        function addActive(x) {
+            if (!x) return false;
+            removeActive(x);
+            if (currentFocus >= x.length) currentFocus = 0;
+            if (currentFocus < 0) currentFocus = (x.length - 1);
+            x[currentFocus].classList.add("autocomplete-active");
+            x[currentFocus].scrollIntoView({ block: "nearest" });
+        }
+
+        function removeActive(x) {
+            for (let i = 0; i < x.length; i++) { x[i].classList.remove("autocomplete-active"); }
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        iniciarAutocomplete(document.getElementById('nome'), 'nome');
+        iniciarAutocomplete(document.getElementById('rua'), 'rua');
+        iniciarAutocomplete(document.getElementById('localizacaoAgua'), 'localizacaoAgua');
+    });
+	
+ // ==========================================
     // NAVEGAÇÃO COM ENTER E FUNÇÃO DE PRIVACIDADE
     // ==========================================
     const navInputs = document.querySelectorAll('.nav-input');
     navInputs.forEach((input, index) => {
         input.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' || e.keyCode === 13) {
+                
+                // CHECA SE O LEQUE ESTÁ ABERTO
+                let listaAberta = document.getElementById(this.id + "autocomplete-list");
+                let itemSelecionado = listaAberta ? listaAberta.querySelector('.autocomplete-active') : null;
+                
+                // Se estiver com algo selecionado no leque, NÃO pula o campo ainda.
+                if (itemSelecionado) return; 
+
+                // Se não tinha item, fecha a lista antes de avançar.
+                if(typeof fecharListasAutocomplete === 'function') fecharListasAutocomplete();
+
                 e.preventDefault(); 
                 
                 if(['dataFim', 'filtroRelBairro', 'filtroRg', 'filtroNome'].includes(this.id)) { 
@@ -961,7 +1115,6 @@ function loginGoogle() {
                     return; 
                 }
 
-                // 1. FORÇA A FORMATAÇÃO E A BUSCA IMEDIATA (Resolve o atraso do Computador)
                 if (['nome', 'bairro', 'rua', 'localizacaoAgua', 'referenciaAgua'].includes(this.id)) {
                     if (typeof formatarNomeProprio === 'function') this.value = formatarNomeProprio(this.value);
                 }
@@ -989,22 +1142,6 @@ function loginGoogle() {
             }
         });
     });
-
-   // Função auxiliar atualizada: AGORA AGENTES TAMBÉM VEEM TUDO
-    function aplicarPrivacidade(r) {
-        let temPermissao = (currentUserNivel === 'admin' || currentUserNivel === 'supervisor' || currentUserNivel === 'agente' || r.emailCriador === currentUserEmail);
-        return {
-            nome: temPermissao ? r.nome : (r.nome ? r.nome.split(' ')[0] + ' ***' : '***'),
-            rg: temPermissao ? (r.rg || 'N/I') : '***',
-            telefone: temPermissao ? (r.telefone || 'N/I') : '***',
-            bairro: temPermissao ? (r.bairro || 'N/I') : '***',
-            rua: temPermissao ? r.rua : '***',
-            numero: temPermissao ? r.numero : '***',
-            localizacaoAgua: temPermissao ? r.localizacaoAgua : '***',
-            referenciaAgua: temPermissao ? r.referenciaAgua : '***',
-            temPermissao: temPermissao
-        };
-    }
 
     // ==========================================
     // FOTOS E ASSINATURA DIGITAL CANVAS E ROTAS
