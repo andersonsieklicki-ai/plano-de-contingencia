@@ -1100,6 +1100,27 @@ function loginGoogle() {
         iniciarAutocomplete(document.getElementById('localizacaoAgua'), 'localizacaoAgua');
     });
 
+        function addActive(x) {
+            if (!x) return false;
+            removeActive(x);
+            if (currentFocus >= x.length) currentFocus = 0;
+            if (currentFocus < 0) currentFocus = (x.length - 1);
+            x[currentFocus].classList.add("autocomplete-active");
+            x[currentFocus].scrollIntoView({ block: "nearest" }); // A tela desce com a seta
+        }
+
+        function removeActive(x) {
+            for (let i = 0; i < x.length; i++) { x[i].classList.remove("autocomplete-active"); }
+        }
+    }
+
+    // Inicializa nos campos desejados (Não precisa mexer no seu HTML)
+    document.addEventListener("DOMContentLoaded", function() {
+        iniciarAutocomplete(document.getElementById('nome'), 'nome');
+        iniciarAutocomplete(document.getElementById('rua'), 'rua');
+        iniciarAutocomplete(document.getElementById('localizacaoAgua'), 'localizacaoAgua');
+    });
+
         // Eventos de teclado (Navegar com Setinhas e apertar Enter)
         inputEle.addEventListener("keydown", function(e) {
             let x = document.getElementById(this.id + "autocomplete-list");
