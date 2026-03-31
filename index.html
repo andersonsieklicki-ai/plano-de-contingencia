@@ -974,7 +974,105 @@ function loginGoogle() {
 
     function prepararImpressao() { setTimeout(function() { window.print(); }, 300); }
     function togglePrintPhotos() { document.body.classList.toggle('print-photos', document.getElementById('chkPrintPhotos').checked); }
+// ==========================================
+    // AUTOCOMPLETAR (Nome, Localização, Rua)
+    // ==========================================
+    function fecharListasAutocomplete() {
+        document.querySelectorAll(".autocomplete-items").forEach(l => l.remove());
+    }
 
+    document.addEventListener("click", function (e) {
+        fecharListasAutocomplete(); // Fecha ao clicar fora
+    });
+
+    function iniciarAutocomplete(inputEle, campoBusca) {
+        if(!inputEle) return;
+        let currentFocus = -1;
+
+        inputEle.addEventListener("input", function(e) {
+            let val = this.value;
+            fecharListasAutocomplete();
+            if (!val || val.length < 3) return false;
+            currentFocus = -1;
+
+            let a = document.createElement("DIV");
+            a.setAttribute("id", this.id + "autocomplete-list");
+            a.setAttribute("class", "autocomplete-items");
+            this.parentNode.appendChild(a);
+
+            let matches = [];
+            let valSemAcento = val.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            let reversedRecords = [...records].reverse(); // Do mais recente para o mais antigo
+
+            for (let i = 0; i < reversedRecords.length; i++) {
+                let r = reversedRecords[i];
+                let valorBanco = r[campoBusca];
+                
+                if (valorBanco) {
+                    let bancoSemAcento = valorBanco.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
+                    if (bancoSemAcento.includes(valSemAcento)) {
+                        // Evita opções duplicadas na lista
+                        if (!matches.some(m => m.toLowerCase() === valorBanco.toLowerCase())) {
+                            matches.push(valorBanco);
+                            
+                            let b = document.createElement("DIV");
+                            b.innerHTML = valorBanco;
+                            
+                            // Ação ao CLICAR na opção do leque
+                            b.addEventListener("click", function(e) {
+                                inputEle.value = valorBanco;
+                                fecharListasAutocomplete();
+                                buscarCadastroExistente(inputEle.id); // Puxa os dados originais
+                                inputEle.focus(); // Mantém o foco para o próximo 'Enter'
+                            });
+                            a.appendChild(b);
+                        }
+                    }
+                }
+                if (matches.length >= 8) break; // Limita a 8 opções para não travar
+            }
+        });
+
+        // Eventos de teclado (Setinhas e Enter no leque)
+        inputEle.addEventListener("keydown", function(e) {
+            let x = document.getElementById(this.id + "autocomplete-list");
+            if (x) x = x.getElementsByTagName("div");
+            if (e.keyCode === 40) { // Seta pra baixo
+                currentFocus++;
+                addActive(x);
+            } else if (e.keyCode === 38) { // Seta pra cima
+                currentFocus--;
+                addActive(x);
+            } else if (e.keyCode === 13) { // Enter
+                if (currentFocus > -1 && x) {
+                    e.preventDefault(); // Impede de pular o campo instantaneamente
+                    x[currentFocus].click(); // Simula o clique e seleciona
+                }
+            }
+        });
+
+        function addActive(x) {
+            if (!x) return false;
+            removeActive(x);
+            if (currentFocus >= x.length) currentFocus = 0;
+            if (currentFocus < 0) currentFocus = (x.length - 1);
+            x[currentFocus].classList.add("autocomplete-active");
+            x[currentFocus].scrollIntoView({ block: "nearest" }); // Acompanha a rolagem
+        }
+
+        function removeActive(x) {
+            for (let i = 0; i < x.length; i++) {
+                x[i].classList.remove("autocomplete-active");
+            }
+        }
+    }
+
+    // Inicializa a escuta para os campos desejados assim que a página carregar
+    document.addEventListener("DOMContentLoaded", function() {
+        iniciarAutocomplete(document.getElementById('nome'), 'nome');
+        iniciarAutocomplete(document.getElementById('rua'), 'rua');
+        iniciarAutocomplete(document.getElementById('localizacaoAgua'), 'localizacaoAgua');
+    });
   
   // ==========================================
     // NAVEGAÇÃO COM ENTER E FUNÇÃO DE PRIVACIDADE
