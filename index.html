@@ -72,21 +72,21 @@
         .form-row { display: flex; gap: 6px; margin-bottom: 5px; align-items: flex-end; }
        .form-col { flex: 1; display: flex; flex-direction: column; position: relative; } /* position relative adicionado */
         
-        /* CSS DO AUTOCOMPLETE (LEQUE) */
+       /* CSS DO AUTOCOMPLETE (LEQUE) */
         .autocomplete-items {
             position: absolute;
             border: 1px solid #ccc;
             border-bottom: none;
             border-top: none;
-            z-index: 999;
+            z-index: 9999; /* Aumentado para sobrepor qualquer botão */
             top: 100%;
             left: 0;
             right: 0;
             background-color: #fff;
-            max-height: 220px;
+            max-height: 250px;
             overflow-y: auto;
             border-radius: 0 0 4px 4px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
         .autocomplete-items div {
             padding: 12px;
