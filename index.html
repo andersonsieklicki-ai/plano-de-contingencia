@@ -982,27 +982,42 @@ function loginGoogle() {
     }
 
     document.addEventListener("click", function (e) {
-        fecharListasAutocomplete(); // Fecha ao clicar fora
+        fecharListasAutocomplete(); 
     });
 
     function iniciarAutocomplete(inputEle, campoBusca) {
         if(!inputEle) return;
+
+        // 1. Cria um contêiner "wrapper" automático para garantir que a lista fique grudada perfeitamente no input
+        let wrapper = document.createElement("div");
+        wrapper.style.position = "relative";
+        wrapper.style.width = "100%";
+        wrapper.style.flex = "1"; // Proteção para manter o layout do seu Flexbox
+        
+        // Move o input para dentro desse wrapper
+        inputEle.parentNode.insertBefore(wrapper, inputEle);
+        wrapper.appendChild(inputEle);
+
         let currentFocus = -1;
 
         inputEle.addEventListener("input", function(e) {
             let val = this.value;
             fecharListasAutocomplete();
+            
+            // Só começa a buscar se tiver 3 ou mais letras
             if (!val || val.length < 3) return false;
             currentFocus = -1;
 
             let a = document.createElement("DIV");
             a.setAttribute("id", this.id + "autocomplete-list");
             a.setAttribute("class", "autocomplete-items");
-            this.parentNode.appendChild(a);
+            
+            // 2. Anexa a lista ao novo wrapper (agora aparece exatamente embaixo do campo!)
+            wrapper.appendChild(a);
 
             let matches = [];
             let valSemAcento = val.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
-            let reversedRecords = [...records].reverse(); // Do mais recente para o mais antigo
+            let reversedRecords = [...records].reverse(); // Busca os mais recentes primeiro
 
             for (let i = 0; i < reversedRecords.length; i++) {
                 let r = reversedRecords[i];
@@ -1011,28 +1026,79 @@ function loginGoogle() {
                 if (valorBanco) {
                     let bancoSemAcento = valorBanco.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
                     if (bancoSemAcento.includes(valSemAcento)) {
-                        // Evita opções duplicadas na lista
+                        // Evita duplicatas na lista
                         if (!matches.some(m => m.toLowerCase() === valorBanco.toLowerCase())) {
                             matches.push(valorBanco);
                             
                             let b = document.createElement("DIV");
-                            b.innerHTML = valorBanco;
                             
-                            // Ação ao CLICAR na opção do leque
-                            b.addEventListener("click", function(e) {
+                            // Destaca em negrito a parte que você digitou
+                            let matchIndex = bancoSemAcento.indexOf(valSemAcento);
+                            if (matchIndex !== -1) {
+                                let matchReal = valorBanco.substring(matchIndex, matchIndex + val.length);
+                                b.innerHTML = valorBanco.replace(matchReal, `<strong style="color:var(--primary-color);">${matchReal}</strong>`);
+                            } else {
+                                b.innerHTML = valorBanco;
+                            }
+                            
+                            // 3. O SEGREDO: Usar 'mousedown' em vez de 'click' para ganhar a corrida contra o 'onblur'
+                            b.addEventListener("mousedown", function(e) {
+                                e.preventDefault(); // Impede o input de perder o foco prematuramente
                                 inputEle.value = valorBanco;
                                 fecharListasAutocomplete();
-                                buscarCadastroExistente(inputEle.id); // Puxa os dados originais
-                                inputEle.focus(); // Mantém o foco para o próximo 'Enter'
+                                
+                                // Aciona sua inteligência de puxar os outros dados (Telefone, Bairro, etc)
+                                if(typeof buscarCadastroExistente === 'function') {
+                                    buscarCadastroExistente(inputEle.id);
+                                }
                             });
                             a.appendChild(b);
                         }
                     }
                 }
-                if (matches.length >= 8) break; // Limita a 8 opções para não travar
+                if (matches.length >= 8) break; // Limita a 8 resultados para manter rápido
             }
         });
 
+        // Eventos de teclado (Navegar com Setinhas e apertar Enter)
+        inputEle.addEventListener("keydown", function(e) {
+            let x = document.getElementById(this.id + "autocomplete-list");
+            if (x) x = x.getElementsByTagName("div");
+            
+            if (e.keyCode === 40) { // Seta para Baixo
+                currentFocus++; addActive(x);
+            } else if (e.keyCode === 38) { // Seta para Cima
+                currentFocus--; addActive(x);
+            } else if (e.keyCode === 13) { // Enter
+                if (currentFocus > -1 && x) {
+                    e.preventDefault(); // Segura o salto de campo
+                    // Simula o clique exato no item destacado no leque
+                    let event = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+                    x[currentFocus].dispatchEvent(event);
+                }
+            }
+        });
+
+        function addActive(x) {
+            if (!x) return false;
+            removeActive(x);
+            if (currentFocus >= x.length) currentFocus = 0;
+            if (currentFocus < 0) currentFocus = (x.length - 1);
+            x[currentFocus].classList.add("autocomplete-active");
+            x[currentFocus].scrollIntoView({ block: "nearest" }); // A tela desce com a seta
+        }
+
+        function removeActive(x) {
+            for (let i = 0; i < x.length; i++) { x[i].classList.remove("autocomplete-active"); }
+        }
+    }
+
+    // Inicializa nos campos desejados (Não precisa mexer no seu HTML)
+    document.addEventListener("DOMContentLoaded", function() {
+        iniciarAutocomplete(document.getElementById('nome'), 'nome');
+        iniciarAutocomplete(document.getElementById('rua'), 'rua');
+        iniciarAutocomplete(document.getElementById('localizacaoAgua'), 'localizacaoAgua');
+    });
         // Eventos de teclado (Setinhas e Enter no leque)
         inputEle.addEventListener("keydown", function(e) {
             let x = document.getElementById(this.id + "autocomplete-list");
