@@ -193,6 +193,25 @@
             .agent-signature p { font-size: 9px !important; } .agent-signature .line { margin-bottom: 2px !important; }
             .print-footer-fixed { display: flex !important; position: fixed; bottom: 0; left: 0; width: 100%; justify-content: flex-end; font-size: 7px !important; color: #999; padding: 2px 10px !important; background-color: white; z-index: 1000; }
         }
+		/* ... outros estilos que você já tem acima ... */
+
+        /* BLOQUEIO VISUAL: Impede a seleção de texto e imagens */
+        body {
+            -webkit-user-select: none; /* Safari */
+            -ms-user-select: none; /* IE 10 and IE 11 */
+            user-select: none; /* Padrão */
+        }
+        
+        /* Libera a seleção apenas dentro dos inputs para o usuário conseguir digitar */
+        input, textarea {
+            -webkit-user-select: auto;
+            -ms-user-select: auto;
+            user-select: auto;
+        }
+
+    </style>
+</head>
+<body>
     </style>
 </head>
 <body>
