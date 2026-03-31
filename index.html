@@ -1090,7 +1090,7 @@ function loginGoogle() {
         iniciarAutocomplete(document.getElementById('localizacaoAgua'), 'localizacaoAgua');
     });
 	
- // ==========================================
+// ==========================================
     // NAVEGAÇÃO COM ENTER E FUNÇÃO DE PRIVACIDADE
     // ==========================================
     const navInputs = document.querySelectorAll('.nav-input');
@@ -1142,6 +1142,22 @@ function loginGoogle() {
             }
         });
     });
+
+   // Função auxiliar atualizada: AGORA AGENTES TAMBÉM VEEM TUDO
+    function aplicarPrivacidade(r) {
+        let temPermissao = (currentUserNivel === 'admin' || currentUserNivel === 'supervisor' || currentUserNivel === 'agente' || r.emailCriador === currentUserEmail);
+        return {
+            nome: temPermissao ? r.nome : (r.nome ? r.nome.split(' ')[0] + ' ***' : '***'),
+            rg: temPermissao ? (r.rg || 'N/I') : '***',
+            telefone: temPermissao ? (r.telefone || 'N/I') : '***',
+            bairro: temPermissao ? (r.bairro || 'N/I') : '***',
+            rua: temPermissao ? r.rua : '***',
+            numero: temPermissao ? r.numero : '***',
+            localizacaoAgua: temPermissao ? r.localizacaoAgua : '***',
+            referenciaAgua: temPermissao ? r.referenciaAgua : '***',
+            temPermissao: temPermissao
+        };
+    }
 
     // ==========================================
     // FOTOS E ASSINATURA DIGITAL CANVAS E ROTAS
