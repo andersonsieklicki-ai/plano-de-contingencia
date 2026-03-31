@@ -196,17 +196,25 @@
 		/* ... outros estilos que você já tem acima ... */
 
         /* BLOQUEIO VISUAL: Impede a seleção de texto e imagens */
-        body {
-            -webkit-user-select: none; /* Safari */
-            -ms-user-select: none; /* IE 10 and IE 11 */
-            user-select: none; /* Padrão */
+       body { 
+            background-color: var(--bg-color); 
+            color: var(--text-color); 
+            margin: 0; 
+            padding: 4px; 
+            font-size: 13px; 
+            transition: all 0.3s ease; 
+            
+            /* BLOQUEIO DE SELEÇÃO FORÇADO */
+            -webkit-user-select: none !important;
+            -ms-user-select: none !important;
+            user-select: none !important;
         }
         
-        /* Libera a seleção apenas dentro dos inputs para o usuário conseguir digitar */
-        input, textarea {
-            -webkit-user-select: auto;
-            -ms-user-select: auto;
-            user-select: auto;
+        /* Libera a seleção APENAS para o usuário conseguir digitar nos campos */
+        input, textarea, select {
+            -webkit-user-select: auto !important;
+            -ms-user-select: auto !important;
+            user-select: auto !important;
         }
 
     </style>
@@ -2531,6 +2539,35 @@ async function apagarCadastrosPorEmail() {
             alert("Erro ao salvar cadastro no banco de dados. Tente novamente.");
         }
     }
+	// ==========================================
+    // ESCUDO ANTI-CURIOSOS (Bloqueia F12, Inspecionar e Botão Direito)
+    // ==========================================
+    
+    // 1. Bloqueia o botão direito do mouse na tela toda
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+    });
+
+    // 2. Bloqueia as teclas de atalho dos hackers/curiosos
+    document.onkeydown = function(e) {
+        // Bloqueia o F12
+        if (e.key === 'F12' || e.keyCode === 123) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Bloqueia Ctrl+Shift+I (Inspecionar), Ctrl+Shift+J (Console) e Ctrl+Shift+C
+        if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C' || e.key === 'i' || e.key === 'j' || e.key === 'c' || e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Bloqueia Ctrl+U (Ver código fonte)
+        if (e.ctrlKey && (e.key === 'U' || e.key === 'u' || e.keyCode === 85)) {
+            e.preventDefault();
+            return false;
+        }
+    };
 </script>
 </body>
 </html>
