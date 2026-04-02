@@ -1380,7 +1380,18 @@ function toggleTipoAgua() {
             }
         });
     }
-
+// ==========================================
+    // CACHE DE USUÁRIOS (Nomes Completos)
+    // ==========================================
+    window.mapaUsuarios = {};
+    async function carregarMapaUsuarios() {
+        try {
+            const snap = await db.collection("usuarios_capanema").get();
+            snap.forEach(doc => {
+                if(doc.data().nome) window.mapaUsuarios[doc.id.toLowerCase()] = doc.data().nome;
+            });
+        } catch(e) {}
+    }
     function iniciarEscutaNuvem() {
         if(!db || !auth.currentUser || currentUserStatus !== 'aprovado') return;
         
@@ -1646,12 +1657,19 @@ function toggleTipoAgua() {
                 
                 let endCompleto = `📍 ${pData.bairro}`; 
                 if(pData.temPermissao) { if(r.localizacaoAgua) endCompleto += ` - ${r.localizacaoAgua}`; if(r.rua) endCompleto += ` - ${r.rua}, ${r.numero||'S/N'}`; } else { if(r.localizacaoAgua || r.rua) endCompleto += ` - ***`; }
-                let emailCriadorFormatado = r.emailCriador || "Desconhecido"; if (emailCriadorFormatado.includes('@')) emailCriadorFormatado = emailCriadorFormatado.split('@')[0];
+               // Puxa o nome completo do cache. Se não achar, usa o e-mail cortado.
+                let emailKey = (r.emailCriador || "").toLowerCase();
+                let emailCriadorFormatado = window.mapaUsuarios[emailKey] || (r.emailCriador ? r.emailCriador.split('@')[0] : "Desconhecido");
 
                 let telDisplay = pData.temPermissao ? (r.telefone || 'Não informado') : '***';
-                let codOneLine = `<span style="white-space: nowrap;">${r.codigo.replace(/DC[-:]?/, '<strong style="color:var(--danger-color);">DC:</strong>')}</span>`;
+                
+                // Código menor
+                let codOneLine = `<span style="white-space: nowrap; font-size: 0.7rem;">${r.codigo.replace(/DC[-:]?/, '<strong style="color:var(--danger-color);">DC:</strong>')}</span>`;
+                
+                // Observação em destaque avermelhado
+                let obsHtml = r.observacao ? `<div style="background: #fee2e2; border: 1px solid #fca5a5; color: #b91c1c; padding: 4px 6px; border-radius: 4px; font-size: 0.8rem; margin: 6px 0;"><strong>⚠️ Obs:</strong> ${r.observacao}</div>` : '';
 
-                h += `<div class="dispatch-card ${classeCard}" ${estiloCard}><div class="dispatch-info"><strong>${icone} ${pData.nome}</strong><div style="font-size:0.85rem; color:#0275d8; margin: 2px 0 4px 0; font-weight: bold;">📞 ${telDisplay}</div><p>${endCompleto}</p><p>${mat}</p>${statusPausa}<div style="font-size:0.75rem; color:#888; margin-top: 8px; border-top: 1px dashed #ccc; padding-top: 6px; line-height: 1.3;"><strong>Cód:</strong> ${codOneLine}<br><strong>Lançado por:</strong> <span style="color:var(--primary-color); font-weight:bold;">${emailCriadorFormatado}</span></div></div><div class="dispatch-actions" style="min-width: 120px;">${btnHtml}${mapsBtn}</div></div>`;
+                h += `<div class="dispatch-card ${classeCard}" ${estiloCard}><div class="dispatch-info"><strong>${icone} ${pData.nome}</strong><div style="font-size:0.85rem; color:#0275d8; margin: 2px 0 4px 0; font-weight: bold;">📞 ${telDisplay}</div><p>${endCompleto}</p><p>${mat}</p>${statusPausa}${obsHtml}<div style="font-size:0.75rem; color:#888; margin-top: 8px; border-top: 1px dashed #ccc; padding-top: 6px; line-height: 1.3;"><strong>Cód:</strong> ${codOneLine}<br><strong>Lançado por:</strong> <span style="color:var(--primary-color); font-weight:bold; text-transform: capitalize;">${emailCriadorFormatado}</span></div></div><div class="dispatch-actions" style="min-width: 120px;">${btnHtml}${mapsBtn}</div></div>`;
             });
             container.innerHTML = h;
         }
@@ -1788,7 +1806,8 @@ function toggleTipoAgua() {
             localStorage.setItem('defesaCivilRecords', JSON.stringify(records)); 
             if(typeof clearFormFields === 'function') clearFormFields(); 
             if(typeof sincronizarFirebaseAutomatica === 'function') sincronizarFirebaseAutomatica(); 
-            if(typeof carregarPainelDespacho === 'function') carregarPainelDespacho();
+           await carregarMapaUsuarios(); // <--- ADICIONE ESTA LINHA AQUI
+                        if(typeof carregarPainelDespacho === 'function') carregarPainelDespacho();
         } catch (e) { alert("⚠️ Erro:\n" + e.message); bs.disabled = false; bs.innerText = "Salvar Lançamento"; }
     }
    async function deleteRecord(id) {
@@ -1949,7 +1968,8 @@ function toggleTipoAgua() {
             if (i.entregasBrutas.length > 0) { 
                 let g = {};
                 i.entregasBrutas.forEach(e => {
-                    let dAp = e.data ? e.data.substring(0, 10) : "S/D"; let hM = e.data ? e.data.match(/\d{2}:\d{2}/) : null; let hAp = hM ? hM[0] : ""; let agL = e.agente ? e.agente.split('@')[0] : "Agente"; let cG = `${dAp}_${agL}`;
+                    let emailAg = (e.agente || "").toLowerCase();
+                    let agL = window.mapaUsuarios[emailAg] || (e.agente ? e.agente.split('@')[0] : "Agente");
                     if(!g[cG]) g[cG] = { data: dAp, agente: agL, totalQtd: 0, viagens: 0, hI: hAp, hF: hAp };
                     g[cG].totalQtd += parseFloat(e.qtd); g[cG].viagens++;
                     if (hAp) { if (!g[cG].hI || hAp < g[cG].hI) g[cG].hI = hAp; if (!g[cG].hF || hAp > g[cG].hF) g[cG].hF = hAp; }
