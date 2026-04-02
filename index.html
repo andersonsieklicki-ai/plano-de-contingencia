@@ -1967,9 +1967,15 @@ function toggleTipoAgua() {
             let ih = ''; 
             if (i.entregasBrutas.length > 0) { 
                 let g = {};
-                i.entregasBrutas.forEach(e => {
+               i.entregasBrutas.forEach(e => {
+                    let dAp = e.data ? e.data.substring(0, 10) : "S/D"; 
+                    let hM = e.data ? e.data.match(/\d{2}:\d{2}/) : null; 
+                    let hAp = hM ? hM[0] : ""; 
+                    
                     let emailAg = (e.agente || "").toLowerCase();
                     let agL = window.mapaUsuarios[emailAg] || (e.agente ? e.agente.split('@')[0] : "Agente");
+                    let cG = `${dAp}_${agL}`;
+                    
                     if(!g[cG]) g[cG] = { data: dAp, agente: agL, totalQtd: 0, viagens: 0, hI: hAp, hF: hAp };
                     g[cG].totalQtd += parseFloat(e.qtd); g[cG].viagens++;
                     if (hAp) { if (!g[cG].hI || hAp < g[cG].hI) g[cG].hI = hAp; if (!g[cG].hF || hAp > g[cG].hF) g[cG].hF = hAp; }
