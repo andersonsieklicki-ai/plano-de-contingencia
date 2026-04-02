@@ -720,7 +720,8 @@ function loginGoogle() {
                         if(typeof iniciarEscutaNuvem === 'function') iniciarEscutaNuvem();
                         if(typeof iniciarEscutaLogsNuvem === 'function') iniciarEscutaLogsNuvem(); 
                         if(typeof iniciarEscutaEstoque === 'function') iniciarEscutaEstoque();
-                        if(typeof carregarPainelDespacho === 'function') carregarPainelDespacho();
+                                    await carregarMapaUsuarios();
+                                    if(typeof carregarPainelDespacho === 'function') carregarPainelDespacho();
                         
                     } else { 
                         if(unsubscribeSnapshot) unsubscribeSnapshot(); 
