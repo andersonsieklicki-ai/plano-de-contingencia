@@ -1967,13 +1967,28 @@ function toggleTipoAgua() {
             let ih = ''; 
             if (i.entregasBrutas.length > 0) { 
                 let g = {};
-               i.entregasBrutas.forEach(e => {
+              i.entregasBrutas.forEach(e => {
+                    // 1. Resgata a data e hora (essencial para o relatório não sumir)
                     let dAp = e.data ? e.data.substring(0, 10) : "S/D"; 
                     let hM = e.data ? e.data.match(/\d{2}:\d{2}/) : null; 
                     let hAp = hM ? hM[0] : ""; 
                     
-                    let emailAg = (e.agente || "").toLowerCase();
-                    let agL = window.mapaUsuarios[emailAg] || (e.agente ? e.agente.split('@')[0] : "Agente");
+                    // 2. BUSCA INTELIGENTE DO NOME (Vanderlei Pettenon em vez de vandpettenon)
+                    let emailAg = (e.agente || "").toLowerCase().trim();
+                    let nomeCompleto = window.mapaUsuarios[emailAg]; // Tenta busca direta
+
+                    if (!nomeCompleto) {
+                        // Procura no mapa de usuários quem tem o e-mail que começa com esse prefixo
+                        let prefixo = emailAg.split('@')[0];
+                        let chaveEncontrada = Object.keys(window.mapaUsuarios).find(key => 
+                            key.split('@')[0] === prefixo || key === prefixo
+                        );
+                        if (chaveEncontrada) nomeCompleto = window.mapaUsuarios[chaveEncontrada];
+                    }
+
+                    // Se não encontrar de jeito nenhum, usa o que está salvo com a 1ª letra maiúscula
+                    let agL = nomeCompleto || (e.agente ? e.agente.split('@')[0] : "Agente");
+
                     let cG = `${dAp}_${agL}`;
                     
                     if(!g[cG]) g[cG] = { data: dAp, agente: agL, totalQtd: 0, viagens: 0, hI: hAp, hF: hAp };
@@ -1982,9 +1997,16 @@ function toggleTipoAgua() {
                 });
                 
                 Object.values(g).forEach(x => { 
-                    let infoH = (x.hI && x.hF && x.hI !== x.hF) ? `(das ${x.hI} às ${x.hF})` : (x.hI ? `(às ${x.hI})` : ""); let infoV = x.viagens > 1 ? `[${x.viagens} viagens]` : `[1 lançamento]`;
-                    ih += `<div style="margin-bottom: 4px; font-size:0.8rem; color:#444; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">• ${x.data}: <strong style="color:var(--primary-color);">${Number(x.totalQtd.toFixed(2))}${u}</strong> por <strong>${x.agente}</strong> <br><span style="color:#777; font-size:0.75rem;">${infoV} ${infoH}</span></div>`; 
-                }); 
+                    let infoH = (x.hI && x.hF && x.hI !== x.hF) ? `(das ${x.hI} às ${x.hF})` : (x.hI ? `(às ${x.hI})` : ""); 
+                    let infoV = x.viagens > 1 ? `[${x.viagens} viagens]` : `[1 lançamento]`;
+                    
+                    // Exibe o nome com a primeira letra maiúscula (text-transform: capitalize)
+                    ih += `<div style="margin-bottom: 6px; font-size:0.85rem; color:#333; border-bottom: 1px solid #eee; padding-bottom: 4px;">
+                        • ${x.data}: <strong style="color:var(--primary-color); font-size:0.9rem;">${Number(x.totalQtd.toFixed(2))}${u}</strong> 
+                        por <strong style="text-transform: capitalize; color:#000;">${x.agente}</strong> 
+                        <br><span style="color:#666; font-size:0.75rem;">${infoV} ${infoH}</span>
+                    </div>`; 
+                });
             } else { ih = `<div style="font-size:0.8rem; color:#777;">Nenhuma entrega registrada.</div>`; }
 
             h += `<tr style="background-color: #e2e8f0; border-top: 2px solid #aaa;"><td colspan="2" style="padding: 6px 10px;"><div style="display:flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px;"><span style="font-size: 1.05rem; color: var(--primary-color);">👤 <strong>${i.n}</strong> <small style="color:#555;">(RG: ${i.rg})</small></span><span style="font-size: 0.95rem; background: #fff; padding: 3px 8px; border-radius: 4px; border: 1px solid #cbd5e1;">${statusTotal}</span></div></td></tr><tr><td style="width: 50%; vertical-align: top; padding: 8px;"><div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">📍 Endereços de Destino</div>${locaisHtml}</td><td style="width: 50%; vertical-align: top; padding: 8px; background: #fafafa;"><div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">🚛 Histórico de Entregas</div>${ih}</td></tr>`; 
