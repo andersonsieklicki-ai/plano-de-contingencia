@@ -230,7 +230,12 @@
     <p style="margin-bottom: 15px; font-size: 1.1rem; max-width: 350px;">O e-mail <strong id="blockedEmailDisplay"></strong> foi bloqueado pelo Administrador do sistema.</p>
     <button onclick="logoutGoogle()" style="padding: 10px 20px; background: #777; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">Sair / Trocar de Conta</button>
 </div>
-
+<div id="aguardandoOverlay" class="login-overlay" style="z-index: 10003; display: none;">
+    <img src="1001145756.png" alt="Defesa Civil" style="width: 80px; margin-bottom: 15px;">
+    <h2 style="color: #f0ad4e; margin-bottom: 10px;">Cadastro em Análise ⏳</h2>
+    <p style="margin-bottom: 15px; font-size: 1.1rem; max-width: 350px;">Os seus dados foram enviados com sucesso! Aguarde a liberação de acesso por parte da Administração ou Supervisão.</p>
+    <button onclick="logoutGoogle()" style="padding: 10px 20px; background: #777; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">Sair / Trocar de Conta</button>
+</div>
 <div id="cadastroOverlay" class="login-overlay" style="z-index: 10002; display: none;">
     <img src="1001145756.png" alt="Defesa Civil" style="width: 80px; margin-bottom: 15px;">
     <h2 style="color: var(--primary-color); margin-bottom: 10px;">Completar Cadastro</h2>
@@ -656,6 +661,13 @@ function loginGoogle() {
                         }
                     }
                 } 
+				else if (currentUserStatus === 'pendente') {
+                    if(blockedOverlay) blockedOverlay.style.display = 'none';
+                    if(cadastroOverlay) cadastroOverlay.style.display = 'none';
+                    const aguardandoOverlay = document.getElementById('aguardandoOverlay');
+                    if(aguardandoOverlay) aguardandoOverlay.style.display = 'flex';
+                }
+                else if (currentUserStatus === 'bloqueado') {
                 else if (currentUserStatus === 'bloqueado') { 
                     if(document.getElementById('blockedEmailDisplay')) document.getElementById('blockedEmailDisplay').innerText = auth.currentUser.email || 'Usuário'; 
                     if(blockedOverlay) blockedOverlay.style.display = 'flex'; 
@@ -1534,8 +1546,8 @@ function toggleTipoAgua() {
         if (!isPer && falta <= 0) { alert("Toda a água solicitada já foi entregue!"); return; }
         
         modalAguaId = id; modalAguaFalta = falta;
-        if (isPer) {
-            document.getElementById('descAguaTexto').innerHTML = `Entrega Contínua para <strong>${r.nome}</strong>.<br><small style="color:var(--primary-color);">Já entregue acumulado: ${Number((r.qtdAguaEntregue||0).toFixed(2))}m³</small>`;
+      if (isPer) {
+            document.getElementById('descAguaTexto').innerHTML = `<div style="background:#fff3cd; color:#856404; padding:10px; border-radius:5px; border:2px dashed #f0ad4e; margin-bottom:10px; font-size:0.9rem; line-height:1.4;">⚠️ <strong>ROTA CONTÍNUA!</strong><br>A sua viagem será gravada no histórico, mas este alerta <strong>NÃO VAI SUMIR</strong> do painel até a data final do período (${r.dataFimAgua.split('-').reverse().join('/')}).</div>Entrega para <strong>${r.nome}</strong>.<br><small style="color:var(--primary-color);">Já entregue acumulado: ${Number((r.qtdAguaEntregue||0).toFixed(2))}m³</small>`;
         } else {
             document.getElementById('descAguaTexto').innerHTML = `Faltam entregar <strong>${Number(falta.toFixed(2))} m³</strong> para <strong>${r.nome}</strong>.`;
         }
@@ -1571,7 +1583,12 @@ function toggleTipoAgua() {
         fecharModalDescarregar(); await registrarLog("ENTREGA ÁGUA", `Total acumulado: ${Number(r.qtdAguaEntregue.toFixed(2))}m³ | Cód: [${r.codigo}] - ${r.nome}`, r.codigo); 
         sincronizarFirebaseAutomatica(); carregarPainelDespacho(); 
         if (!document.getElementById('reportSection').classList.contains('hidden')) generateReport();
-    }
+	// O ALERTA FINAL PARA O MOTORISTA DE PERÍODO CONTÍNUO
+        if (isPer) {
+            setTimeout(() => {
+                alert(`✅ Viagem de ${novaQtd}m³ gravada com sucesso no histórico!\n\nLembrete: Como esta é uma rota por Período, ela vai continuar no seu painel para as próximas viagens.`);
+            }, 500);
+        }
     async function marcarEntregaTelha(id) {
         const index = records.findIndex(r => r.id === id); if (index === -1) return;
         if(!confirm("Deseja marcar estas telhas como ENTREGUES NO LOCAL? O alerta sairá do painel do motorista.")) return;
@@ -2633,40 +2650,59 @@ async function apagarCadastrosPorEmail() {
         setTimeout(() => { carregarPainelDespacho(); if(typeof iniciarEscutaEstoque === 'function') iniciarEscutaEstoque(); }, 1000); 
     });
 // ==========================================
-    // FUNÇÃO QUE SALVA O CADASTRO INICIAL DO AGENTE
+    // FUNÇÃO QUE SALVA O CADASTRO INICIAL E NOTIFICA SUPERVISORES
     // ==========================================
     async function salvarCadastroComplementar() {
         const nome = document.getElementById('cadNome').value.trim();
-        const tel = document.getElementById('cadTelefone').value.replace(/\D/g, ''); // Guarda só números
+        const tel = document.getElementById('cadTelefone').value.replace(/\D/g, ''); 
         
         if (nome.length < 5) { alert("Por favor, informe seu Nome Completo."); return; }
         if (tel.length < 10) { alert("Por favor, informe um Telefone / WhatsApp válido com DDD."); return; }
         
-        document.getElementById('cadastroOverlay').style.opacity = '0.5'; // Efeito de carregando
+        document.getElementById('cadastroOverlay').style.opacity = '0.5'; 
         
         try {
             const email = auth.currentUser.email.toLowerCase();
             const docRef = db.collection('usuarios_capanema').doc(email);
             
-            // Grava os dados no Firebase
+            // Grava os dados como PENDENTE
             await docRef.set({ 
                 email: email, 
                 nome: nome, 
                 telefone: tel,
-                status: 'aprovado', 
+                status: 'pendente', // <--- Alterado para pendente
                 nivel: 'padrao', 
                 dataRegistro: new Date().toLocaleString('pt-BR') 
             }, { merge: true });
             
-            alert("Cadastro concluído com sucesso! Bem-vindo(a).");
-            document.getElementById('cadastroOverlay').style.display = 'none';
-            document.getElementById('cadastroOverlay').style.opacity = '1';
-            
-            location.reload(); // Entra no sistema!
+            // MÁGICA: Notificar Supervisores e Admins no WhatsApp
+            try {
+                const snapAdmins = await db.collection('usuarios_capanema').where('status', '==', 'aprovado').get();
+                snapAdmins.forEach(doc => {
+                    let d = doc.data();
+                    if ((d.nivel === 'admin' || d.nivel === 'supervisor') && d.telefone) {
+                        let numSupervisor = d.telefone.replace(/\D/g, '');
+                        if (!numSupervisor.startsWith('55')) numSupervisor = '55' + numSupervisor;
+                        
+                        let msgNotificacao = `🚨 *NOVO CADASTRO PENDENTE* 🚨\n\n*Nome:* ${nome}\n*E-mail:* ${email}\n*Telefone:* ${tel}\n\n👉 Acesse o painel web, vá no menu *Equipe* e libere o acesso deste agente para ele poder usar o sistema.`;
+                        
+                        db.collection('mensagens_externas').add({
+                            telefone: numSupervisor,
+                            mensagem: msgNotificacao,
+                            status: 'pendente',
+                            data_criacao: new Date().toISOString(),
+                            tipo: 'defesa'
+                        });
+                    }
+                });
+            } catch(errAviso) { console.error("Erro ao avisar chefia:", errAviso); }
+
+            alert("Cadastro enviado! Aguarde a aprovação da chefia.");
+            location.reload(); 
         } catch (e) {
             console.error(e);
             document.getElementById('cadastroOverlay').style.opacity = '1';
-            alert("Erro ao salvar cadastro no banco de dados. Tente novamente.");
+            alert("Erro ao salvar cadastro. Tente novamente.");
         }
     }
 	// ==========================================
