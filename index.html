@@ -2656,7 +2656,7 @@ async function apagarCadastrosPorEmail() {
         setTimeout(() => { carregarPainelDespacho(); if(typeof iniciarEscutaEstoque === 'function') iniciarEscutaEstoque(); }, 1000); 
     });
 // ==========================================
-    // FUNÇÃO QUE SALVA O CADASTRO INICIAL E NOTIFICA SUPERVISORES
+    // FUNÇÃO QUE SALVA O CADASTRO INICIAL DO AGENTE
     // ==========================================
     async function salvarCadastroComplementar() {
         const nome = document.getElementById('cadNome').value.trim();
@@ -2671,39 +2671,17 @@ async function apagarCadastrosPorEmail() {
             const email = auth.currentUser.email.toLowerCase();
             const docRef = db.collection('usuarios_capanema').doc(email);
             
-            // Grava os dados como PENDENTE
+            // Grava os dados como PENDENTE. O Robô (defesa.js) assume a partir daqui!
             await docRef.set({ 
                 email: email, 
                 nome: nome, 
                 telefone: tel,
-                status: 'pendente', // <--- Alterado para pendente
+                status: 'pendente', 
                 nivel: 'padrao', 
                 dataRegistro: new Date().toLocaleString('pt-BR') 
             }, { merge: true });
             
-            // MÁGICA: Notificar Supervisores e Admins no WhatsApp
-            try {
-                const snapAdmins = await db.collection('usuarios_capanema').where('status', '==', 'aprovado').get();
-                snapAdmins.forEach(doc => {
-                    let d = doc.data();
-                    if ((d.nivel === 'admin' || d.nivel === 'supervisor') && d.telefone) {
-                        let numSupervisor = d.telefone.replace(/\D/g, '');
-                        if (!numSupervisor.startsWith('55')) numSupervisor = '55' + numSupervisor;
-                        
-                        let msgNotificacao = `🚨 *NOVO CADASTRO PENDENTE* 🚨\n\n*Nome:* ${nome}\n*E-mail:* ${email}\n*Telefone:* ${tel}\n\n👉 Acesse o painel web, vá no menu *Equipe* e libere o acesso deste agente para ele poder usar o sistema.`;
-                        
-                        db.collection('mensagens_externas').add({
-                            telefone: numSupervisor,
-                            mensagem: msgNotificacao,
-                            status: 'pendente',
-                            data_criacao: new Date().toISOString(),
-                            tipo: 'defesa'
-                        });
-                    }
-                });
-            } catch(errAviso) { console.error("Erro ao avisar chefia:", errAviso); }
-
-            alert("Cadastro enviado! Aguarde a aprovação da chefia.");
+            alert("Cadastro enviado com sucesso! Aguarde a aprovação da chefia no WhatsApp.");
             location.reload(); 
         } catch (e) {
             console.error(e);
