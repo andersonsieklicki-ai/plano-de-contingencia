@@ -1594,6 +1594,7 @@ function toggleTipoAgua() {
                 alert(`✅ Viagem de ${novaQtd}m³ gravada com sucesso no histórico!\n\nLembrete: Como esta é uma rota por Período, ela vai continuar no seu painel para as próximas viagens.`);
             }, 500);
         }
+		}
     async function marcarEntregaTelha(id) {
         const index = records.findIndex(r => r.id === id); if (index === -1) return;
         if(!confirm("Deseja marcar estas telhas como ENTREGUES NO LOCAL? O alerta sairá do painel do motorista.")) return;
