@@ -629,7 +629,7 @@ function loginGoogle() {
         }
     }
 
-    function verificarAcesso() {
+   function verificarAcesso() {
         if (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') { 
             if(btnEquipe && currentUserNivel === 'admin') btnEquipe.style.display = 'inline-block';
             if(document.getElementById('tab-btn-log')) document.getElementById('tab-btn-log').style.display = 'block'; 
@@ -643,17 +643,20 @@ function loginGoogle() {
         }
 
         const cadastroOverlay = document.getElementById('cadastroOverlay'); 
+        const aguardandoOverlay = document.getElementById('aguardandoOverlay');
 
         if (navigator.onLine) {
             if (!auth.currentUser) { 
                 if(loginOverlay) loginOverlay.style.display = 'flex'; 
                 if(blockedOverlay) blockedOverlay.style.display = 'none'; 
                 if(cadastroOverlay) cadastroOverlay.style.display = 'none';
+                if(aguardandoOverlay) aguardandoOverlay.style.display = 'none';
             } else { 
                 if(loginOverlay) loginOverlay.style.display = 'none';
                 
                 if (currentUserStatus === 'pendente_dados') {
                     if(blockedOverlay) blockedOverlay.style.display = 'none';
+                    if(aguardandoOverlay) aguardandoOverlay.style.display = 'none';
                     if(cadastroOverlay) {
                         cadastroOverlay.style.display = 'flex';
                         if (!document.getElementById('cadNome').value && auth.currentUser.displayName) {
@@ -661,26 +664,28 @@ function loginGoogle() {
                         }
                     }
                 } 
-				else if (currentUserStatus === 'pendente') {
+                else if (currentUserStatus === 'pendente') {
                     if(blockedOverlay) blockedOverlay.style.display = 'none';
                     if(cadastroOverlay) cadastroOverlay.style.display = 'none';
-                    const aguardandoOverlay = document.getElementById('aguardandoOverlay');
                     if(aguardandoOverlay) aguardandoOverlay.style.display = 'flex';
                 }
-                else if (currentUserStatus === 'bloqueado') {
                 else if (currentUserStatus === 'bloqueado') { 
                     if(document.getElementById('blockedEmailDisplay')) document.getElementById('blockedEmailDisplay').innerText = auth.currentUser.email || 'Usuário'; 
                     if(blockedOverlay) blockedOverlay.style.display = 'flex'; 
                     if(cadastroOverlay) cadastroOverlay.style.display = 'none';
+                    if(aguardandoOverlay) aguardandoOverlay.style.display = 'none';
                 } 
                 else { 
                     if(blockedOverlay) blockedOverlay.style.display = 'none'; 
                     if(cadastroOverlay) cadastroOverlay.style.display = 'none';
+                    if(aguardandoOverlay) aguardandoOverlay.style.display = 'none';
                 }
             }
         } else {
             if(loginOverlay) loginOverlay.style.display = 'none';
             if(cadastroOverlay) cadastroOverlay.style.display = 'none';
+            if(aguardandoOverlay) aguardandoOverlay.style.display = 'none';
+            
             if (auth.currentUser && currentUserStatus === 'bloqueado') { 
                 if(document.getElementById('blockedEmailDisplay')) document.getElementById('blockedEmailDisplay').innerText = auth.currentUser.email || 'Usuário'; 
                 if(blockedOverlay) blockedOverlay.style.display = 'flex'; 
