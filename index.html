@@ -1892,7 +1892,7 @@ function clearFormFields() {
                 const idx = records.findIndex(x => x.id === editandoId);
                 if (idx !== -1) {
                     diffL = qL - (records[idx].qtdLona || 0); diffT = qT - (records[idx].qtdTelha || 0); diffC = qC - (records[idx].qtdCesta || 0);
-                    records[idx] = { ...records[idx], nome:nm, rg, telefone:tel, bairro:bai, rua:ru, numero:nu, localizacaoAgua:lAg, referenciaAgua:rAg, observacao:ob, qtdLona:qL, qtdTelha:qT, telhaRequerEntrega:rEnt, qtdCesta:qC, qtdAgua:qA, tipoAgua:tA, dataInicioAgua:dtIniA, dataFimAgua:dtFimA, qtdAguaEntregue:qAe, signatureData:sig, fotoRg:fo, synced:false, agente:nAg };
+                   records[idx] = { ...records[idx], nome:nm, rg, telefone:tel, bairro:bai, rua:ru, numero:nu, localizacaoAgua:lAg, referenciaAgua:rAg, observacao:ob, qtdLona:qL, qtdTelha:qT, telhaRequerEntrega:rEnt, qtdCesta:qC, qtdAgua:qA, tipoAgua:tA, dataInicioAgua:dtIniA, dataFimAgua:dtFimA, qtdAguaEntregue:qAe, signatureData:sig, fotoRg:fo, synced:false, agente:nAg, qtdFamilias: parseInt(document.getElementById('qtdFamilias').value) || 1 };
                     if(typeof registrarLog === 'function') await registrarLog("EDIÇÃO", `Alterou Cód: [${records[idx].codigo}]`); 
                     alert('Atualizado!');
                 }
