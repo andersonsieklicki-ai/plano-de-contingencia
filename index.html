@@ -2805,7 +2805,52 @@ async function apagarCadastrosPorEmail() {
             alert("O seu navegador não suporta a captura de GPS.");
         }
     }
+// ==========================================
+    // CAPTURA DE GPS PELO WHATSAPP (ROBÔ)
+    // ==========================================
+    let escutaGpsRobo = null;
 
+    function ativarCapturaGpsRobo() {
+        if (!auth.currentUser) {
+            alert("Você precisa estar logado para usar esta função.");
+            return;
+        }
+        const emailAgente = auth.currentUser.email.toLowerCase();
+        const inputLoc = document.getElementById('localizacaoAgua');
+        
+        // 1. Muda o visual do campo para mostrar que está escutando
+        inputLoc.value = "⏳ Aguardando pino no WhatsApp...";
+        inputLoc.style.backgroundColor = "#fff3cd";
+        inputLoc.style.color = "#856404";
+        inputLoc.style.fontWeight = "bold";
+
+        // 2. Abre o sinal (Avisa o robô no banco de dados)
+        db.collection('captura_gps').doc(emailAgente).set({
+            status: 'aguardando',
+            link_maps: '',
+            data_solicitacao: Date.now()
+        });
+
+        // 3. Fica ouvindo o Firebase até o robô escrever o link de volta
+        if (escutaGpsRobo) escutaGpsRobo(); 
+        escutaGpsRobo = db.collection('captura_gps').doc(emailAgente).onSnapshot(doc => {
+            if (doc.exists && doc.data().status === 'recebido') {
+                inputLoc.value = doc.data().link_maps;
+                inputLoc.style.backgroundColor = "#d4edda";
+                inputLoc.style.color = "#155724";
+                alert("✅ Localização capturada do WhatsApp com sucesso!");
+                
+                // Volta a cor ao normal depois de 3 segundos
+                setTimeout(() => { 
+                    inputLoc.style.backgroundColor = ""; 
+                    inputLoc.style.color = "";
+                    inputLoc.style.fontWeight = "normal";
+                }, 3000);
+                
+                if (escutaGpsRobo) escutaGpsRobo(); // Para de ouvir para economizar internet
+            }
+        });
+    }
     // PAINEL: GESTÃO DA BASE DE CADASTROS (MORADORES/COMUNIDADES)
     // ==========================================
     function renderPainelCadastro() {
