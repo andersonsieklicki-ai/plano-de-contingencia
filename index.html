@@ -1741,14 +1741,14 @@ function toggleTipoAgua() {
         // Observação em destaque avermelhado (MANTEMOS FORA DO LEQUE POR SEGURANÇA)
                 let obsHtml = r.observacao ? `<div style="background: #fee2e2; border: 1px solid #fca5a5; color: #b91c1c; padding: 6px; border-radius: 6px; font-size: 0.85rem; margin: 8px 0; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);"><strong>⚠️ Obs:</strong> ${r.observacao}</div>` : '';
 
-              // --- LAYOUT RESPONSIVO CORRIGIDO (SMARTPHONE E NOTEBOOK) ---
-                h += `<div class="dispatch-card ${classeCard}" ${estiloCard} style="display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 8px; margin-bottom: 12px; background: #fff; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+             // --- LAYOUT HÍBRIDO CORRIGIDO (PC CENTRALIZADO E MOBILE AJUSTADO) ---
+                h += `<div class="dispatch-card ${classeCard}" ${estiloCard} style="display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 8px; margin: 0 auto 12px auto; background: #fff; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.05); max-width: 500px;">
                         
-                        <!-- ÁREA PRINCIPAL: FLEX QUE QUEBRA EM CELULARES PEQUENOS -->
-                        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: flex-start;">
+                        <!-- ÁREA PRINCIPAL -->
+                        <div style="display: flex; justify-content: space-between; gap: 10px; align-items: flex-start;">
                             
-                            <!-- COLUNA DE INFO (Ajusta largura automaticamente) -->
-                            <div style="flex: 1; min-width: 180px;">
+                            <!-- COLUNA DE INFO -->
+                            <div style="flex: 1; min-width: 0;">
                                 <strong style="font-size: 1.1rem; color: var(--primary-color); display: block; margin-bottom: 4px;">${icone} ${pData.nome}</strong>
                                 <div style="font-size: 0.95rem; margin-bottom: 3px; font-weight: bold;">${linkZap}</div>
                                 <div style="font-size: 0.9rem; color: #444; margin-bottom: 3px;">📍 <strong>Bairro:</strong> ${pData.bairro}</div>
@@ -1757,14 +1757,14 @@ function toggleTipoAgua() {
                                 </div>
                             </div>
 
-                            <!-- CAIXA DE AÇÕES (FIXA À DIREITA NO PC, ABAIXO NO CELULAR SE NÃO CABER) -->
-                            <div style="display: flex; flex-direction: column; gap: 5px; width: 125px; background: #f8f9fa; padding: 8px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                            <!-- CAIXA DE AÇÕES (LARGURA FIXA PARA NÃO ESPALHAR) -->
+                            <div style="display: flex; flex-direction: column; gap: 5px; width: 120px; flex-shrink: 0; background: #f8f9fa; padding: 8px; border-radius: 8px; border: 1px solid #e2e8f0;">
                                 ${btnHtml.replace(/width: 100%;/g, 'width: 100%; padding: 8px 2px; font-size: 0.75rem; margin: 0;')}
                                 ${mapsBtn.replace(/width: 100%;/g, 'width: 100%; padding: 8px 2px; font-size: 0.75rem; margin: 0;')}
                             </div>
                         </div>
                         
-                        <!-- OBSERVAÇÃO E ALERTAS (LARGURA TOTAL) -->
+                        <!-- OBSERVAÇÃO E ALERTAS -->
                         <div style="width: 100%;">
                             ${statusPausa}
                             ${obsHtml ? obsHtml.replace('margin: 8px 0;', 'margin: 5px 0; font-size: 0.85rem; padding: 8px; border-radius: 6px;') : ''}
