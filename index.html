@@ -202,8 +202,14 @@
             margin: 0; 
             padding: 4px; 
             font-size: 13px; 
-            transition: all 0.3s ease;   
-                    
+            transition: all 0.3s ease; 
+            
+            /* BLOQUEIO DE SELEÇÃO FORÇADO */
+            -webkit-user-select: none !important;
+            -ms-user-select: none !important;
+            user-select: none !important;
+        }
+        
         /* Libera a seleção APENAS para o usuário conseguir digitar nos campos */
         input, textarea, select {
             -webkit-user-select: auto !important;
@@ -1713,20 +1719,14 @@ function toggleTipoAgua() {
                 }
                     
                 let temCesta = r.qtdCesta > 0; 
-				// CÓDIGO CORRIGIDO (VERMELHO):
-                let mapsBtn = `<button class="btn-small" style="background:var(--danger-color); color:white; width:100%; text-align:center; margin-top:2px; font-size: 1rem; height: 36px; border:none; border-radius:4px; font-weight:bold;" onclick="abrirMapaDireto('${pData.temPermissao?r.localizacaoAgua||'':''}', '${pData.temPermissao?r.bairro:pData.bairro}', '${pData.temPermissao?r.rua||'':''}', '${pData.temPermissao?r.numero||'':''}')">📍 Localização</button>`;
+                let mapsBtn = `<button class="btn-small" style="background:#25D366; color:white; width:100%; text-align:center; margin-top:2px; font-size: 1rem; height: 36px;" onclick="reenviarZapMotorista('${pData.temPermissao?r.nome:pData.nome}', '${pData.temPermissao?r.bairro:pData.bairro}', '${pData.temPermissao?r.localizacaoAgua||'':''}', '${pData.temPermissao?r.rua||'':''}', '${pData.temPermissao?r.numero||'':''}', '${pData.temPermissao?r.referenciaAgua||'':''}', '${r.observacao||''}', '${pData.temPermissao?r.telefone:''}', '${isAgua ? r.qtdAgua : r.qtdTelha}', '${isAgua ? 'agua' : 'telha'}', ${temCesta}, ${r.tipoAgua === 'periodo'}, '${r.dataInicioAgua||''}', '${r.dataFimAgua||''}')">💬 Rota WhatsApp</button>`;                
                 let endCompleto = `📍 ${pData.bairro}`; 
                 if(pData.temPermissao) { if(r.localizacaoAgua) endCompleto += ` - ${r.localizacaoAgua}`; if(r.rua) endCompleto += ` - ${r.rua}, ${r.numero||'S/N'}`; } else { if(r.localizacaoAgua || r.rua) endCompleto += ` - ***`; }
                // Puxa o nome completo do cache. Se não achar, usa o e-mail cortado.
                 let emailKey = (r.emailCriador || "").toLowerCase();
                 let emailCriadorFormatado = window.mapaUsuarios[emailKey] || (r.emailCriador ? r.emailCriador.split('@')[0] : "Desconhecido");
 
-               let telDisplay = pData.temPermissao ? (r.telefone || 'Não informado') : '***';
-                
-                // MÁGICA DO WHATSAPP: Transforma o telefone em link clicável
-                let linkZap = (pData.temPermissao && r.telefone) 
-                    ? `<a href="https://wa.me/55${r.telefone.replace(/\D/g, '')}" target="_blank" style="color:#25D366; text-decoration:none;">📞 ${r.telefone}</a>` 
-                    : `📞 ${telDisplay}`;
+                let telDisplay = pData.temPermissao ? (r.telefone || 'Não informado') : '***';
                 
                 // Código menor
                 let codOneLine = `<span style="white-space: nowrap; font-size: 0.7rem;">${r.codigo.replace(/DC[-:]?/, '<strong style="color:var(--danger-color);">DC:</strong>')}</span>`;
@@ -1734,9 +1734,8 @@ function toggleTipoAgua() {
                 // Observação em destaque avermelhado
                 let obsHtml = r.observacao ? `<div style="background: #fee2e2; border: 1px solid #fca5a5; color: #b91c1c; padding: 4px 6px; border-radius: 4px; font-size: 0.8rem; margin: 6px 0;"><strong>⚠️ Obs:</strong> ${r.observacao}</div>` : '';
 
-                // Montagem do cartão com o linkZap aplicado
-                h += `<div class="dispatch-card ${classeCard}" ${estiloCard}><div class="dispatch-info"><strong>${icone} ${pData.nome}</strong><div style="font-size:0.85rem; margin: 2px 0 4px 0; font-weight: bold;">${linkZap}</div><p>${endCompleto}</p><p>${mat}</p>${statusPausa}${obsHtml}<div style="font-size:0.75rem; color:#888; margin-top: 8px; border-top: 1px dashed #ccc; padding-top: 6px; line-height: 1.3;"><strong>Cód:</strong> ${codOneLine}<br><strong>Lançado por:</strong> <span style="color:var(--primary-color); font-weight:bold; text-transform: capitalize;">${emailCriadorFormatado}</span></div></div><div class="dispatch-actions" style="min-width: 120px;">${btnHtml}${mapsBtn}</div></div>`;
-			});
+                h += `<div class="dispatch-card ${classeCard}" ${estiloCard}><div class="dispatch-info"><strong>${icone} ${pData.nome}</strong><div style="font-size:0.85rem; color:#0275d8; margin: 2px 0 4px 0; font-weight: bold;">📞 ${telDisplay}</div><p>${endCompleto}</p><p>${mat}</p>${statusPausa}${obsHtml}<div style="font-size:0.75rem; color:#888; margin-top: 8px; border-top: 1px dashed #ccc; padding-top: 6px; line-height: 1.3;"><strong>Cód:</strong> ${codOneLine}<br><strong>Lançado por:</strong> <span style="color:var(--primary-color); font-weight:bold; text-transform: capitalize;">${emailCriadorFormatado}</span></div></div><div class="dispatch-actions" style="min-width: 120px;">${btnHtml}${mapsBtn}</div></div>`;
+            });
             container.innerHTML = h;
         }
     }
@@ -2162,7 +2161,7 @@ function toggleTipoAgua() {
                 }
                 let mats = mArr.join('  |  ');
 
-let act = ps ? `<button class="btn-edit no-print" onclick="editRecord(${r.id})" style="display:inline-block; width:auto; margin-right:4px;">✏️ Editar</button>` : ''; 
+                let act = ps ? `<button class="btn-edit no-print" onclick="editRecord(${r.id})" style="display:inline-block; width:auto; margin-right:4px;">✏️ Editar</button>` : ''; 
                 
                 let isCriador = (r.emailCriador === currentUserEmail);
                 let foiEntregue = (r.qtdAguaEntregue > 0) || r.telhaEntregue || r.cestaEntregue || r.status === 'entregue';
@@ -2170,9 +2169,6 @@ let act = ps ? `<button class="btn-edit no-print" onclick="editRecord(${r.id})" 
                 if (currentUserNivel === 'admin' || (currentUserNivel === 'supervisor' && isCriador && !foiEntregue)) { 
                     act += `<button class="btn-small no-print" style="background-color: var(--danger-color); padding: 3px 6px; font-size: 0.7rem; display:inline-block; width:auto;" onclick="deleteRecord(${r.id})">🗑️ Excluir</button>`; 
                 }
-                
-                // BOTAO DE LOCALIZAÇÃO VERMELHO
-                act += `<button class="btn-small no-print" style="background-color: red; padding: 3px 6px; font-size: 0.7rem; display:inline-block; width:auto; margin-left:4px; color:white; border:none; border-radius:4px;" onclick="abrirMapaDireto('${r.localizacaoAgua||''}', '${r.bairro||''}', '${r.rua||''}', '${r.numero||''}')">📍 Localização</button>`;
                 
                 h+=`<tr><td style="text-align:center;">${cbh}</td><td><small>${r.dataHoraFormatada.split(' ')[0]}<br>${r.dataHoraFormatada.split(' ')[1]}</small></td><td><strong>${r.nome}</strong> <small style="color:#666;">(RG: ${pv?r.rg||'N/I':'***'})</small><br><div style="font-size:0.8rem; color:#444; margin:4px 0; line-height:1.4;">${detEnd}</div><div class="no-print" style="margin-top:4px;">${act}</div></td><td style="vertical-align:middle; line-height:1.5;">${mats}</td></tr>`;
             }); 
@@ -2895,7 +2891,7 @@ async function apagarCadastrosPorEmail() {
             if (filtrados.length === 0) th += `<tr><td colspan="3" style="text-align:center;">Nenhum cadastro encontrado.</td></tr>`;
             
             filtrados.slice(0, 100).forEach(u => {
-           let linkMaps = "";
+              let linkMaps = "";
                 if (u.localizacaoAgua) {
                     if (u.localizacaoAgua.startsWith('http')) {
                         linkMaps = u.localizacaoAgua;
@@ -2920,24 +2916,6 @@ async function apagarCadastrosPorEmail() {
         
         window.filtrarCadastroAba(); 
     }
-	// ==========================================
-// ABERTURA DIRETA DO GOOGLE MAPS
-// ==========================================
-function abrirMapaDireto(loc, bairro, rua, num) {
-    let urlFinal = "";
-    
-    if (loc && loc.startsWith('http')) {
-        // Se já tivermos o link do GPS (pino do Zap), abre ele direto
-        urlFinal = loc;
-    } else {
-        // Se for apenas texto, monta a busca oficial do Google Maps para Capanema
-        let enderecoCompleto = `${rua ? rua + ',' : ''} ${num ? num : ''} ${bairro ? bairro : ''} ${loc ? loc : ''} Capanema PR`.trim();
-        urlFinal = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoCompleto)}`;
-    }
-    
-    // Abre o aplicativo de mapas do celular ou uma nova aba no navegador
-    window.open(urlFinal, '_blank');
-}
 	// ==========================================
     // ESCUDO ANTI-CURIOSOS (Bloqueia F12, Inspecionar e Botão Direito)
     // ==========================================
