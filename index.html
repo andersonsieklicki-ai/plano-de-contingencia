@@ -1719,7 +1719,7 @@ function toggleTipoAgua() {
                 }
                     
                 let temCesta = r.qtdCesta > 0; 
-                let mapsBtn = `<button class="btn-small" style="background:#25D366; color:white; width:100%; text-align:center; margin-top:2px; font-size: 1rem; height: 36px;" onclick="reenviarZapMotorista('${pData.temPermissao?r.nome:pData.nome}', '${pData.temPermissao?r.bairro:pData.bairro}', '${pData.temPermissao?r.localizacaoAgua||'':''}', '${pData.temPermissao?r.rua||'':''}', '${pData.temPermissao?r.numero||'':''}', '${pData.temPermissao?r.referenciaAgua||'':''}', '${r.observacao||''}', '${pData.temPermissao?r.telefone:''}', '${isAgua ? r.qtdAgua : r.qtdTelha}', '${isAgua ? 'agua' : 'telha'}', ${temCesta}, ${r.tipoAgua === 'periodo'}, '${r.dataInicioAgua||''}', '${r.dataFimAgua||''}')">💬 Rota WhatsApp</button>`;                
+				let mapsBtn = `<button class="btn-small" style="background:#4285F4; color:white; width:100%; text-align:center; margin-top:2px; font-size: 1rem; height: 36px; border:none; border-radius:4px; font-weight:bold;" onclick="abrirMapaDireto('${pData.temPermissao?r.localizacaoAgua||'':''}', '${pData.temPermissao?r.bairro:pData.bairro}', '${pData.temPermissao?r.rua||'':''}', '${pData.temPermissao?r.numero||'':''}')">📍 Localização</button>`;
                 let endCompleto = `📍 ${pData.bairro}`; 
                 if(pData.temPermissao) { if(r.localizacaoAgua) endCompleto += ` - ${r.localizacaoAgua}`; if(r.rua) endCompleto += ` - ${r.rua}, ${r.numero||'S/N'}`; } else { if(r.localizacaoAgua || r.rua) endCompleto += ` - ***`; }
                // Puxa o nome completo do cache. Se não achar, usa o e-mail cortado.
@@ -2916,6 +2916,24 @@ async function apagarCadastrosPorEmail() {
         
         window.filtrarCadastroAba(); 
     }
+	// ==========================================
+// ABERTURA DIRETA DO GOOGLE MAPS
+// ==========================================
+function abrirMapaDireto(loc, bairro, rua, num) {
+    let urlFinal = "";
+    
+    if (loc && loc.startsWith('http')) {
+        // Se já tivermos o link do GPS (pino do Zap), abre ele direto
+        urlFinal = loc;
+    } else {
+        // Se for apenas texto, monta a busca oficial do Google Maps para Capanema
+        let enderecoCompleto = `${rua ? rua + ',' : ''} ${num ? num : ''} ${bairro ? bairro : ''} ${loc ? loc : ''} Capanema PR`.trim();
+        urlFinal = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoCompleto)}`;
+    }
+    
+    // Abre o aplicativo de mapas do celular ou uma nova aba no navegador
+    window.open(urlFinal, '_blank');
+}
 	// ==========================================
     // ESCUDO ANTI-CURIOSOS (Bloqueia F12, Inspecionar e Botão Direito)
     // ==========================================
