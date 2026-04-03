@@ -2084,11 +2084,11 @@ function clearFormFields() {
         
         Object.values(p).sort((a, b) => b.t - a.t).forEach(i => { 
             let locaisHtml = '';
-          Object.keys(i.locais).forEach(loc => {
+     Object.keys(i.locais).forEach(loc => {
                 let locSol = i.locais[loc].t; 
                 let locEmp = i.locais[loc].ae;
                 
-              // --- CORREÇÃO: IDENTIFICA LINK OU COORDENADA E GERA BOTÃO ---
+                // --- IDENTIFICA LINK OU COORDENADA E GERA BOTÃO ---
                 let visualLoc = loc;
                 let matchCoord = loc ? loc.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/) : null;
 
@@ -2100,7 +2100,6 @@ function clearFormFields() {
                 } else if (matchCoord) {
                     let url = `https://www.google.com/maps?q=${matchCoord[1]},${matchCoord[2]}`;
                     visualLoc = `<span style="color:#555; font-weight:bold; font-size:0.8rem;">${loc}</span> <a href="${url}" target="_blank" style="text-decoration:none; display:inline-flex; align-items:center; gap:5px; background:#4285F4; color:white; padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold; margin-left:6px;">📍 Mapa</a>`;
-                }
                 }
 
                 if(isA) { 
