@@ -1826,7 +1826,7 @@ function clearFormFields() {
         const bs = document.getElementById('btnSalvarCadastro'); bs.innerText = "Atualizar Lançamento"; bs.style.backgroundColor = "#0275d8"; showForm(); 
     }
 
-    async function saveRecord() {
+   async function saveRecord() {
         const bs = document.getElementById('btnSalvarCadastro');
         try {
             if(!verificarVigiaAntifraude()) return;
@@ -1846,7 +1846,7 @@ function clearFormFields() {
             let bai = document.getElementById('bairro').value.trim().toUpperCase(); let fo = document.getElementById('rgPhotoBase64').value; 
             let ob = document.getElementById('observacao').value.trim(); let rEnt = document.getElementById('checkTelhaEntrega').checked;
             
-            // --- PEGA A QTD DE FAMÍLIAS DO CAMPO ---
+            // --- LÊ A QTD DE FAMÍLIAS DA TELA ---
             let qFam = parseInt(document.getElementById('qtdFamilias').value) || 1;
 
             let ru = (cL || cT || cC) ? document.getElementById('rua').value.trim().toUpperCase() : ''; 
@@ -1893,7 +1893,6 @@ function clearFormFields() {
                 const idx = records.findIndex(x => x.id === editandoId);
                 if (idx !== -1) {
                     diffL = qL - (records[idx].qtdLona || 0); diffT = qT - (records[idx].qtdTelha || 0); diffC = qC - (records[idx].qtdCesta || 0);
-                    // --- GARANTIA QUE SALVA A QTD DE FAMILIAS NA EDIÇÃO ---
                     records[idx] = { ...records[idx], nome:nm, rg, telefone:tel, bairro:bai, rua:ru, numero:nu, localizacaoAgua:lAg, referenciaAgua:rAg, observacao:ob, qtdLona:qL, qtdTelha:qT, telhaRequerEntrega:rEnt, qtdCesta:qC, qtdAgua:qA, tipoAgua:tA, dataInicioAgua:dtIniA, dataFimAgua:dtFimA, qtdAguaEntregue:qAe, signatureData:sig, fotoRg:fo, synced:false, agente:nAg, qtdFamilias: qFam };
                     if(typeof registrarLog === 'function') await registrarLog("EDIÇÃO", `Alterou Cód: [${records[idx].codigo}]`); 
                     alert('Atualizado!');
@@ -2033,9 +2032,6 @@ function clearFormFields() {
         
         return h + `</tbody></table>`;
     }
-        return h + `</tbody></table>`;
-    }
-
 
  function buildIndividualHTML(arr, tipo) {
         let isA = tipo === 'quantAgua'; let isL = tipo === 'quantLona'; let isT = tipo === 'quantTelha'; let isC = tipo === 'quantCesta'; 
