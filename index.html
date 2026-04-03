@@ -2987,11 +2987,11 @@ async function apagarCadastrosPorEmail() {
 // ==========================================
     // ABERTURA DIRETA DO GOOGLE MAPS (VERSÃO BLINDADA)
     // ==========================================
-function function abrirMapaDireto(loc, bairro, rua, num) {
+function abrirMapaDireto(loc, bairro, rua, num) {
     let urlFinal = "";
     // Extrai os números ignorando o texto "Latitude/Longitude"
     let matchCoord = loc ? loc.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/) : null;
-    
+
     if (matchCoord) {
         // FORÇA O FORMATO SOLICITADO NO SISTEMA
         urlFinal = `https://www.google.com/maps?q=${matchCoord[1]},${matchCoord[2]}&z=17&hl=pt-BR`;
