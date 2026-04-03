@@ -336,7 +336,8 @@
         <div class="form-row">
             <div class="form-col"><label for="telefone">Telefone:</label><input type="tel" id="telefone" placeholder="(46) 9..." tabindex="3" class="nav-input" enterkeyhint="next" onblur="buscarCadastroExistente('telefone')"></div>
             <div class="form-col"><label for="bairro" id="lblBairro">Bairro / Comunidade:</label><input type="text" id="bairro" placeholder="Digite..." tabindex="4" class="nav-input" enterkeyhint="next" autocomplete="off" style="text-transform: capitalize;"></div>
-        </div>
+       <div class="form-col"><label for="qtdFamilias">Qtd. Famílias:</label><input type="number" id="qtdFamilias" min="1" value="1" class="nav-input" title="Para reservatórios comunitários, informe quantas famílias são atendidas."></div>
+	   </div>
 
         <div id="aguaFieldsExtra" class="form-row hidden">
         <div class="form-col" style="flex: 1.5;">
@@ -1788,9 +1789,10 @@ function toggleTipoAgua() {
             container.innerHTML = h;
         }
     }
- function clearFormFields() {
+function clearFormFields() {
         ['nome','rg','telefone','bairro','rua','numero','localizacaoAgua','referenciaAgua','observacao','qtdLona','qtdTelha','qtdCesta','qtdAgua','dataInicioAgua','dataFimAgua'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
         if(document.getElementById('qtdAguaEntregue')) document.getElementById('qtdAguaEntregue').value = '0';
+		if(document.getElementById('qtdFamilias')) document.getElementById('qtdFamilias').value = '1';
         ['checkLona','checkTelha','checkCesta','checkAgua','checkTelhaEntrega'].forEach(id => document.getElementById(id).checked = false);
         
         if(document.getElementById('tipoPedidoAgua')) { document.getElementById('tipoPedidoAgua').value = 'volume'; toggleTipoAgua(); }
@@ -1804,7 +1806,8 @@ function toggleTipoAgua() {
         if (currentUserNivel !== 'admin' && currentUserNivel !== 'supervisor' && r.emailCriador !== currentUserEmail) { alert(`🔒 ACESSO NEGADO`); return; }
         editandoId = id; 
         ['nome','rg','telefone','bairro','rua','numero','localizacaoAgua','referenciaAgua','observacao'].forEach(f => document.getElementById(f).value = r[f] || '');
-        document.getElementById('checkLona').checked = r.qtdLona>0; document.getElementById('qtdLona').value = r.qtdLona||'';
+        if(document.getElementById('qtdFamilias')) document.getElementById('qtdFamilias').value = r.qtdFamilias || 1;
+		document.getElementById('checkLona').checked = r.qtdLona>0; document.getElementById('qtdLona').value = r.qtdLona||'';
         document.getElementById('checkTelha').checked = r.qtdTelha>0; document.getElementById('qtdTelha').value = r.qtdTelha||''; document.getElementById('checkTelhaEntrega').checked = r.telhaRequerEntrega||false;
         document.getElementById('checkCesta').checked = r.qtdCesta>0; document.getElementById('qtdCesta').value = r.qtdCesta||'';
         
@@ -1904,8 +1907,7 @@ function toggleTipoAgua() {
                 if(qC>0) detLog.push(`${qC} Cestas`);
                 let descLog = detLog.length > 0 ? detLog.join(' | ') : 'Nada';
 
-                records.push({ id: Date.now(), codigo: cd, dataISO: new Date().toISOString(), dataHoraFormatada: new Date().toLocaleString('pt-BR'), nome:nm, rg, telefone:tel, bairro:bai, rua:ru, numero:nu, localizacaoAgua:lAg, referenciaAgua:rAg, observacao:ob, qtdLona:qL, qtdTelha:qT, telhaRequerEntrega:rEnt, telhaEntregue:false, qtdCesta:qC, qtdAgua:qA, tipoAgua:tA, dataInicioAgua:dtIniA, dataFimAgua:dtFimA, qtdAguaEntregue:qAe, entregasAgua:[], signatureData:sig, fotoRg:fo, synced:false, agente:nAg, emailCriador: currentUserEmail, logisticaPausada: false, logisticaMotivo: "" });
-                
+                records.push({ id: Date.now(), codigo: cd, dataISO: new Date().toISOString(), dataHoraFormatada: new Date().toLocaleString('pt-BR'), nome:nm, rg, telefone:tel, bairro:bai, rua:ru, numero:nu, localizacaoAgua:lAg, referenciaAgua:rAg, observacao:ob, qtdLona:qL, qtdTelha:qT, telhaRequerEntrega:rEnt, telhaEntregue:false, qtdCesta:qC, qtdAgua:qA, tipoAgua:tA, dataInicioAgua:dtIniA, dataFimAgua:dtFimA, qtdAguaEntregue:qAe, entregasAgua:[], signatureData:sig, fotoRg:fo, synced:false, agente:nAg, emailCriador: currentUserEmail, logisticaPausada: false, logisticaMotivo: "", qtdFamilias: parseInt(document.getElementById('qtdFamilias').value) || 1 });
                 if(typeof registrarLog === 'function') await registrarLog("NOVO CADASTRO", `Cód: [${cd}] - Doado: ${descLog}`, cd); 
                 
                 let lst = (configZap?.emailSolicitante || '').toLowerCase().split(',').map(e => e.trim());
