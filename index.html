@@ -1537,13 +1537,14 @@ function toggleTipoAgua() {
 
 async function reenviarZapMotorista(nome, bairro, loc, rua, num, ref, obs, tel, vol, tipo, temCesta, isPeriodo = false, dtIni = '', dtFim = '') {
     let numDestino = tipo === 'agua' ? configZap.telefonePipa : configZap.telefoneSocial;
-    if (!numDestino) { alert("Telefone do motorista não configurado!"); return; }
+    if (!numDestino) { alert("Telefone não configurado!"); return; }
     
+    // Extrai apenas os números da localização salva
     let matchCoord = loc ? loc.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/) : null;
     let linkMaps = "";
     
     if (matchCoord) {
-        // Formato Exato solicitado: q=lat,lon
+        // FORÇA O FORMATO SOLICITADO PARA O ROBÔ
         linkMaps = `https://www.google.com/maps?q=${matchCoord[1]},${matchCoord[2]}&z=17&hl=pt-BR`;
     } else {
         let enderecoBusca = loc ? loc : (rua ? `${rua}, ${num||'S/N'}` : '');
@@ -2986,22 +2987,22 @@ async function apagarCadastrosPorEmail() {
 // ==========================================
     // ABERTURA DIRETA DO GOOGLE MAPS (VERSÃO BLINDADA)
     // ==========================================
-function abrirMapaDireto(loc, bairro, rua, num) {
-        let urlFinal = "";
-        let matchCoord = loc ? loc.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/) : null;
-        
-        if (matchCoord) {
-            // Se houver coordenadas, ignora o nome do bairro e abre o ponto exato
-            urlFinal = `https://www.google.com/maps?q=${matchCoord[1]},${matchCoord[2]}&z=17&hl=pt-BR`;
-        } else if (loc && loc.startsWith('http')) {
-            urlFinal = loc;
-        } else {
-            // Se for apenas texto, mantém a busca por endereço
-            let enderecoCompleto = `${rua ? rua + ',' : ''} ${num ? num : ''} ${bairro ? bairro : ''} ${loc ? loc : ''} Capanema PR`.trim();
-            urlFinal = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoCompleto)}`;
-        }
-        window.open(urlFinal, '_blank');
+function function abrirMapaDireto(loc, bairro, rua, num) {
+    let urlFinal = "";
+    // Extrai os números ignorando o texto "Latitude/Longitude"
+    let matchCoord = loc ? loc.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/) : null;
+    
+    if (matchCoord) {
+        // FORÇA O FORMATO SOLICITADO NO SISTEMA
+        urlFinal = `https://www.google.com/maps?q=${matchCoord[1]},${matchCoord[2]}&z=17&hl=pt-BR`;
+    } else if (loc && loc.startsWith('http')) {
+        urlFinal = loc;
+    } else {
+        let enderecoCompleto = `${rua ? rua + ',' : ''} ${num ? num : ''} ${bairro ? bairro : ''} ${loc ? loc : ''} Capanema PR`.trim();
+        urlFinal = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoCompleto)}`;
     }
+    window.open(urlFinal, '_blank');
+}
 	// ==========================================
     // ESCUDO ANTI-CURIOSOS (Bloqueia F12, Inspecionar e Botão Direito)
     // ==========================================
