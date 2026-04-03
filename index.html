@@ -1741,42 +1741,14 @@ function toggleTipoAgua() {
         // Observação em destaque avermelhado (MANTEMOS FORA DO LEQUE POR SEGURANÇA)
                 let obsHtml = r.observacao ? `<div style="background: #fee2e2; border: 1px solid #fca5a5; color: #b91c1c; padding: 6px; border-radius: 6px; font-size: 0.85rem; margin: 8px 0; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);"><strong>⚠️ Obs:</strong> ${r.observacao}</div>` : '';
 
-// --- ESTILOS PARA SEPARAÇÃO DE TELAS (PC E CELULAR) ---
-                h += `<style>
-                        .desktop-view { display: block; }
-                        .mobile-view { display: none; }
-                        @media (max-width: 800px) {
-                            .desktop-view { display: none; }
-                            .mobile-view { display: block; }
-                        }
-                      </style>`;
-
-               // --- CSS INTELIGENTE: INJETA AS REGRAS APENAS UMA VEZ ---
-                if (!h.includes('estilo-responsivo-defesa')) {
-                    h += `<style class="estilo-responsivo-defesa">
-                            /* REGRAS PARA O COMPUTADOR (Padrão: Botões grandes embaixo) */
-                            .card-flex { display: flex; flex-direction: column; gap: 5px; }
-                            .col-botoes { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 10px; }
-                            .col-botoes > * { width: 100% !important; margin: 0 !important; font-size: 0.95rem !important; padding: 10px !important; border-radius: 6px !important; box-sizing: border-box; }
-                            
-                            /* REGRAS PARA O CELULAR (Menor que 800px: Botões pequenos na lateral) */
-                            @media (max-width: 800px) {
-                                .card-flex { flex-direction: row; justify-content: space-between; align-items: flex-start; gap: 15px; }
-                                .col-info { flex: 1; min-width: 0; }
-                                .col-botoes { width: 120px; flex-shrink: 0; margin-top: 0; background: #f8f9fa; padding: 8px; border-radius: 8px; border: 1px solid #e2e8f0; gap: 6px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); }
-                                .col-botoes > * { padding: 8px 2px !important; font-size: 0.75rem !important; border-radius: 4px !important; }
-                            }
-                          </style>`;
-                }
-
-                // --- O CARTÃO ÚNICO (Ele se adapta sozinho usando as regras acima) ---
-                h += `<div class="dispatch-card ${classeCard}" ${estiloCard} style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 8px; margin-bottom: 12px; background: #fff; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+// --- LAYOUT UNIFICADO DEFINITIVO (LADO A LADO PARA PC E CELULAR COM BOTÕES MAIORES) ---
+                h += `<div class="dispatch-card ${classeCard}" ${estiloCard} style="display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 8px; margin-bottom: 12px; background: #fff; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                         
-                        <div class="card-flex">
+                        <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: flex-start; gap: 15px;">
                             
-                            <!-- INFORMAÇÕES (Fica no topo no PC e na esquerda no Celular) -->
-                            <div class="col-info">
-                                <strong style="font-size: 1.1rem; color: var(--primary-color); display: block; margin-bottom: 4px; line-height: 1.2;">${icone} ${pData.nome}</strong>
+                            <!-- COLUNA DA ESQUERDA (INFORMAÇÕES COM QUEBRA DE LINHA INTELIGENTE) -->
+                            <div style="flex: 1; min-width: 0;">
+                                <strong style="font-size: 1.1rem; color: var(--primary-color); display: block; margin-bottom: 4px; line-height: 1.3; white-space: normal; word-wrap: break-word;">${icone} ${pData.nome}</strong>
                                 <div style="font-size: 0.95rem; margin-bottom: 4px; font-weight: bold;">${linkZap}</div>
                                 <div style="font-size: 0.85rem; color: #333; margin-bottom: 4px;">📍 <strong>Bairro:</strong> ${pData.bairro}</div>
                                 <div style="font-size: 0.9rem; margin-top: 6px; color: var(--primary-color); font-weight: bold; background: #f0f7ff; padding: 6px; border-radius: 4px; display: inline-block; border-left: 4px solid var(--agua-color);">
@@ -1784,20 +1756,20 @@ function toggleTipoAgua() {
                                 </div>
                             </div>
 
-                            <!-- CAIXA DE BOTÕES (Fica embaixo no PC e na lateral no Celular) -->
-                            <div class="col-botoes">
-                                ${btnHtml}
-                                ${mapsBtn}
+                            <!-- COLUNA DA DIREITA (BOTÕES MAIORES E MAIS AFASTADOS) -->
+                            <div style="display: flex; flex-direction: column; gap: 12px; width: 135px; flex-shrink: 0; background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
+                                ${btnHtml.replace(/width: 100%;/g, 'width: 100%; padding: 12px 4px; font-size: 0.8rem; margin: 0; border-radius: 6px;')}
+                                ${mapsBtn.replace(/width: 100%;/g, 'width: 100%; padding: 12px 4px; font-size: 0.8rem; margin: 0; border-radius: 6px;')}
                             </div>
                         </div>
                         
-                        <!-- ALERTAS GERAIS -->
+                        <!-- ALERTAS E OBSERVAÇÕES -->
                         <div style="width: 100%; margin-top: 4px;">
                             ${statusPausa}
                             ${obsHtml ? obsHtml.replace('margin: 8px 0;', 'margin: 4px 0; font-size: 0.85rem; padding: 6px; border-radius: 4px;') : ''}
                         </div>
 
-                        <!-- LEQUE / DETALHES -->
+                        <!-- LEQUE DE DETALHES -->
                         <details style="background: #f1f5f9; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 6px;">
                             <summary style="cursor: pointer; color: #475569; font-weight: bold; font-size: 0.75rem; padding: 8px 10px; outline: none;">
                                 ➕ Ver Endereço Completo e Cód.
