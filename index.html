@@ -2890,28 +2890,58 @@ function capturarGpsNavegador() {
     // ==========================================
     // CAPTURA DE GPS PELO WHATSAPP (ROBÔ)
     // ==========================================
- function ativarCapturaGpsRobo() {
-        if (!auth.currentUser) return;
+// ==========================================
+    // CAPTURA DE GPS PELO WHATSAPP (ROBÔ) - CORRIGIDA
+    // ==========================================
+    let escutaGpsRobo = null;
+
+    function ativarCapturaGpsRobo() {
+        if (!auth.currentUser) { alert("Precisa estar logado!"); return; }
         const emailAgente = auth.currentUser.email.toLowerCase();
         const inputLoc = document.getElementById('localizacaoAgua');
+        
         inputLoc.value = "⏳ Aguardando pino no WhatsApp...";
-        db.collection('captura_gps').doc(emailAgente).set({ status: 'aguardando', link_maps: '', data_solicitacao: Date.now() });
+        inputLoc.style.backgroundColor = "#fff3cd";
 
+        // Avisa ao banco que este agente está esperando
+        db.collection('captura_gps').doc(emailAgente).set({ 
+            status: 'aguardando', 
+            link_maps: '', 
+            data_solicitacao: Date.now() 
+        }, { merge: true });
+
+        // Cancela escuta anterior se existir para não duplicar
         if (escutaGpsRobo) escutaGpsRobo(); 
+
+        // Inicia a escuta em tempo real
         escutaGpsRobo = db.collection('captura_gps').doc(emailAgente).onSnapshot(doc => {
-            if (doc.exists && doc.data().status === 'recebido') {
-                let link = doc.data().link_maps;
-                let match = link.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
-                if(match) { 
-                    // Transforma o link recebido no formato padrão q=lat,lon...
-                    inputLoc.value = `https://www.google.com/maps?q=${match[1]},${match[2]}&z=17&hl=pt-BR`; 
-                } else { 
-                    inputLoc.value = link; 
+            if (doc.exists) {
+                const data = doc.data();
+                if (data.status === 'recebido' && data.link_maps) {
+                    let linkBruto = data.link_maps;
+                    
+                    // Extrai os números decimais (Latitude e Longitude)
+                    let match = linkBruto.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
+                    
+                    if (match) {
+                        // FORÇA O PREENCHIMENTO NO FORMATO EXATO SOLICITADO
+                        inputLoc.value = `https://www.google.com/maps?q=${match[1]},${match[2]}&z=17&hl=pt-BR`;
+                        inputLoc.style.backgroundColor = "#d4edda"; // Verde de sucesso
+                        alert("✅ Localização preenchida com sucesso!");
+                    } else {
+                        // Se não for coordenada, mas tiver link, coloca o link bruto
+                        inputLoc.value = linkBruto;
+                    }
+                    
+                    // Para de escutar para economizar memória e evitar loops
+                    if (escutaGpsRobo) {
+                        escutaGpsRobo();
+                        escutaGpsRobo = null;
+                    }
                 }
-                inputLoc.style.backgroundColor = "#d4edda";
-                alert("✅ Localização recebida do Robô!");
-                if (escutaGpsRobo) escutaGpsRobo(); 
             }
+        }, err => {
+            console.error("Erro na escuta do GPS:", err);
         });
     }
     // PAINEL: GESTÃO DA BASE DE CADASTROS (MORADORES/COMUNIDADES)
