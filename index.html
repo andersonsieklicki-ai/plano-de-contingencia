@@ -1846,6 +1846,9 @@ function clearFormFields() {
             let bai = document.getElementById('bairro').value.trim().toUpperCase(); let fo = document.getElementById('rgPhotoBase64').value; 
             let ob = document.getElementById('observacao').value.trim(); let rEnt = document.getElementById('checkTelhaEntrega').checked;
             
+            // --- PEGA A QTD DE FAMÍLIAS DO CAMPO ---
+            let qFam = parseInt(document.getElementById('qtdFamilias').value) || 1;
+
             let ru = (cL || cT || cC) ? document.getElementById('rua').value.trim().toUpperCase() : ''; 
             let nu = (cL || cT || cC) ? document.getElementById('numero').value.trim() : ''; 
             let lAg = cA ? document.getElementById('localizacaoAgua').value.trim() : ''; 
@@ -1872,7 +1875,6 @@ function clearFormFields() {
             const qL = cL?parseFloat(document.getElementById('qtdLona').value)||0:0; const qT = cT?parseInt(document.getElementById('qtdTelha').value)||0:0; 
             const qC = cC?parseInt(document.getElementById('qtdCesta').value)||0:0; 
             
-// --- CORREÇÃO: LÓGICA DE ÁGUA (PERÍODO E EDIÇÃO) ---
             let qA = 0;
             const qAe = document.getElementById('qtdAguaEntregue') ? (parseFloat(document.getElementById('qtdAguaEntregue').value)||0) : 0;
 
@@ -1880,7 +1882,6 @@ function clearFormFields() {
                 if (tA === 'volume') {
                     qA = parseFloat(document.getElementById('qtdAgua').value) || 0;
                 } else if (tA === 'periodo') {
-                    // SE É EDIÇÃO E É PERÍODO, A QUANTIDADE DEVE IGUALAR O QUE JÁ FOI ENTREGUE!
                     qA = editandoId ? qAe : 0; 
                 }
             }
@@ -1892,7 +1893,8 @@ function clearFormFields() {
                 const idx = records.findIndex(x => x.id === editandoId);
                 if (idx !== -1) {
                     diffL = qL - (records[idx].qtdLona || 0); diffT = qT - (records[idx].qtdTelha || 0); diffC = qC - (records[idx].qtdCesta || 0);
-                   records[idx] = { ...records[idx], nome:nm, rg, telefone:tel, bairro:bai, rua:ru, numero:nu, localizacaoAgua:lAg, referenciaAgua:rAg, observacao:ob, qtdLona:qL, qtdTelha:qT, telhaRequerEntrega:rEnt, qtdCesta:qC, qtdAgua:qA, tipoAgua:tA, dataInicioAgua:dtIniA, dataFimAgua:dtFimA, qtdAguaEntregue:qAe, signatureData:sig, fotoRg:fo, synced:false, agente:nAg, qtdFamilias: parseInt(document.getElementById('qtdFamilias').value) || 1 };
+                    // --- GARANTIA QUE SALVA A QTD DE FAMILIAS NA EDIÇÃO ---
+                    records[idx] = { ...records[idx], nome:nm, rg, telefone:tel, bairro:bai, rua:ru, numero:nu, localizacaoAgua:lAg, referenciaAgua:rAg, observacao:ob, qtdLona:qL, qtdTelha:qT, telhaRequerEntrega:rEnt, qtdCesta:qC, qtdAgua:qA, tipoAgua:tA, dataInicioAgua:dtIniA, dataFimAgua:dtFimA, qtdAguaEntregue:qAe, signatureData:sig, fotoRg:fo, synced:false, agente:nAg, qtdFamilias: qFam };
                     if(typeof registrarLog === 'function') await registrarLog("EDIÇÃO", `Alterou Cód: [${records[idx].codigo}]`); 
                     alert('Atualizado!');
                 }
@@ -1907,15 +1909,16 @@ function clearFormFields() {
                 if(qC>0) detLog.push(`${qC} Cestas`);
                 let descLog = detLog.length > 0 ? detLog.join(' | ') : 'Nada';
 
-                records.push({ id: Date.now(), codigo: cd, dataISO: new Date().toISOString(), dataHoraFormatada: new Date().toLocaleString('pt-BR'), nome:nm, rg, telefone:tel, bairro:bai, rua:ru, numero:nu, localizacaoAgua:lAg, referenciaAgua:rAg, observacao:ob, qtdLona:qL, qtdTelha:qT, telhaRequerEntrega:rEnt, telhaEntregue:false, qtdCesta:qC, qtdAgua:qA, tipoAgua:tA, dataInicioAgua:dtIniA, dataFimAgua:dtFimA, qtdAguaEntregue:qAe, entregasAgua:[], signatureData:sig, fotoRg:fo, synced:false, agente:nAg, emailCriador: currentUserEmail, logisticaPausada: false, logisticaMotivo: "", qtdFamilias: parseInt(document.getElementById('qtdFamilias').value) || 1 });
+                records.push({ id: Date.now(), codigo: cd, dataISO: new Date().toISOString(), dataHoraFormatada: new Date().toLocaleString('pt-BR'), nome:nm, rg, telefone:tel, bairro:bai, rua:ru, numero:nu, localizacaoAgua:lAg, referenciaAgua:rAg, observacao:ob, qtdLona:qL, qtdTelha:qT, telhaRequerEntrega:rEnt, telhaEntregue:false, qtdCesta:qC, qtdAgua:qA, tipoAgua:tA, dataInicioAgua:dtIniA, dataFimAgua:dtFimA, qtdAguaEntregue:qAe, entregasAgua:[], signatureData:sig, fotoRg:fo, synced:false, agente:nAg, emailCriador: currentUserEmail, logisticaPausada: false, logisticaMotivo: "", qtdFamilias: qFam });
+                
                 if(typeof registrarLog === 'function') await registrarLog("NOVO CADASTRO", `Cód: [${cd}] - Doado: ${descLog}`, cd); 
                 
                 let lst = (configZap?.emailSolicitante || '').toLowerCase().split(',').map(e => e.trim());
                 if ((cA || rEnt) && lst.includes((currentUserEmail||'').toLowerCase()) && typeof reenviarZapMotorista === 'function') { 
-            reenviarZapMotorista(nm, bai, lAg, ru, nu, rAg, ob, tel, cA?qA:qT, cA?'agua':'telha', qC>0, tA==='periodo', dtIniA, dtFimA); 
-        } else { 
-            alert('Salvo com sucesso!'); 
-        }
+                    reenviarZapMotorista(nm, bai, lAg, ru, nu, rAg, ob, tel, cA?qA:qT, cA?'agua':'telha', qC>0, tA==='periodo', dtIniA, dtFimA); 
+                } else { 
+                    alert('Salvo com sucesso!'); 
+                }
             }
 
             if (navigator.onLine && typeof db !== 'undefined' && (diffL !== 0 || diffT !== 0 || diffC !== 0)) {
@@ -1929,8 +1932,8 @@ function clearFormFields() {
             localStorage.setItem('defesaCivilRecords', JSON.stringify(records)); 
             if(typeof clearFormFields === 'function') clearFormFields(); 
             if(typeof sincronizarFirebaseAutomatica === 'function') sincronizarFirebaseAutomatica(); 
-           await carregarMapaUsuarios(); // <--- ADICIONE ESTA LINHA AQUI
-                        if(typeof carregarPainelDespacho === 'function') carregarPainelDespacho();
+            await carregarMapaUsuarios(); 
+            if(typeof carregarPainelDespacho === 'function') carregarPainelDespacho();
         } catch (e) { alert("⚠️ Erro:\n" + e.message); bs.disabled = false; bs.innerText = "Salvar Lançamento"; }
     }
    async function deleteRecord(id) {
@@ -1994,25 +1997,25 @@ function clearFormFields() {
     }
     function updateReportToggle() { document.querySelectorAll('.report-toggle').forEach(l => { if(l.querySelector('input').checked) l.classList.add('active'); else l.classList.remove('active'); }); }
 
-    function buildResumoBairrosHTML(arr) {
+ function buildResumoBairrosHTML(arr) {
         let res = {};
-        // Usa um 'Set' para garantir que a mesma pessoa não seja contada duas vezes no total geral
         let totalFamiliasSet = new Set(); 
         let tL=0, tT=0, tC=0, tA=0, tAe=0;
         
         arr.forEach(r => { 
             let b = (r.bairro||'N/I').toUpperCase(); 
-            // Inicializa o bairro com um 'Set' para guardar apenas famílias únicas
             if(!res[b]) res[b] = { familias: new Set(), l:0, t:0, c:0, a:0, ae:0 }; 
             
-            // Cria um "RG Digital" invisível (Nome + RG) para identificar se é a mesma pessoa
-            let pessoaId = `${(r.nome || 'desconhecido').trim().toLowerCase()}_${(r.rg || '').trim()}`;
+            // --- A MÁGICA PARA SOMAR AS FAMÍLIAS (PASSO 3) ---
+            let qtdFamilias = parseInt(r.qtdFamilias) || 1;
+            let pessoaIdBase = `${(r.nome || 'desconhecido').trim().toLowerCase()}_${(r.rg || '').trim()}`;
             
-            // Adiciona a pessoa. Se ela já existir, o 'Set' ignora automaticamente, não duplicando a contagem!
-            res[b].familias.add(pessoaId);
-            totalFamiliasSet.add(pessoaId);
+            for (let i = 0; i < qtdFamilias; i++) {
+                let pessoaIdFinal = i === 0 ? pessoaIdBase : `${pessoaIdBase}_familia_${i}`;
+                res[b].familias.add(pessoaIdFinal);
+                totalFamiliasSet.add(pessoaIdFinal);
+            }
             
-            // Soma os materiais normalmente
             res[b].l += r.qtdLona||0; tL += r.qtdLona||0; 
             res[b].t += r.qtdTelha||0; tT += r.qtdTelha||0; 
             res[b].c += r.qtdCesta||0; tC += r.qtdCesta||0; 
@@ -2020,17 +2023,16 @@ function clearFormFields() {
             res[b].ae += r.qtdAguaEntregue||0; tAe += r.qtdAguaEntregue||0;
         });
         
-        // Cabeçalho da tabela limpo, com os emojis novos e a nova escrita da Água
         let h = `<div class="report-summary"><strong>Resumo por Bairros 📊</strong></div><table class="report-table"><thead><tr><th>Bairro</th><th>Famílias</th><th>💧 Água (Solicitação / Entregue)</th><th>⛺ Lona</th><th>🏠 Telha</th><th>📦 Cesta</th></tr></thead><tbody>`;
         
         Object.keys(res).sort().forEach(b => { 
-            // Fundo verde removido. Mantive apenas o número de entregas em negrito suave para facilitar a leitura.
             h += `<tr><td>${b}</td><td>${res[b].familias.size}</td><td>${Number(res[b].a.toFixed(2))} / <strong>${Number(res[b].ae.toFixed(2))}</strong></td><td>${Number(res[b].l.toFixed(2))}</td><td>${res[b].t}</td><td>${res[b].c}</td></tr>`; 
         }); 
         
-        // Linha de total geral também limpa e mostrando o total real de famílias únicas
         h += `<tr style="background-color: var(--primary-color); color: white; font-weight: bold;"><td style="text-align: right;">TOTAL GERAL:</td><td>${totalFamiliasSet.size}</td><td>${Number(tA.toFixed(2))} / ${Number(tAe.toFixed(2))}</td><td>${Number(tL.toFixed(2))}</td><td>${tT}</td><td>${tC}</td></tr>`;
         
+        return h + `</tbody></table>`;
+    }
         return h + `</tbody></table>`;
     }
 
