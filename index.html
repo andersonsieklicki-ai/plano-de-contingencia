@@ -2891,7 +2891,7 @@ async function apagarCadastrosPorEmail() {
             if (filtrados.length === 0) th += `<tr><td colspan="3" style="text-align:center;">Nenhum cadastro encontrado.</td></tr>`;
             
             filtrados.slice(0, 100).forEach(u => {
-              let linkMaps = "";
+           let linkMaps = "";
                 if (u.localizacaoAgua) {
                     if (u.localizacaoAgua.startsWith('http')) {
                         linkMaps = u.localizacaoAgua;
