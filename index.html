@@ -1741,14 +1741,14 @@ function toggleTipoAgua() {
         // Observação em destaque avermelhado (MANTEMOS FORA DO LEQUE POR SEGURANÇA)
                 let obsHtml = r.observacao ? `<div style="background: #fee2e2; border: 1px solid #fca5a5; color: #b91c1c; padding: 6px; border-radius: 6px; font-size: 0.85rem; margin: 8px 0; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);"><strong>⚠️ Obs:</strong> ${r.observacao}</div>` : '';
 
-// --- LAYOUT COM CSS GRID (ALINHAMENTO PERFEITO E BOTÕES GRANDES) ---
-                h += `<div class="dispatch-card ${classeCard}" ${estiloCard} style="display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 8px; margin-bottom: 12px; background: #fff; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+// --- LAYOUT COM LARGURA 100% FORÇADA (ALINHAMENTO DEFINITIVO) ---
+                h += `<div class="dispatch-card ${classeCard}" ${estiloCard} style="width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 8px; margin-bottom: 12px; background: #fff; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                         
-                        <!-- USANDO GRID: Fixa a direita com 135px e a esquerda ocupa o resto -->
-                        <div style="display: grid; grid-template-columns: 1fr 135px; gap: 15px; align-items: start;">
+                        <!-- GRID COM LARGURA TOTAL -->
+                        <div style="display: grid; grid-template-columns: 1fr 135px; gap: 15px; align-items: start; width: 100%;">
                             
-                            <!-- COLUNA DA ESQUERDA (Info com quebra forçada) -->
-                            <div style="min-width: 0;"> <!-- Esse min-width: 0 é o segredo para forçar a quebra do texto -->
+                            <!-- COLUNA DA ESQUERDA -->
+                            <div style="min-width: 0;">
                                 <strong style="font-size: 1.1rem; color: var(--primary-color); display: block; margin-bottom: 4px; line-height: 1.3; word-wrap: break-word; overflow-wrap: break-word;">${icone} ${pData.nome}</strong>
                                 <div style="font-size: 0.95rem; margin-bottom: 4px; font-weight: bold;">${linkZap}</div>
                                 <div style="font-size: 0.85rem; color: #333; margin-bottom: 4px;">📍 <strong>Bairro:</strong> ${pData.bairro}</div>
@@ -1757,7 +1757,7 @@ function toggleTipoAgua() {
                                 </div>
                             </div>
 
-                            <!-- COLUNA DA DIREITA (Botões sempre na mesma posição) -->
+                            <!-- COLUNA DA DIREITA -->
                             <div style="display: flex; flex-direction: column; gap: 12px; background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
                                 ${btnHtml.replace(/width: 100%;/g, 'width: 100%; padding: 12px 4px; font-size: 0.8rem; margin: 0; border-radius: 6px;')}
                                 ${mapsBtn.replace(/width: 100%;/g, 'width: 100%; padding: 12px 4px; font-size: 0.8rem; margin: 0; border-radius: 6px;')}
