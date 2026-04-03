@@ -2989,18 +2989,22 @@ async function apagarCadastrosPorEmail() {
     // ==========================================
 function abrirMapaDireto(loc, bairro, rua, num) {
     let urlFinal = "";
-    // Extrai os números ignorando o texto "Latitude/Longitude"
+    
+    // Esta regra limpa o texto e extrai APENAS os números da latitude e longitude
     let matchCoord = loc ? loc.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/) : null;
-
+    
     if (matchCoord) {
-        // FORÇA O FORMATO SOLICITADO NO SISTEMA
+        // FORMATO CORRIGIDO: Usa ?q= para pino exato, z=17 para zoom e hl=pt-BR para idioma
         urlFinal = `https://www.google.com/maps?q=${matchCoord[1]},${matchCoord[2]}&z=17&hl=pt-BR`;
     } else if (loc && loc.startsWith('http')) {
+        // Se já for um link completo, abre ele
         urlFinal = loc;
     } else {
+        // Se for apenas texto (Rua/Bairro), faz a busca normal
         let enderecoCompleto = `${rua ? rua + ',' : ''} ${num ? num : ''} ${bairro ? bairro : ''} ${loc ? loc : ''} Capanema PR`.trim();
         urlFinal = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoCompleto)}`;
     }
+    
     window.open(urlFinal, '_blank');
 }
 	// ==========================================
