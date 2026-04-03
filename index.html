@@ -2891,7 +2891,17 @@ async function apagarCadastrosPorEmail() {
             if (filtrados.length === 0) th += `<tr><td colspan="3" style="text-align:center;">Nenhum cadastro encontrado.</td></tr>`;
             
             filtrados.slice(0, 100).forEach(u => {
-                let locDisplay = u.localizacaoAgua ? `<br><a href="${u.localizacaoAgua}" target="_blank" style="color:#0275d8; font-weight:bold;">📍 Ver no Mapa</a>` : `<br><span style="color:#999;">Sem GPS</span>`;
+              let linkMaps = "";
+                if (u.localizacaoAgua) {
+                    if (u.localizacaoAgua.startsWith('http')) {
+                        linkMaps = u.localizacaoAgua;
+                    } else {
+                        let enderecoBusca = `${u.localizacaoAgua} ${u.bairro || ''} Capanema PR`;
+                        linkMaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoBusca)}`;
+                    }
+                }
+                
+                let locDisplay = u.localizacaoAgua ? `<br><a href="${linkMaps}" target="_blank" style="color:#0275d8; font-weight:bold;">📍 Ver no Mapa</a>` : `<br><span style="color:#999;">Sem GPS cadastrado</span>`;
                 
                 th += `<tr>
                     <td><strong>${u.nome}</strong><br><span style="color:#555;">📞 ${u.telefone || 'N/I'}</span><br><small>RG: ${u.rg || 'N/I'}</small></td>
