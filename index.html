@@ -1065,8 +1065,8 @@ function loginGoogle() {
                     // Extrai apenas os números (latitude e longitude)
                     let match = this.value.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
                     if(match) {
-                        // Formata com nomes por extenso e asteriscos para negrito no WhatsApp
-                        this.value = `**Latitude:** ${match[1]}, **Longitude:** ${match[2]}`;
+                        // Preenche exatamente no formato solicitado: q=lat,lon&z=17...
+                        this.value = `https://www.google.com/maps?q=${match[1]},${match[2]}&z=17&hl=pt-BR`;
                     } else {
                         this.value = formatarNomeProprio(this.value);
                     }
@@ -2868,40 +2868,33 @@ async function apagarCadastrosPorEmail() {
 	// ==========================================
     // CAPTURA DE GPS DIRETO DO APARELHO (SISTEMA)
     // ==========================================
-    function capturarGpsNavegador() {
+function capturarGpsNavegador() {
         if (navigator.geolocation) {
             const inputLoc = document.getElementById('localizacaoAgua');
             inputLoc.value = "⏳ Buscando satélite...";
-            inputLoc.style.backgroundColor = "#e2e8f0";
-            
-            navigator.geolocation.getCurrentPosition(function(position) {
+            navigator.geolocation.getCurrentPosition(position => {
                 let lat = position.coords.latitude.toFixed(7);
                 let lng = position.coords.longitude.toFixed(7);
-                inputLoc.value = `Lat: ${lat}, Lon: ${lng}`;
+                // Preenche o link direto no campo
+                inputLoc.value = `https://www.google.com/maps?q=${lat},${lng}&z=17&hl=pt-BR`;
                 inputLoc.style.backgroundColor = "#d4edda";
-                
-                alert("✅ GPS do aparelho capturado com sucesso!");
+                alert("✅ Link de localização gerado!");
                 setTimeout(() => { inputLoc.style.backgroundColor = ""; }, 3000);
-            }, function(error) {
-                inputLoc.value = ""; inputLoc.style.backgroundColor = "";
-                alert("❌ Erro ao capturar GPS.\nVerifique permissões de Localização.");
+            }, error => {
+                inputLoc.value = "";
+                alert("❌ Erro ao capturar GPS.");
             }, { enableHighAccuracy: true });
-        } else { alert("Navegador não suporta a captura de GPS."); }
+        }
     }
 
     // ==========================================
     // CAPTURA DE GPS PELO WHATSAPP (ROBÔ)
     // ==========================================
-    let escutaGpsRobo = null;
-
-    function ativarCapturaGpsRobo() {
-        if (!auth.currentUser) { alert("Precisa estar logado para usar esta função."); return; }
+ function ativarCapturaGpsRobo() {
+        if (!auth.currentUser) return;
         const emailAgente = auth.currentUser.email.toLowerCase();
         const inputLoc = document.getElementById('localizacaoAgua');
-        
         inputLoc.value = "⏳ Aguardando pino no WhatsApp...";
-        inputLoc.style.backgroundColor = "#fff3cd"; inputLoc.style.color = "#856404"; inputLoc.style.fontWeight = "bold";
-
         db.collection('captura_gps').doc(emailAgente).set({ status: 'aguardando', link_maps: '', data_solicitacao: Date.now() });
 
         if (escutaGpsRobo) escutaGpsRobo(); 
@@ -2909,12 +2902,14 @@ async function apagarCadastrosPorEmail() {
             if (doc.exists && doc.data().status === 'recebido') {
                 let link = doc.data().link_maps;
                 let match = link.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
-                if(match) { inputLoc.value = `Lat: ${match[1]}, Lon: ${match[2]}`; } 
-                else { inputLoc.value = link; }
-                
-                inputLoc.style.backgroundColor = "#d4edda"; inputLoc.style.color = "#155724";
-                alert("✅ Localização capturada do WhatsApp com sucesso!");
-                setTimeout(() => { inputLoc.style.backgroundColor = ""; inputLoc.style.color = ""; inputLoc.style.fontWeight = "normal"; }, 3000);
+                if(match) { 
+                    // Transforma o link recebido no formato padrão q=lat,lon...
+                    inputLoc.value = `https://www.google.com/maps?q=${match[1]},${match[2]}&z=17&hl=pt-BR`; 
+                } else { 
+                    inputLoc.value = link; 
+                }
+                inputLoc.style.backgroundColor = "#d4edda";
+                alert("✅ Localização recebida do Robô!");
                 if (escutaGpsRobo) escutaGpsRobo(); 
             }
         });
