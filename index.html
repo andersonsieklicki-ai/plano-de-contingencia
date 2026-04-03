@@ -2074,12 +2074,32 @@ function toggleTipoAgua() {
         
         Object.values(p).sort((a, b) => b.t - a.t).forEach(i => { 
             let locaisHtml = '';
-            Object.keys(i.locais).forEach(loc => {
-                let locSol = i.locais[loc].t; let locEmp = i.locais[loc].ae;
-                if(isA) { locaisHtml += `<div style="margin-bottom:4px; font-size:0.85rem; color:#333;">📍 ${loc}:<br><strong>${Number(locSol.toFixed(2))}${u}</strong> <span style="color:white; background:green; padding:1px 3px; border-radius:3px; font-size:0.75rem;">(Entregue: ${Number(locEmp.toFixed(2))}${u})</span></div>`; } 
-                else { locaisHtml += `<div style="margin-bottom:4px; font-size:0.85rem; color:#333;">📍 ${loc}: <strong>${Number(locSol.toFixed(2))}${u}</strong></div>`; }
-            });
+          Object.keys(i.locais).forEach(loc => {
+                let locSol = i.locais[loc].t; 
+                let locEmp = i.locais[loc].ae;
+                
+                // --- CORREÇÃO: IDENTIFICA LINK E GERA BOTÃO ---
+                let visualLoc = loc;
+                if (loc && loc.includes('http')) {
+                    const urlMatch = loc.match(/https?:\/\/[^\s]+/);
+                    if (urlMatch) {
+                        const url = urlMatch[0];
+                        visualLoc = `<a href="${url}" target="_blank" style="text-decoration:none; display:inline-flex; align-items:center; gap:5px; background:#4285F4; color:white; padding:2px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">
+                                        📍 Abrir Localização
+                                     </a>`;
+                    }
+                }
 
+                if(isA) { 
+                    locaisHtml += `<div style="margin-bottom:8px; font-size:0.85rem; color:#333; border-left: 3px solid #eee; padding-left: 5px;">
+                                    📍 ${visualLoc}:<br>
+                                    <strong>${Number(locSol.toFixed(2))}${u}</strong> 
+                                    <span style="color:white; background:green; padding:1px 3px; border-radius:3px; font-size:0.75rem;">(Entregue: ${Number(locEmp.toFixed(2))}${u})</span>
+                                   </div>`; 
+                } else { 
+                    locaisHtml += `<div style="margin-bottom:8px; font-size:0.85rem; color:#333;">📍 ${visualLoc}: <strong>${Number(locSol.toFixed(2))}${u}</strong></div>`; 
+                }
+            });
             let statusTotal = '';
             if (isA) {
                 statusTotal = `Solicitado: <strong>${Number(i.t.toFixed(2))}${u}</strong>  |  <span style="color:white; background:green; padding:2px 4px; border-radius:3px;">Entregue: <strong>${Number(i.ae.toFixed(2))}${u}</strong></span>`;
