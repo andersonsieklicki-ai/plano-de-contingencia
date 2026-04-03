@@ -889,8 +889,7 @@ function loginGoogle() {
                 let selectNivel = `<select onchange="alterarNivelUsuario('${u.email}', this.value)" style="width:100%; padding:2px; font-size:0.75rem;"><option value="padrao" ${u.nivel === 'padrao' || !u.nivel ? 'selected' : ''}>Padrão</option><option value="agente" ${u.nivel === 'agente' ? 'selected' : ''}>Agente</option><option value="supervisor" ${u.nivel === 'supervisor' ? 'selected' : ''}>Supervisor</option><option value="admin" ${u.nivel === 'admin' || ADMIN_EMAILS.includes(u.email) ? 'selected' : ''}>Admin</option></select>`;
                 if (ADMIN_EMAILS.includes(u.email)) selectNivel = `<strong>Administrador</strong>`; 
                 
-                let botoes = `<div style="display: flex; flex-direction:column; gap: 4px; margin-top:4px;">`;
-                let botoes = `<div style="display: flex; flex-direction:column; gap: 4px; margin-top:4px;">`;
+               let botoes = `<div style="display: flex; flex-direction:column; gap: 4px; margin-top:4px;">`;
                 
                 // MÁGICA 2: Botão verde gigante para o Supervisor clicar e aprovar na hora
                 if (u.status === 'pendente') { botoes += `<button class="btn-small" style="background-color: var(--success-color); width: 100%; padding: 4px; font-size: 0.85rem;" onclick="alterarStatusUsuario('${u.email}', 'aprovado')">✅ Aprovar Acesso</button>`; }
@@ -899,9 +898,6 @@ function loginGoogle() {
                 if (u.status === 'aprovado' && !ADMIN_EMAILS.includes(u.email)) { botoes += `<button class="btn-small" style="background-color: #f0ad4e; width: 100%; padding: 4px;" onclick="alterarStatusUsuario('${u.email}', 'bloqueado')">🚫 Suspender</button>`; }
                 if (!ADMIN_EMAILS.includes(u.email)) { botoes += `<button class="btn-small" style="background-color: var(--danger-color); width: 100%; padding: 4px;" onclick="excluirUsuarioDefinitivo('${u.email}')">🗑️ Excluir Agente</button>`; }
                 botoes += `</div>`;
-                if (u.status === 'aprovado' && !ADMIN_EMAILS.includes(u.email)) { botoes += `<button class="btn-small" style="background-color: #f0ad4e; width: 100%; padding: 4px;" onclick="alterarStatusUsuario('${u.email}', 'bloqueado')">🚫 Suspender</button>`; }
-                if (!ADMIN_EMAILS.includes(u.email)) { botoes += `<button class="btn-small" style="background-color: var(--danger-color); width: 100%; padding: 4px;" onclick="excluirUsuarioDefinitivo('${u.email}')">🗑️ Excluir Agente</button>`; }
-                botoes += `</div>`; 
                 
                 htmlTabela += `<tr><td><strong>${u.nome}</strong><br><span style="word-break: break-all; font-size: 0.7rem; color: #555;">${u.email}</span></td><td>${selectNivel}</td><td>${statusLigacao}</td><td>${botoes}</td></tr>`;
             });
