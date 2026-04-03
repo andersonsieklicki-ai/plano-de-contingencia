@@ -1539,28 +1539,26 @@ async function reenviarZapMotorista(nome, bairro, loc, rua, num, ref, obs, tel, 
     let numDestino = tipo === 'agua' ? configZap.telefonePipa : configZap.telefoneSocial;
     if (!numDestino) { alert("Telefone do motorista não configurado!"); return; }
     
-    // Identifica se a localização são coordenadas e extrai apenas os números limpos
     let matchCoord = loc ? loc.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/) : null;
-    let destinoMaps = "";
+    let linkMaps = "";
     
     if (matchCoord) {
-        destinoMaps = `${matchCoord[1]},${matchCoord[2]}`; // Envia apenas "número,número" para o Google
+        // Formato Exato solicitado: q=lat,lon
+        linkMaps = `https://www.google.com/maps?q=${matchCoord[1]},${matchCoord[2]}&z=17&hl=pt-BR`;
     } else {
         let enderecoBusca = loc ? loc : (rua ? `${rua}, ${num||'S/N'}` : '');
-        destinoMaps = encodeURIComponent(`${enderecoBusca} ${bairro} Capanema PR`.trim());
+        linkMaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoBusca + ' ' + bairro + ' Capanema PR')}`;
     }
 
-    let linkMaps = `https://www.google.com/maps/dir/?api=1&destination=${destinoMaps}`;
     let msg = `*Ordem de Serviço Defesa Civil*\n\n*Nome:* ${nome}\n*Bairro:* ${bairro}\n*Localização:* ${loc}\n\n*🗺️ Rota no GPS:* ${linkMaps}`;
     
     try {
         await db.collection('mensagens_externas').add({ telefone: numDestino, mensagem: msg, status: 'pendente', data_criacao: new Date().toISOString(), tipo: 'defesa' });
-        alert('✅ Rota enviada para o Robô!');
+        alert('✅ Rota enviada com sucesso!');
     } catch (e) {
         window.open(`https://api.whatsapp.com/send?phone=${numDestino}&text=${encodeURIComponent(msg)}`, '_blank');
     }
 }
-
     // ==========================================
     // LOGÍSTICA DE FROTAS
     // ==========================================
@@ -2988,23 +2986,20 @@ async function apagarCadastrosPorEmail() {
 // ==========================================
     // ABERTURA DIRETA DO GOOGLE MAPS (VERSÃO BLINDADA)
     // ==========================================
-  function abrirMapaDireto(loc, bairro, rua, num) {
+function abrirMapaDireto(loc, bairro, rua, num) {
         let urlFinal = "";
-        
-        // Esta regra extrai APENAS os números decimais, ignorando letras e asteriscos
         let matchCoord = loc ? loc.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/) : null;
         
         if (matchCoord) {
-            // Se forem coordenadas, monta a busca limpa (essencial para funcionar no App do Maps)
-            urlFinal = `https://www.google.com/maps/search/?api=1&query=${matchCoord[1]},${matchCoord[2]}`;
+            // Se houver coordenadas, ignora o nome do bairro e abre o ponto exato
+            urlFinal = `https://www.google.com/maps?q=${matchCoord[1]},${matchCoord[2]}&z=17&hl=pt-BR`;
         } else if (loc && loc.startsWith('http')) {
             urlFinal = loc;
         } else {
-            // Se for endereço comum em texto
+            // Se for apenas texto, mantém a busca por endereço
             let enderecoCompleto = `${rua ? rua + ',' : ''} ${num ? num : ''} ${bairro ? bairro : ''} ${loc ? loc : ''} Capanema PR`.trim();
             urlFinal = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoCompleto)}`;
         }
-        
         window.open(urlFinal, '_blank');
     }
 	// ==========================================
