@@ -1741,42 +1741,49 @@ function toggleTipoAgua() {
         // Observação em destaque avermelhado (MANTEMOS FORA DO LEQUE POR SEGURANÇA)
                 let obsHtml = r.observacao ? `<div style="background: #fee2e2; border: 1px solid #fca5a5; color: #b91c1c; padding: 6px; border-radius: 6px; font-size: 0.85rem; margin: 8px 0; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);"><strong>⚠️ Obs:</strong> ${r.observacao}</div>` : '';
 
-                // --- NOVO LAYOUT COMPACTO CORRIGIDO ---
-                h += `<div class="dispatch-card ${classeCard}" ${estiloCard} style="display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 8px; margin-bottom: 10px; background: #fff; border: 1px solid #ddd;">
+              // --- LAYOUT RESPONSIVO CORRIGIDO (SMARTPHONE E NOTEBOOK) ---
+                h += `<div class="dispatch-card ${classeCard}" ${estiloCard} style="display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 8px; margin-bottom: 12px; background: #fff; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                         
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+                        <!-- ÁREA PRINCIPAL: FLEX QUE QUEBRA EM CELULARES PEQUENOS -->
+                        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: flex-start;">
                             
-                            <div style="flex: 1; min-width: 0;">
-                                <strong style="font-size: 1.05rem; color: var(--primary-color); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${icone} ${pData.nome}</strong>
-                                <div style="font-size: 0.95rem; margin: 2px 0; font-weight: bold;">${linkZap}</div>
-                                <p style="font-size: 0.85rem; color: #333; margin: 2px 0;">📍 Bairro: ${pData.bairro}</p>
-                                <div style="font-size: 0.9rem; margin-top: 4px; color: var(--primary-color); font-weight: bold; background: #f0f7ff; padding: 4px; border-radius: 4px; display: inline-block;">${mat}</div>
+                            <!-- COLUNA DE INFO (Ajusta largura automaticamente) -->
+                            <div style="flex: 1; min-width: 180px;">
+                                <strong style="font-size: 1.1rem; color: var(--primary-color); display: block; margin-bottom: 4px;">${icone} ${pData.nome}</strong>
+                                <div style="font-size: 0.95rem; margin-bottom: 3px; font-weight: bold;">${linkZap}</div>
+                                <div style="font-size: 0.9rem; color: #444; margin-bottom: 3px;">📍 <strong>Bairro:</strong> ${pData.bairro}</div>
+                                <div style="font-size: 0.9rem; color: var(--primary-color); font-weight: bold; background: #f0f7ff; padding: 6px; border-radius: 4px; border-left: 4px solid var(--agua-color); margin-top: 5px;">
+                                    ${mat}
+                                </div>
                             </div>
 
-                            <div style="display: flex; flex-direction: column; gap: 4px; width: 115px; flex-shrink: 0; background: #f8f9fa; padding: 6px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
-                                ${btnHtml.replace(/width: 100%;/g, 'width: 100%; padding: 7px 2px; font-size: 0.75rem; margin-bottom: 0;')}
-                                ${mapsBtn.replace(/width: 100%;/g, 'width: 100%; padding: 7px 2px; font-size: 0.75rem; margin-top: 0;')}
+                            <!-- CAIXA DE AÇÕES (FIXA À DIREITA NO PC, ABAIXO NO CELULAR SE NÃO CABER) -->
+                            <div style="display: flex; flex-direction: column; gap: 5px; width: 125px; background: #f8f9fa; padding: 8px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                                ${btnHtml.replace(/width: 100%;/g, 'width: 100%; padding: 8px 2px; font-size: 0.75rem; margin: 0;')}
+                                ${mapsBtn.replace(/width: 100%;/g, 'width: 100%; padding: 8px 2px; font-size: 0.75rem; margin: 0;')}
                             </div>
                         </div>
                         
+                        <!-- OBSERVAÇÃO E ALERTAS (LARGURA TOTAL) -->
                         <div style="width: 100%;">
                             ${statusPausa}
-                            ${obsHtml ? obsHtml.replace('margin: 8px 0;', 'margin: 4px 0; font-size: 0.8rem; padding: 5px;') : ''}
+                            ${obsHtml ? obsHtml.replace('margin: 8px 0;', 'margin: 5px 0; font-size: 0.85rem; padding: 8px; border-radius: 6px;') : ''}
                         </div>
 
-                        <details style="background: #f1f5f9; border-radius: 6px; border: 1px solid #cbd5e1; overflow: hidden; margin-top: 5px;">
-                            <summary style="cursor: pointer; color: #475569; font-weight: bold; font-size: 0.75rem; padding: 6px 10px; outline: none;">
+                        <!-- LEQUE DE DETALHES -->
+                        <details style="background: #f1f5f9; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 4px;">
+                            <summary style="cursor: pointer; color: #475569; font-weight: bold; font-size: 0.75rem; padding: 8px 12px; outline: none;">
                                 ➕ Ver Endereço Completo e Cód.
                             </summary>
-                            <div style="padding: 10px; font-size: 0.8rem; color: #444; border-top: 1px solid #cbd5e1; background: #fff;">
-                                <p style="margin-bottom: 6px; word-break: break-all;"><strong>GPS / Rua:</strong> ${endCompleto}</p>
-                                <div style="border-top: 1px dashed #e2e8f0; padding-top: 6px; font-size: 0.75rem; color: #666;">
+                            <div style="padding: 10px; font-size: 0.85rem; color: #444; border-top: 1px solid #cbd5e1; background: #fff; line-height: 1.4;">
+                                <p style="margin-bottom: 8px; word-break: break-all;"><strong>GPS / Rua:</strong><br>${endCompleto}</p>
+                                <div style="border-top: 1px dashed #e2e8f0; padding-top: 8px; font-size: 0.8rem; color: #666;">
                                     <strong>Cód:</strong> ${codOneLine}<br>
-                                    <strong>Agente:</strong> <span style="text-transform: capitalize;">${emailCriadorFormatado}</span>
+                                    <strong>Lançado por:</strong> <span style="text-transform: capitalize; font-weight: bold; color: var(--primary-color);">${emailCriadorFormatado}</span>
                                 </div>
                             </div>
                         </details>
-                     </div>`;
+                      </div>`;
             });
             container.innerHTML = h;
         }
