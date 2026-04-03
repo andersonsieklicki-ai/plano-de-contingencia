@@ -1751,37 +1751,31 @@ function toggleTipoAgua() {
                         }
                       </style>`;
 
-                // === 1. LAYOUT COMPUTADOR (VERTICAL, IGUAL AO ORIGINAL DA FOTO) ===
-                h += `<div class="desktop-view dispatch-card ${classeCard}" ${estiloCard} style="display: flex; flex-direction: column; gap: 8px; padding: 15px; border-radius: 8px; margin-bottom: 15px; background: #fff; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                        <strong style="font-size: 1.15rem; color: var(--primary-color);">${icone} ${pData.nome}</strong>
-                        <div style="font-size: 1rem; font-weight: bold;">${linkZap}</div>
-                        <div style="font-size: 0.95rem; color: #333;">📍 <strong>Bairro:</strong> ${pData.bairro}</div>
+               // --- CSS INTELIGENTE: INJETA AS REGRAS APENAS UMA VEZ ---
+                if (!h.includes('estilo-responsivo-defesa')) {
+                    h += `<style class="estilo-responsivo-defesa">
+                            /* REGRAS PARA O COMPUTADOR (Padrão: Botões grandes embaixo) */
+                            .card-flex { display: flex; flex-direction: column; gap: 5px; }
+                            .col-botoes { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 10px; }
+                            .col-botoes > * { width: 100% !important; margin: 0 !important; font-size: 0.95rem !important; padding: 10px !important; border-radius: 6px !important; box-sizing: border-box; }
+                            
+                            /* REGRAS PARA O CELULAR (Menor que 800px: Botões pequenos na lateral) */
+                            @media (max-width: 800px) {
+                                .card-flex { flex-direction: row; justify-content: space-between; align-items: flex-start; gap: 15px; }
+                                .col-info { flex: 1; min-width: 0; }
+                                .col-botoes { width: 120px; flex-shrink: 0; margin-top: 0; background: #f8f9fa; padding: 8px; border-radius: 8px; border: 1px solid #e2e8f0; gap: 6px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); }
+                                .col-botoes > * { padding: 8px 2px !important; font-size: 0.75rem !important; border-radius: 4px !important; }
+                            }
+                          </style>`;
+                }
+
+                // --- O CARTÃO ÚNICO (Ele se adapta sozinho usando as regras acima) ---
+                h += `<div class="dispatch-card ${classeCard}" ${estiloCard} style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 8px; margin-bottom: 12px; background: #fff; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                         
-                        <div style="font-size: 0.95rem; margin-top: 4px; color: var(--primary-color); font-weight: bold; background: #f0f7ff; padding: 8px; border-radius: 4px; border-left: 4px solid var(--agua-color);">
-                            ${mat}
-                        </div>
-                        
-                        <div style="width: 100%; margin-top: 6px;">
-                            ${statusPausa}
-                            ${obsHtml ? obsHtml.replace('margin: 8px 0;', 'margin: 4px 0; font-size: 0.9rem; padding: 8px; border-radius: 4px;') : ''}
-                        </div>
-
-                        <div style="border-top: 1px dashed #e2e8f0; margin-top: 8px; padding-top: 8px; font-size: 0.85rem; color: #444; line-height: 1.5;">
-                            <p style="margin-bottom: 6px; word-break: break-all;"><strong>Endereço / GPS:</strong><br>${endCompleto}</p>
-                            <strong>Cód:</strong> ${codOneLine}<br>
-                            <strong>Lançado por:</strong> <span style="text-transform: capitalize; font-weight:bold;">${emailCriadorFormatado}</span>
-                        </div>
-
-                        <div style="display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 10px;">
-                            ${btnHtml}
-                            ${mapsBtn}
-                        </div>
-                      </div>`;
-
-                // === 2. LAYOUT SMARTPHONE (COMPACTO, BOTÕES LATERAIS, LEQUE) ===
-                h += `<div class="mobile-view dispatch-card ${classeCard}" ${estiloCard} style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 8px; margin-bottom: 10px; background: #fff; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 15px;">
-                            <div style="flex: 1; min-width: 0;">
+                        <div class="card-flex">
+                            
+                            <!-- INFORMAÇÕES (Fica no topo no PC e na esquerda no Celular) -->
+                            <div class="col-info">
                                 <strong style="font-size: 1.1rem; color: var(--primary-color); display: block; margin-bottom: 4px; line-height: 1.2;">${icone} ${pData.nome}</strong>
                                 <div style="font-size: 0.95rem; margin-bottom: 4px; font-weight: bold;">${linkZap}</div>
                                 <div style="font-size: 0.85rem; color: #333; margin-bottom: 4px;">📍 <strong>Bairro:</strong> ${pData.bairro}</div>
@@ -1789,16 +1783,22 @@ function toggleTipoAgua() {
                                     ${mat}
                                 </div>
                             </div>
-                            <div style="display: flex; flex-direction: column; gap: 6px; width: 120px; flex-shrink: 0; background: #f8f9fa; padding: 8px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
-                                ${btnHtml.replace(/width: 100%;/g, 'width: 100%; padding: 8px 2px; font-size: 0.75rem; margin: 0; border-radius: 4px;')}
-                                ${mapsBtn.replace(/width: 100%;/g, 'width: 100%; padding: 8px 2px; font-size: 0.75rem; margin: 0; border-radius: 4px;')}
+
+                            <!-- CAIXA DE BOTÕES (Fica embaixo no PC e na lateral no Celular) -->
+                            <div class="col-botoes">
+                                ${btnHtml}
+                                ${mapsBtn}
                             </div>
                         </div>
-                        <div style="width: 100%; margin-top: 2px;">
+                        
+                        <!-- ALERTAS GERAIS -->
+                        <div style="width: 100%; margin-top: 4px;">
                             ${statusPausa}
                             ${obsHtml ? obsHtml.replace('margin: 8px 0;', 'margin: 4px 0; font-size: 0.85rem; padding: 6px; border-radius: 4px;') : ''}
                         </div>
-                        <details style="background: #f1f5f9; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 4px;">
+
+                        <!-- LEQUE / DETALHES -->
+                        <details style="background: #f1f5f9; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 6px;">
                             <summary style="cursor: pointer; color: #475569; font-weight: bold; font-size: 0.75rem; padding: 8px 10px; outline: none;">
                                 ➕ Ver Endereço Completo e Cód.
                             </summary>
