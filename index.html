@@ -1738,25 +1738,45 @@ function toggleTipoAgua() {
                 
                 let codOneLine = `<span style="white-space: nowrap; font-size: 0.7rem;">${r.codigo.replace(/DC[-:]?/, '<strong style="color:var(--danger-color);">DC:</strong>')}</span>`;
                 
+        // Observação em destaque avermelhado (MANTEMOS FORA DO LEQUE POR SEGURANÇA)
                 let obsHtml = r.observacao ? `<div style="background: #fee2e2; border: 1px solid #fca5a5; color: #b91c1c; padding: 6px; border-radius: 6px; font-size: 0.85rem; margin: 8px 0; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);"><strong>⚠️ Obs:</strong> ${r.observacao}</div>` : '';
 
-                // Novo Layout Flexbox: Evita que os botões esmaguem o texto (Resolve o problema do print da INES)
-                h += `<div class="dispatch-card ${classeCard}" ${estiloCard} style="display: flex; flex-wrap: wrap; gap: 12px; padding: 12px;">
-                        <div class="dispatch-info" style="flex: 1 1 200px; min-width: 60%;">
-                            <strong style="font-size: 1.1rem;">${icone} ${pData.nome}</strong>
-                            <div style="font-size:0.95rem; margin: 4px 0 6px 0; font-weight: bold;">${linkZap}</div>
-                            <p style="margin-bottom: 4px;">${endCompleto}</p>
-                            <p style="font-size: 0.95rem;">${mat}</p>
-                            ${statusPausa}${obsHtml}
-                            <div style="font-size:0.75rem; color:#777; margin-top: 10px; border-top: 1px dashed #eee; padding-top: 8px; line-height: 1.4;">
-                                <strong>Cód:</strong> ${codOneLine}<br>
-                                <strong>Lançado por:</strong> <span style="color:var(--primary-color); font-weight:bold; text-transform: capitalize;">${emailCriadorFormatado}</span>
-                            </div>
+                // NOVO LAYOUT INTELIGENTE (COM LEQUE/ACCORDION)
+                h += `<div class="dispatch-card ${classeCard}" ${estiloCard} style="display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        
+                        <!-- 1. INFO PRINCIPAL (Nome, Fone, Bairro, Resumo) -->
+                        <div class="dispatch-info">
+                            <strong style="font-size: 1.15rem; color: var(--primary-color);">${icone} ${pData.nome}</strong>
+                            <div style="font-size:1rem; margin: 4px 0; font-weight: bold;">${linkZap}</div>
+                            <p style="font-size: 0.95rem; font-weight: bold; color: #333; margin: 4px 0;">📍 Bairro: ${pData.bairro}</p>
+                            <div style="font-size: 1rem; margin: 6px 0; background: #f8f9fa; padding: 6px; border-radius: 4px; border-left: 4px solid var(--primary-color);">${mat}</div>
                         </div>
-                        <div class="dispatch-actions" style="flex: 1 1 120px; display: flex; flex-direction: column; justify-content: center; min-width: 130px;">
+                        
+                        <!-- OBSERVAÇÃO CRÍTICA E STATUS -->
+                        ${statusPausa}
+                        ${obsHtml}
+
+                        <!-- 2. BOTÕES DE AÇÃO (Sempre grandes e fáceis de clicar) -->
+                        <div class="dispatch-actions" style="display: flex; flex-direction: column; gap: 6px; width: 100%; margin-top: 4px;">
                             ${btnHtml}
                             ${mapsBtn}
                         </div>
+
+                        <!-- 3. MÁGICA DO LEQUE (Esconde os links feios e dados do sistema) -->
+                        <details style="margin-top: 8px; background: #f1f5f9; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                            <summary style="cursor: pointer; color: #0275d8; font-weight: bold; font-size: 0.9rem; outline: none;">
+                                ➕ Mais Detalhes (Endereço Completo, Cód)
+                            </summary>
+                            <div style="margin-top: 10px; font-size: 0.85rem; color: #444;">
+                                <!-- word-break resolve o problema do link gigante vazando na tela -->
+                                <p style="margin-bottom: 8px; word-break: break-all;"><strong>Endereço / GPS:</strong><br>${endCompleto}</p>
+                                
+                                <div style="border-top: 1px dashed #cbd5e1; padding-top: 8px; line-height: 1.4; font-size: 0.8rem;">
+                                    <strong>Cód:</strong> ${codOneLine}<br>
+                                    <strong>Lançado por:</strong> <span style="color:var(--primary-color); font-weight:bold; text-transform: capitalize;">${emailCriadorFormatado}</span>
+                                </div>
+                            </div>
+                        </details>
                       </div>`;
            });
             container.innerHTML = h;
