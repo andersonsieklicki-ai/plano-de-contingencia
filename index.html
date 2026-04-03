@@ -2207,7 +2207,7 @@ function toggleTipoAgua() {
                 let ps = (currentUserNivel==='supervisor' || currentUserNivel==='admin' || r.emailCriador === currentUserEmail); 
                 let cbh = currentUserNivel === 'admin' ? `<input type="checkbox" class="bulk-checkbox no-print" value="${r.id}" onchange="checkBulkDelete()">` : ``;
                 
-                let detEnd = ''; let eArr = [];
+               let detEnd = ''; let eArr = [];
                 if(pv) {
                     if(r.rua) eArr.push(`Rua: ${r.rua}, Nº ${r.numero||'S/N'}`); if(r.localizacaoAgua) eArr.push(`Loc: ${r.localizacaoAgua}`);
                 } else {
