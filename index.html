@@ -2235,7 +2235,27 @@ let act = ps ? `<button class="btn-edit no-print" onclick="editRecord(${r.id})" 
         const fE = document.getElementById('filtroRelEmail') ? document.getElementById('filtroRelEmail').value.toLowerCase().trim() : '';
 
         let f = records; 
-        if(dI) f = f.filter(r => new Date(r.dataISO) >= new Date(dI+'T00:00:00')); if(dF) f = f.filter(r => new Date(r.dataISO) <= new Date(dF+'T23:59:59')); 
+		if(dI || dF) {
+    f = f.filter(r => {
+        const dataRef = new Date(r.dataISO);
+        const inicio = dI ? new Date(dI+'T00:00:00') : null;
+        const fim = dF ? new Date(dF+'T23:59:59') : null;
+        
+        // Verifica se o cadastro principal está no período
+        let noPeriodo = (!inicio || dataRef >= inicio) && (!fim || dataRef <= fim);
+        
+        // NOVIDADE: Verifica se existe alguma entrega interna de água no período buscado
+        if (!noPeriodo && r.entregasAgua && r.entregasAgua.length > 0) {
+            noPeriodo = r.entregasAgua.some(ent => {
+                // Converte a string "02/04/2026..." para objeto Date para comparar
+                const [d, m, y] = ent.data.split(',')[0].split('/');
+                const dataEnt = new Date(`${y}-${m}-${d}T12:00:00`);
+                return (!inicio || dataEnt >= inicio) && (!fim || dataEnt <= fim);
+            });
+        }
+        return noPeriodo;
+    });
+}
         if(fN) f = f.filter(r => r.nome.toUpperCase().includes(fN)); if(fRg) f = f.filter(r => (r.rg||'').includes(fRg)); if(fB) f = f.filter(r => (r.bairro||'').toUpperCase().includes(fB));
         if(fE) f = f.filter(r => (r.emailCriador||'').toLowerCase().includes(fE) || (r.agente||'').toLowerCase().includes(fE));
 
