@@ -1866,12 +1866,18 @@ function toggleTipoAgua() {
             const qL = cL?parseFloat(document.getElementById('qtdLona').value)||0:0; const qT = cT?parseInt(document.getElementById('qtdTelha').value)||0:0; 
             const qC = cC?parseInt(document.getElementById('qtdCesta').value)||0:0; 
             
+// --- CORREÇÃO: LÓGICA DE ÁGUA (PERÍODO E EDIÇÃO) ---
             let qA = 0;
-            if (cA) {
-                if (tA === 'volume') qA = parseFloat(document.getElementById('qtdAgua').value) || 0;
-            }
-            
             const qAe = document.getElementById('qtdAguaEntregue') ? (parseFloat(document.getElementById('qtdAguaEntregue').value)||0) : 0;
+
+            if (cA) {
+                if (tA === 'volume') {
+                    qA = parseFloat(document.getElementById('qtdAgua').value) || 0;
+                } else if (tA === 'periodo') {
+                    // SE É EDIÇÃO E É PERÍODO, A QUANTIDADE DEVE IGUALAR O QUE JÁ FOI ENTREGUE!
+                    qA = editandoId ? qAe : 0; 
+                }
+            }
             let sig = (cT || cC) ? canvas.toDataURL() : null; let nAg = (auth && auth.currentUser) ? (auth.currentUser.email || auth.currentUser.displayName) : "Offline";
             
             let diffL = 0; let diffT = 0; let diffC = 0; 
