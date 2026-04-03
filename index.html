@@ -202,14 +202,8 @@
             margin: 0; 
             padding: 4px; 
             font-size: 13px; 
-            transition: all 0.3s ease; 
-            
-            /* BLOQUEIO DE SELEÇÃO FORÇADO */
-            -webkit-user-select: none !important;
-            -ms-user-select: none !important;
-            user-select: none !important;
-        }
-        
+            transition: all 0.3s ease;   
+                    
         /* Libera a seleção APENAS para o usuário conseguir digitar nos campos */
         input, textarea, select {
             -webkit-user-select: auto !important;
@@ -345,7 +339,14 @@
         </div>
 
         <div id="aguaFieldsExtra" class="form-row hidden">
-            <div class="form-col" style="flex: 1.5;"><label>Localização (Rua, Nº, Rodovia, Km):</label><input type="text" id="localizacaoAgua" placeholder="Ex: Linha São Paulo, Nº 123" tabindex="5" class="nav-input" enterkeyhint="next" autocomplete="off"></div>
+        <div class="form-col" style="flex: 1.5;">
+                <label>Localização (Rua, Nº, Rodovia, Km):</label>
+                <div style="display: flex; gap: 4px;">
+                    <input type="text" id="localizacaoAgua" placeholder="Ex: Linha São Paulo" tabindex="5" class="nav-input" enterkeyhint="next" autocomplete="off" style="flex: 1;">
+                    <button type="button" onclick="ativarCapturaGpsRobo()" class="btn-small no-print" style="background:#25D366; color:white; height:32px; padding:0 8px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;" tabindex="-1" title="Puxar do WhatsApp">💬 Zap</button>
+                    <button type="button" onclick="capturarGpsNavegador()" class="btn-small no-print" style="background:#0275d8; color:white; height:32px; padding:0 8px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;" tabindex="-1" title="Capturar GPS do Aparelho">📍 Meu GPS</button>
+                </div>
+            </div>
             <div class="form-col" style="flex: 1;"><label>Referência:</label><input type="text" id="referenciaAgua" placeholder="Perto de..." tabindex="6" class="nav-input" enterkeyhint="next" autocomplete="off"></div>
         </div>
 
@@ -413,7 +414,7 @@
         <div class="tab-btn tab-btn-log" id="tab-btn-log" onclick="openTab('log')" style="font-size: 1rem; padding: 10px 15px; display: none;">🔒 Auditoria e Configs</div>
         <div class="tab-btn" id="tab-btn-estoque" onclick="openTab('estoque')" style="font-size: 1rem; padding: 10px 15px; display: none;">📦 Controle de Estoque</div>
         
-        <div class="tab-btn" id="tab-btn-robo" onclick="openTab('robo')" style="font-size: 1rem; padding: 10px 15px; display: none; background: #e8f5e9; color: #2e7d32; border-color: #c8e6c9;">🤖 Robô WhatsApp</div>
+      <div class="tab-btn" id="tab-btn-cadastro" onclick="openTab('cadastro')" style="font-size: 1rem; padding: 10px 15px; display: none; background: #e3f2fd; color: #0275d8; border-color: #b3e5fc;">👥 Cadastro</div>
    
   </div>
     
@@ -480,7 +481,7 @@
 
     <div class="tab-content" id="tab-log"></div>
     <div class="tab-content" id="tab-estoque"></div>
-    <div class="tab-content" id="tab-robo"></div>
+   <div class="tab-content" id="tab-cadastro"></div>
     
     <div class="no-print" style="margin-top:20px; border-top: 2px solid #eee; padding-top: 15px;">
         <button class="btn-print" onclick="prepararImpressao()">🖨️ Imprimir / Salvar PDF</button>
@@ -709,6 +710,7 @@ function loginGoogle() {
             if(btnSync) { btnSync.innerText = "☁️ S/ Internet"; btnSync.style.backgroundColor = "#777"; }
         }
         verificarAcesso();
+		if(document.getElementById('tab-btn-cadastro')) document.getElementById('tab-btn-cadastro').style.display = 'block';
     }
     window.addEventListener('online', updateOnlineStatus); 
     window.addEventListener('offline', updateOnlineStatus);
@@ -881,11 +883,15 @@ function loginGoogle() {
                 let selectNivel = `<select onchange="alterarNivelUsuario('${u.email}', this.value)" style="width:100%; padding:2px; font-size:0.75rem;"><option value="padrao" ${u.nivel === 'padrao' || !u.nivel ? 'selected' : ''}>Padrão</option><option value="agente" ${u.nivel === 'agente' ? 'selected' : ''}>Agente</option><option value="supervisor" ${u.nivel === 'supervisor' ? 'selected' : ''}>Supervisor</option><option value="admin" ${u.nivel === 'admin' || ADMIN_EMAILS.includes(u.email) ? 'selected' : ''}>Admin</option></select>`;
                 if (ADMIN_EMAILS.includes(u.email)) selectNivel = `<strong>Administrador</strong>`; 
                 
-                let botoes = `<div style="display: flex; flex-direction:column; gap: 4px; margin-top:4px;">`;
+               let botoes = `<div style="display: flex; flex-direction:column; gap: 4px; margin-top:4px;">`;
+                
+                // MÁGICA 2: Botão verde gigante para o Supervisor clicar e aprovar na hora
+                if (u.status === 'pendente') { botoes += `<button class="btn-small" style="background-color: var(--success-color); width: 100%; padding: 4px; font-size: 0.85rem;" onclick="alterarStatusUsuario('${u.email}', 'aprovado')">✅ Aprovar Acesso</button>`; }
+                
                 if (u.status === 'bloqueado') { botoes += `<button class="btn-small" style="background-color: var(--success-color); width: 100%; padding: 4px;" onclick="alterarStatusUsuario('${u.email}', 'aprovado')">✅ Desbloquear</button>`; }
                 if (u.status === 'aprovado' && !ADMIN_EMAILS.includes(u.email)) { botoes += `<button class="btn-small" style="background-color: #f0ad4e; width: 100%; padding: 4px;" onclick="alterarStatusUsuario('${u.email}', 'bloqueado')">🚫 Suspender</button>`; }
                 if (!ADMIN_EMAILS.includes(u.email)) { botoes += `<button class="btn-small" style="background-color: var(--danger-color); width: 100%; padding: 4px;" onclick="excluirUsuarioDefinitivo('${u.email}')">🗑️ Excluir Agente</button>`; }
-                botoes += `</div>`; 
+                botoes += `</div>`;
                 
                 htmlTabela += `<tr><td><strong>${u.nome}</strong><br><span style="word-break: break-all; font-size: 0.7rem; color: #555;">${u.email}</span></td><td>${selectNivel}</td><td>${statusLigacao}</td><td>${botoes}</td></tr>`;
             });
@@ -894,10 +900,32 @@ function loginGoogle() {
         container.innerHTML = htmlTabela;
     }
 
-    async function alterarStatusUsuario(email, novoStatus) { if(!confirm(`Mudar o acesso de ${email} para ${novoStatus.toUpperCase()}?`)) return; try { await db.collection('usuarios_capanema').doc(email).update({ status: novoStatus }); carregarListaUsuarios(); } catch (e) { alert("Erro."); } }
-    async function alterarNivelUsuario(email, novoNivel) { if(!confirm(`Alterar permissão de ${email} para ${novoNivel.toUpperCase()}?`)) { carregarListaUsuarios(); return; } try { await db.collection('usuarios_capanema').doc(email).update({ nivel: novoNivel }); alert('Atualizado!'); carregarListaUsuarios(); } catch (e) { alert("Erro."); } }
-    async function excluirUsuarioDefinitivo(email) { if(!confirm(`⚠️ ATENÇÃO EXTREMA!\nTem certeza absoluta que deseja apagar o usuário ${email} do banco de dados?\nEle terá que se conectar e ser aprovado novamente.`)) return; try { await db.collection('usuarios_capanema').doc(email).delete(); alert('Usuário excluído com sucesso.'); carregarListaUsuarios(); } catch (e) { alert("Erro ao excluir usuário."); } }
-
+    async function alterarStatusUsuario(email, novoStatus) { 
+        if(!confirm(`Mudar o acesso de ${email} para ${novoStatus.toUpperCase()}?`)) return; 
+        try { 
+            await db.collection('usuarios_capanema').doc(email).update({ status: novoStatus }); 
+            carregarListaUsuarios(); 
+        } catch (e) { alert("Erro."); } 
+    }
+    
+    async function alterarNivelUsuario(email, novoNivel) { 
+        if(!confirm(`Alterar permissão de ${email} para ${novoNivel.toUpperCase()}?`)) { carregarListaUsuarios(); return; } 
+        try { 
+            // MÁGICA 1: Muda o nível E aprova o status ao mesmo tempo, tirando o "pendente" do Firebase!
+            await db.collection('usuarios_capanema').doc(email).update({ nivel: novoNivel, status: 'aprovado' }); 
+            alert('Atualizado e Acesso Liberado!'); 
+            carregarListaUsuarios(); 
+        } catch (e) { alert("Erro."); } 
+    }
+    
+    async function excluirUsuarioDefinitivo(email) { 
+        if(!confirm(`⚠️ ATENÇÃO EXTREMA!\nTem certeza absoluta que deseja apagar o usuário ${email} do banco de dados?\nEle terá que se conectar e ser aprovado novamente.`)) return; 
+        try { 
+            await db.collection('usuarios_capanema').doc(email).delete(); 
+            alert('Usuário excluído com sucesso.'); 
+            carregarListaUsuarios(); 
+        } catch (e) { alert("Erro ao excluir usuário."); } 
+    }
     // ==========================================
     // TEMPO, VIGIA ANTIFRAUDE E AUTO-PREENCHIMENTO
     // ==========================================
@@ -1490,7 +1518,7 @@ function toggleTipoAgua() {
         } 
     }
 
-   async function reenviarZapMotorista(nome, bairro, loc, rua, num, ref, obs, tel, vol, tipo, temCesta) {
+   async function reenviarZapMotorista(nome, bairro, loc, rua, num, ref, obs, tel, vol, tipo, temCesta, isPeriodo = false, dtIni = '', dtFim = '') {
     let numDestino = tipo === 'agua' ? configZap.telefonePipa : configZap.telefoneSocial;
     if (!numDestino) { alert(`O telefone responsável por ${tipo === 'agua' ? 'ÁGUA' : 'TELHAS'} não está configurado na aba Auditoria.`); return; }
     
@@ -1501,7 +1529,15 @@ function toggleTipoAgua() {
 
     if (tipo === 'agua') {
         saudacao = `${saudacao}, Agente da Defesa Civil!`; origemGPS = encodeURIComponent("Corpo de Bombeiros, Capanema - PR");
-        cabecalho = `*Ordem de serviço Defesa Civil entrega de água potável 💧*`; textMaterial = `*Volume Solicitado:* ${Number(vol)} m³ 💧`;
+        cabecalho = `*Ordem de serviço Defesa Civil entrega de água potável 💧*`; 
+        
+        if (isPeriodo) {
+            let dataI = dtIni ? dtIni.split('-').reverse().join('/') : 'N/I';
+            let dataF = dtFim ? dtFim.split('-').reverse().join('/') : 'N/I';
+            textMaterial = `*Fornecimento Contínuo:*\nInício: ${dataI}\nTérmino: ${dataF} 💧`;
+        } else {
+            textMaterial = `*Volume Solicitado:* ${Number(vol)} m³ 💧`;
+        }
     } else {
         saudacao = `${saudacao}, motorista!`; origemGPS = encodeURIComponent("CRAS - Rua Antônio Nieheus, 670, Centro, Capanema - PR");
         if (temCesta) { cabecalho = `*Ordem de serviço Assistência Social: Entrega de telhas e cesta básica 🏠📦*`; textMaterial = `*Material Liberado:* ${vol} Telhas e Cesta(s) Básica(s).`; } 
@@ -1669,32 +1705,80 @@ function toggleTipoAgua() {
                     mat = `Entregar: <strong>${r.qtdTelha} Telhas</strong>`;
                 }
                 
-                let btnHtml = '';
-                if (isPausado) { btnHtml = `<button class="btn-small" style="background:#f0ad4e; color:#333; margin-bottom: 4px; border: 1px solid #d39e00; width: 100%; font-size: 1.1rem; height: 38px;" onclick="retomarEntrega(${r.id})">▶️ Retomar Entrega</button>`; } 
-                else {
-                    btnHtml = isAgua ? `<button class="btn-small" style="background:var(--agua-color); margin-bottom: 4px; width: 100%; font-size: 1.1rem; height: 38px;" onclick="adicionarAgua(${r.id})">🚛 Descarregar</button>` : `<button class="btn-small" style="background:var(--telha-color); margin-bottom: 4px; width: 100%; font-size: 1.1rem; height: 38px;" onclick="marcarEntregaTelha(${r.id})">✅ Concluir</button>`;
-                    btnHtml += `<button class="btn-small" style="background:#e67e22; color:white; width:100%; text-align:center; margin-bottom: 4px; height: 34px;" onclick="pausarEntrega(${r.id})">⚠️ Relatar Problema</button>`;
+             let btnHtml = '';
+                // Novo estilo profissional para os botões (arredondados, sombra, fonte melhor)
+                let btnStyle = "width: 100%; font-size: 0.95rem; font-weight: bold; border: none; border-radius: 6px; padding: 10px 5px; margin-bottom: 6px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: opacity 0.2s;";
+                
+                if (isPausado) { 
+                    btnHtml = `<button style="background:#f0ad4e; color:#333; ${btnStyle}" onclick="retomarEntrega(${r.id})">▶️ Retomar Entrega</button>`; 
+                } else {
+                    btnHtml = isAgua 
+                        ? `<button style="background:var(--agua-color); color:white; ${btnStyle}" onclick="adicionarAgua(${r.id})">🚛 Descarregar</button>` 
+                        : `<button style="background:var(--telha-color); color:white; ${btnStyle}" onclick="marcarEntregaTelha(${r.id})">✅ Concluir</button>`;
+                    
+                    btnHtml += `<button style="background:#e67e22; color:white; ${btnStyle}" onclick="pausarEntrega(${r.id})">⚠️ Relatar Problema</button>`;
                 }
                     
                 let temCesta = r.qtdCesta > 0; 
-                let mapsBtn = `<button class="btn-small" style="background:#25D366; color:white; width:100%; text-align:center; margin-top:2px; font-size: 1rem; height: 36px;" onclick="reenviarZapMotorista('${pData.temPermissao?r.nome:pData.nome}', '${pData.temPermissao?r.bairro:pData.bairro}', '${pData.temPermissao?r.localizacaoAgua||'':''}', '${pData.temPermissao?r.rua||'':''}', '${pData.temPermissao?r.numero||'':''}', '${pData.temPermissao?r.referenciaAgua||'':''}', '${r.observacao||''}', '${pData.temPermissao?r.telefone:''}', '${isAgua ? r.qtdAgua : r.qtdTelha}', '${isAgua ? 'agua' : 'telha'}', ${temCesta})">💬 Rota WhatsApp</button>`;
+                
+                // Botão de Localização Vermelho Profissional
+                let mapsBtn = `<button style="background:var(--danger-color); color:white; ${btnStyle}" onclick="abrirMapaDireto('${pData.temPermissao?r.localizacaoAgua||'':''}', '${pData.temPermissao?r.bairro:pData.bairro}', '${pData.temPermissao?r.rua||'':''}', '${pData.temPermissao?r.numero||'':''}')">📍 Localização</button>`;
                 
                 let endCompleto = `📍 ${pData.bairro}`; 
                 if(pData.temPermissao) { if(r.localizacaoAgua) endCompleto += ` - ${r.localizacaoAgua}`; if(r.rua) endCompleto += ` - ${r.rua}, ${r.numero||'S/N'}`; } else { if(r.localizacaoAgua || r.rua) endCompleto += ` - ***`; }
-               // Puxa o nome completo do cache. Se não achar, usa o e-mail cortado.
+                
                 let emailKey = (r.emailCriador || "").toLowerCase();
                 let emailCriadorFormatado = window.mapaUsuarios[emailKey] || (r.emailCriador ? r.emailCriador.split('@')[0] : "Desconhecido");
 
                 let telDisplay = pData.temPermissao ? (r.telefone || 'Não informado') : '***';
                 
-                // Código menor
+                let linkZap = (pData.temPermissao && r.telefone) 
+                    ? `<a href="https://wa.me/55${r.telefone.replace(/\D/g, '')}" target="_blank" style="color:#25D366; text-decoration:none;">📞 ${r.telefone}</a>` 
+                    : `📞 ${telDisplay}`;
+                
                 let codOneLine = `<span style="white-space: nowrap; font-size: 0.7rem;">${r.codigo.replace(/DC[-:]?/, '<strong style="color:var(--danger-color);">DC:</strong>')}</span>`;
                 
-                // Observação em destaque avermelhado
-                let obsHtml = r.observacao ? `<div style="background: #fee2e2; border: 1px solid #fca5a5; color: #b91c1c; padding: 4px 6px; border-radius: 4px; font-size: 0.8rem; margin: 6px 0;"><strong>⚠️ Obs:</strong> ${r.observacao}</div>` : '';
+        // Observação em destaque avermelhado (MANTEMOS FORA DO LEQUE POR SEGURANÇA)
+                let obsHtml = r.observacao ? `<div style="background: #fee2e2; border: 1px solid #fca5a5; color: #b91c1c; padding: 6px; border-radius: 6px; font-size: 0.85rem; margin: 8px 0; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);"><strong>⚠️ Obs:</strong> ${r.observacao}</div>` : '';
 
-                h += `<div class="dispatch-card ${classeCard}" ${estiloCard}><div class="dispatch-info"><strong>${icone} ${pData.nome}</strong><div style="font-size:0.85rem; color:#0275d8; margin: 2px 0 4px 0; font-weight: bold;">📞 ${telDisplay}</div><p>${endCompleto}</p><p>${mat}</p>${statusPausa}${obsHtml}<div style="font-size:0.75rem; color:#888; margin-top: 8px; border-top: 1px dashed #ccc; padding-top: 6px; line-height: 1.3;"><strong>Cód:</strong> ${codOneLine}<br><strong>Lançado por:</strong> <span style="color:var(--primary-color); font-weight:bold; text-transform: capitalize;">${emailCriadorFormatado}</span></div></div><div class="dispatch-actions" style="min-width: 120px;">${btnHtml}${mapsBtn}</div></div>`;
-            });
+                // NOVO LAYOUT INTELIGENTE (COM LEQUE/ACCORDION)
+                h += `<div class="dispatch-card ${classeCard}" ${estiloCard} style="display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        
+                        <!-- 1. INFO PRINCIPAL (Nome, Fone, Bairro, Resumo) -->
+                        <div class="dispatch-info">
+                            <strong style="font-size: 1.15rem; color: var(--primary-color);">${icone} ${pData.nome}</strong>
+                            <div style="font-size:1rem; margin: 4px 0; font-weight: bold;">${linkZap}</div>
+                            <p style="font-size: 0.95rem; font-weight: bold; color: #333; margin: 4px 0;">📍 Bairro: ${pData.bairro}</p>
+                            <div style="font-size: 1rem; margin: 6px 0; background: #f8f9fa; padding: 6px; border-radius: 4px; border-left: 4px solid var(--primary-color);">${mat}</div>
+                        </div>
+                        
+                        <!-- OBSERVAÇÃO CRÍTICA E STATUS -->
+                        ${statusPausa}
+                        ${obsHtml}
+
+                        <!-- 2. BOTÕES DE AÇÃO (Sempre grandes e fáceis de clicar) -->
+                        <div class="dispatch-actions" style="display: flex; flex-direction: column; gap: 6px; width: 100%; margin-top: 4px;">
+                            ${btnHtml}
+                            ${mapsBtn}
+                        </div>
+
+                        <!-- 3. MÁGICA DO LEQUE (Esconde os links feios e dados do sistema) -->
+                        <details style="margin-top: 8px; background: #f1f5f9; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                            <summary style="cursor: pointer; color: #0275d8; font-weight: bold; font-size: 0.9rem; outline: none;">
+                                ➕ Mais Detalhes (Endereço Completo, Cód)
+                            </summary>
+                            <div style="margin-top: 10px; font-size: 0.85rem; color: #444;">
+                                <!-- word-break resolve o problema do link gigante vazando na tela -->
+                                <p style="margin-bottom: 8px; word-break: break-all;"><strong>Endereço / GPS:</strong><br>${endCompleto}</p>
+                                
+                                <div style="border-top: 1px dashed #cbd5e1; padding-top: 8px; line-height: 1.4; font-size: 0.8rem;">
+                                    <strong>Cód:</strong> ${codOneLine}<br>
+                                    <strong>Lançado por:</strong> <span style="color:var(--primary-color); font-weight:bold; text-transform: capitalize;">${emailCriadorFormatado}</span>
+                                </div>
+                            </div>
+                        </details>
+                      </div>`;
+           });
             container.innerHTML = h;
         }
     }
@@ -1782,12 +1866,18 @@ function toggleTipoAgua() {
             const qL = cL?parseFloat(document.getElementById('qtdLona').value)||0:0; const qT = cT?parseInt(document.getElementById('qtdTelha').value)||0:0; 
             const qC = cC?parseInt(document.getElementById('qtdCesta').value)||0:0; 
             
+// --- CORREÇÃO: LÓGICA DE ÁGUA (PERÍODO E EDIÇÃO) ---
             let qA = 0;
-            if (cA) {
-                if (tA === 'volume') qA = parseFloat(document.getElementById('qtdAgua').value) || 0;
-            }
-            
             const qAe = document.getElementById('qtdAguaEntregue') ? (parseFloat(document.getElementById('qtdAguaEntregue').value)||0) : 0;
+
+            if (cA) {
+                if (tA === 'volume') {
+                    qA = parseFloat(document.getElementById('qtdAgua').value) || 0;
+                } else if (tA === 'periodo') {
+                    // SE É EDIÇÃO E É PERÍODO, A QUANTIDADE DEVE IGUALAR O QUE JÁ FOI ENTREGUE!
+                    qA = editandoId ? qAe : 0; 
+                }
+            }
             let sig = (cT || cC) ? canvas.toDataURL() : null; let nAg = (auth && auth.currentUser) ? (auth.currentUser.email || auth.currentUser.displayName) : "Offline";
             
             let diffL = 0; let diffT = 0; let diffC = 0; 
@@ -1816,7 +1906,11 @@ function toggleTipoAgua() {
                 if(typeof registrarLog === 'function') await registrarLog("NOVO CADASTRO", `Cód: [${cd}] - Doado: ${descLog}`, cd); 
                 
                 let lst = (configZap?.emailSolicitante || '').toLowerCase().split(',').map(e => e.trim());
-                if ((cA || rEnt) && lst.includes((currentUserEmail||'').toLowerCase()) && typeof reenviarZapMotorista === 'function') { reenviarZapMotorista(nm, bai, lAg, ru, nu, rAg, ob, tel, cA?qA:qT, cA?'agua':'telha', qC>0); } else { alert('Salvo com sucesso!'); }
+                if ((cA || rEnt) && lst.includes((currentUserEmail||'').toLowerCase()) && typeof reenviarZapMotorista === 'function') { 
+            reenviarZapMotorista(nm, bai, lAg, ru, nu, rAg, ob, tel, cA?qA:qT, cA?'agua':'telha', qC>0, tA==='periodo', dtIniA, dtFimA); 
+        } else { 
+            alert('Salvo com sucesso!'); 
+        }
             }
 
             if (navigator.onLine && typeof db !== 'undefined' && (diffL !== 0 || diffT !== 0 || diffC !== 0)) {
@@ -1936,7 +2030,7 @@ function toggleTipoAgua() {
     }
 
 
-   function buildIndividualHTML(arr, tipo) {
+ function buildIndividualHTML(arr, tipo) {
         let isA = tipo === 'quantAgua'; let isL = tipo === 'quantLona'; let isT = tipo === 'quantTelha'; let isC = tipo === 'quantCesta'; 
         let u = isA ? 'm³' : (isL ? 'm²' : ' un'); 
         let nomeMat = isA ? 'Água 💧' : (isT ? 'Telhas 🏠' : (isC ? 'Cestas Básicas 📦' : 'Lonas ⛺'));
@@ -1972,7 +2066,11 @@ function toggleTipoAgua() {
             }
         });
         
-        let h = `<div class="report-summary"><strong>Relatório Individual: ${nomeMat}</strong></div><table class="report-table"><tbody>`;
+        // MÁGICA: Adicionamos o botão "Abrir/Fechar Todos"
+        let h = `<div class="report-summary" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <strong>Relatório Individual: ${nomeMat}</strong>
+                    <button class="btn-small no-print" onclick="document.querySelectorAll('.indiv-leque').forEach(d => d.open = !d.open)" style="background:#6c757d; color:white; border:none; padding:5px 10px; border-radius:3px; cursor:pointer;">↕️ Abrir/Fechar Todos</button>
+                 </div><table class="report-table" style="border-collapse: collapse; width:100%;"><tbody>`;
         
         Object.values(p).sort((a, b) => b.t - a.t).forEach(i => { 
             let locaisHtml = '';
@@ -1992,17 +2090,14 @@ function toggleTipoAgua() {
             if (i.entregasBrutas.length > 0) { 
                 let g = {};
               i.entregasBrutas.forEach(e => {
-                    // 1. Resgata a data e hora (essencial para o relatório não sumir)
                     let dAp = e.data ? e.data.substring(0, 10) : "S/D"; 
                     let hM = e.data ? e.data.match(/\d{2}:\d{2}/) : null; 
                     let hAp = hM ? hM[0] : ""; 
                     
-                    // 2. BUSCA INTELIGENTE DO NOME (Vanderlei Pettenon em vez de vandpettenon)
                     let emailAg = (e.agente || "").toLowerCase().trim();
-                    let nomeCompleto = window.mapaUsuarios[emailAg]; // Tenta busca direta
+                    let nomeCompleto = window.mapaUsuarios[emailAg]; 
 
                     if (!nomeCompleto) {
-                        // Procura no mapa de usuários quem tem o e-mail que começa com esse prefixo
                         let prefixo = emailAg.split('@')[0];
                         let chaveEncontrada = Object.keys(window.mapaUsuarios).find(key => 
                             key.split('@')[0] === prefixo || key === prefixo
@@ -2010,9 +2105,7 @@ function toggleTipoAgua() {
                         if (chaveEncontrada) nomeCompleto = window.mapaUsuarios[chaveEncontrada];
                     }
 
-                    // Se não encontrar de jeito nenhum, usa o que está salvo com a 1ª letra maiúscula
                     let agL = nomeCompleto || (e.agente ? e.agente.split('@')[0] : "Agente");
-
                     let cG = `${dAp}_${agL}`;
                     
                     if(!g[cG]) g[cG] = { data: dAp, agente: agL, totalQtd: 0, viagens: 0, hI: hAp, hF: hAp };
@@ -2024,7 +2117,6 @@ function toggleTipoAgua() {
                     let infoH = (x.hI && x.hF && x.hI !== x.hF) ? `(das ${x.hI} às ${x.hF})` : (x.hI ? `(às ${x.hI})` : ""); 
                     let infoV = x.viagens > 1 ? `[${x.viagens} viagens]` : `[1 lançamento]`;
                     
-                    // Exibe o nome com a primeira letra maiúscula (text-transform: capitalize)
                     ih += `<div style="margin-bottom: 6px; font-size:0.85rem; color:#333; border-bottom: 1px solid #eee; padding-bottom: 4px;">
                         • ${x.data}: <strong style="color:var(--primary-color); font-size:0.9rem;">${Number(x.totalQtd.toFixed(2))}${u}</strong> 
                         por <strong style="text-transform: capitalize; color:#000;">${x.agente}</strong> 
@@ -2033,7 +2125,30 @@ function toggleTipoAgua() {
                 });
             } else { ih = `<div style="font-size:0.8rem; color:#777;">Nenhuma entrega registrada.</div>`; }
 
-            h += `<tr style="background-color: #e2e8f0; border-top: 2px solid #aaa;"><td colspan="2" style="padding: 6px 10px;"><div style="display:flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px;"><span style="font-size: 1.05rem; color: var(--primary-color);">👤 <strong>${i.n}</strong> <small style="color:#555;">(RG: ${i.rg})</small></span><span style="font-size: 0.95rem; background: #fff; padding: 3px 8px; border-radius: 4px; border: 1px solid #cbd5e1;">${statusTotal}</span></div></td></tr><tr><td style="width: 50%; vertical-align: top; padding: 8px;"><div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">📍 Endereços de Destino</div>${locaisHtml}</td><td style="width: 50%; vertical-align: top; padding: 8px; background: #fafafa;"><div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">🚛 Histórico de Entregas</div>${ih}</td></tr>`; 
+            // MÁGICA: Transformamos a linha num Accordion recolhido (<details>)
+            h += `<tr>
+                    <td style="padding: 0; border: none; border-bottom: 2px solid #aaa;">
+                        <details class="indiv-leque" style="background:#fff; width: 100%;">
+                            <summary style="cursor:pointer; outline:none; background-color: #e2e8f0; padding: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px;">
+                                <span style="font-size: 1.05rem; color: var(--primary-color);">👤 <strong>${i.n}</strong> <small style="color:#555;">(RG: ${i.rg})</small></span>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 0.95rem; background: #fff; padding: 3px 8px; border-radius: 4px; border: 1px solid #cbd5e1;">${statusTotal}</span>
+                                    <span style="font-size:0.8rem; color:#0275d8; font-weight:bold;" class="no-print">🔽 Exp.</span>
+                                </div>
+                            </summary>
+                            <div style="display: flex; flex-wrap: wrap; width: 100%; border-top: 1px solid #ccc;">
+                                <div style="flex: 1; min-width: 250px; padding: 10px; border-right: 1px solid #eee;">
+                                    <div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">📍 Endereços de Destino</div>
+                                    ${locaisHtml}
+                                </div>
+                                <div style="flex: 1; min-width: 250px; padding: 10px; background: #fafafa;">
+                                    <div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">🚛 Histórico de Entregas</div>
+                                    ${ih}
+                                </div>
+                            </div>
+                        </details>
+                    </td>
+                  </tr>`; 
         }); 
 
         let vdTotal = isA ? `Solicitado: ${Number(grandTotalSol.toFixed(2))}${u}   |   <span style="color:white; background:green; padding:3px 8px; border-radius:4px;">Entregue: ${Number(grandTotalEmp.toFixed(2))}${u}</span>` : `${Number(grandTotalSol.toFixed(2))}${u}`;
@@ -2042,16 +2157,31 @@ function toggleTipoAgua() {
         return h + `</tbody></table>`;
     }
 
-      function buildGroupedHTML(arr, tit, sel) {
+     function buildGroupedHTML(arr, tit, sel) {
         let isA = sel.includes('quantAgua'); let isL = sel.includes('quantLona'); let isT = sel.includes('quantTelha'); let isC = sel.includes('quantCesta'); let mt = (!isA && !isL && !isT && !isC); 
         let fF = arr; if (!mt) { fF = arr.filter(r => (isA && r.qtdAgua>0) || (isL && r.qtdLona>0) || (isT && r.qtdTelha>0) || (isC && r.qtdCesta>0)); }
         let bMap = {}; fF.forEach(r => { let b = (r.bairro||'N/I').toUpperCase(); if(!bMap[b]) bMap[b]=[]; bMap[b].push(r); }); 
         
         let hasFullView = (currentUserNivel === 'admin' || currentUserNivel === 'supervisor' || currentUserNivel === 'agente');
 
-        let h = `<div class="report-summary"><strong>Lista Detalhada 📋</strong></div>`;
+        // MÁGICA: Adicionamos um botão para abrir/fechar tudo de uma vez
+        let h = `<div class="report-summary" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <strong>Lista Detalhada 📋</strong>
+                    <button class="btn-small no-print" onclick="document.querySelectorAll('.bairro-leque').forEach(d => d.open = !d.open)" style="background:#6c757d; color:white; border:none; padding:5px 10px; border-radius:3px; cursor:pointer;">↕️ Abrir/Fechar Todos os Bairros</button>
+                 </div>`;
+                 
         Object.keys(bMap).sort().forEach(b => {
-            h += `<div class="bairro-section"><div class="bairro-header">📍 ${b}</div><table class="report-table"><thead><tr><th width="5%"></th><th width="15%">Data</th><th>Beneficiário / Contato / Endereço</th><th width="35%">Materiais (Solicitado / Status)</th></tr></thead><tbody>`;
+            // MÁGICA: Transformamos a div num <details> (Leque nativo do navegador)
+            h += `<details class="bairro-section bairro-leque" style="margin-bottom:8px; border:1px solid #ccc; border-radius:4px; background:#fff; overflow:hidden;">
+                    <summary class="bairro-header" style="cursor:pointer; outline:none; margin-bottom:0; display:flex; justify-content:space-between; align-items:center; background:#e2e8f0; padding:10px;">
+                        <span>📍 ${b} <span style="font-size:0.8rem; font-weight:normal; color:#666;">(${bMap[b].length} registros)</span></span>
+                        <span style="font-size:0.8rem; color:#0275d8; font-weight:bold;">🔽 Clique para expandir</span>
+                    </summary>
+                    <div style="padding: 10px; overflow-x: auto;">
+                        <table class="report-table" style="margin-bottom:0; width:100%;">
+                            <thead><tr><th width="5%"></th><th width="15%">Data</th><th>Beneficiário / Contato / Endereço</th><th width="35%">Materiais (Solicitado / Status)</th></tr></thead>
+                            <tbody>`;
+            
             bMap[b].reverse().forEach(r => {
                 let pv = (hasFullView || r.emailCriador === currentUserEmail); 
                 let ps = (currentUserNivel==='supervisor' || currentUserNivel==='admin' || r.emailCriador === currentUserEmail); 
@@ -2065,7 +2195,7 @@ function toggleTipoAgua() {
                 }
                 if(eArr.length > 0) detEnd += eArr.join(' | ') + `<br>`;
                 if(r.telefone) detEnd += `📞 ${pv ? r.telefone : '***'}<br>`;
-              if(r.codigo) detEnd += `🏷️ <strong>Cód:</strong> <span style="white-space: nowrap;">${r.codigo.replace(/DC[-:]?/, '<strong style="color:var(--danger-color);">DC:</strong>')}</span><br>`;
+                if(r.codigo) detEnd += `🏷️ <strong>Cód:</strong> <span style="white-space: nowrap;">${r.codigo.replace(/DC[-:]?/, '<strong style="color:var(--danger-color);">DC:</strong>')}</span><br>`;
                 if(r.observacao) detEnd += `<span style="color:var(--danger-color); font-weight:bold;">Obs: ${r.observacao}</span><br>`;
 
                 let mArr = [];
@@ -2080,11 +2210,22 @@ function toggleTipoAgua() {
                 }
                 let mats = mArr.join('  |  ');
 
-                let act = ps ? `<button class="btn-edit no-print" onclick="editRecord(${r.id})" style="display:inline-block; width:auto; margin-right:4px;">✏️ Editar</button>` : ''; 
-                if (currentUserNivel === 'admin') { act += `<button class="btn-small no-print" style="background-color: var(--danger-color); padding: 3px 6px; font-size: 0.7rem; display:inline-block; width:auto;" onclick="deleteRecord(${r.id})">🗑️ Excluir</button>`; }
+let act = ps ? `<button class="btn-edit no-print" onclick="editRecord(${r.id})" style="display:inline-block; width:auto; margin-right:4px;">✏️ Editar</button>` : ''; 
+                
+                let isCriador = (r.emailCriador === currentUserEmail);
+                let foiEntregue = (r.qtdAguaEntregue > 0) || r.telhaEntregue || r.cestaEntregue || r.status === 'entregue';
+                
+                if (currentUserNivel === 'admin' || (currentUserNivel === 'supervisor' && isCriador && !foiEntregue)) { 
+                    act += `<button class="btn-small no-print" style="background-color: var(--danger-color); padding: 3px 6px; font-size: 0.7rem; display:inline-block; width:auto;" onclick="deleteRecord(${r.id})">🗑️ Excluir</button>`; 
+                }
+                
+                // BOTAO DE LOCALIZAÇÃO VERMELHO
+                act += `<button class="btn-small no-print" style="background-color: red; padding: 3px 6px; font-size: 0.7rem; display:inline-block; width:auto; margin-left:4px; color:white; border:none; border-radius:4px;" onclick="abrirMapaDireto('${r.localizacaoAgua||''}', '${r.bairro||''}', '${r.rua||''}', '${r.numero||''}')">📍 Localização</button>`;
                 
                 h+=`<tr><td style="text-align:center;">${cbh}</td><td><small>${r.dataHoraFormatada.split(' ')[0]}<br>${r.dataHoraFormatada.split(' ')[1]}</small></td><td><strong>${r.nome}</strong> <small style="color:#666;">(RG: ${pv?r.rg||'N/I':'***'})</small><br><div style="font-size:0.8rem; color:#444; margin:4px 0; line-height:1.4;">${detEnd}</div><div class="no-print" style="margin-top:4px;">${act}</div></td><td style="vertical-align:middle; line-height:1.5;">${mats}</td></tr>`;
-            }); h += `</tbody></table></div>`;
+            }); 
+            
+            h += `</tbody></table></div></details>`; // Fecha o leque do bairro
         }); return h;
     }
     function generateReport() {
@@ -2436,7 +2577,8 @@ async function apagarCadastrosPorEmail() {
         if(document.getElementById('tab-btn-'+t)) document.getElementById('tab-btn-'+t).classList.add('active'); 
         if (t==='log') { renderPainelAuditoria(); } 
         if (t==='estoque') { renderPainelEstoque(); } 
-		if (t==='robo') { renderPainelRobo(); } 
+        if (t==='robo') { renderPainelRobo(); } 
+        if (t==='cadastro') { renderPainelCadastro(); }
     }
 
     // ==========================================
@@ -2689,6 +2831,161 @@ async function apagarCadastrosPorEmail() {
             alert("Erro ao salvar cadastro. Tente novamente.");
         }
     }
+	// ==========================================
+    // CAPTURA DE GPS DIRETO DO APARELHO (SISTEMA)
+    // ==========================================
+    function capturarGpsNavegador() {
+        if (navigator.geolocation) {
+            const inputLoc = document.getElementById('localizacaoAgua');
+            inputLoc.value = "⏳ Buscando satélite...";
+            inputLoc.style.backgroundColor = "#e2e8f0";
+            
+            navigator.geolocation.getCurrentPosition(function(position) {
+                let lat = position.coords.latitude;
+                let lng = position.coords.longitude;
+                inputLoc.value = `https://www.google.com/maps?q=${lat},${lng}`;
+                inputLoc.style.backgroundColor = "#d4edda";
+                
+                alert("✅ GPS do aparelho capturado com sucesso!");
+                setTimeout(() => { inputLoc.style.backgroundColor = ""; }, 3000);
+            }, function(error) {
+                inputLoc.value = "";
+                inputLoc.style.backgroundColor = "";
+                alert("❌ Erro ao capturar GPS.\nVerifique se a permissão de 'Localização' está ativada no seu navegador/celular.");
+            }, { enableHighAccuracy: true });
+        } else {
+            alert("O seu navegador não suporta a captura de GPS.");
+        }
+    }
+// ==========================================
+    // CAPTURA DE GPS PELO WHATSAPP (ROBÔ)
+    // ==========================================
+    let escutaGpsRobo = null;
+
+    function ativarCapturaGpsRobo() {
+        if (!auth.currentUser) {
+            alert("Você precisa estar logado para usar esta função.");
+            return;
+        }
+        const emailAgente = auth.currentUser.email.toLowerCase();
+        const inputLoc = document.getElementById('localizacaoAgua');
+        
+        // 1. Muda o visual do campo para mostrar que está escutando
+        inputLoc.value = "⏳ Aguardando pino no WhatsApp...";
+        inputLoc.style.backgroundColor = "#fff3cd";
+        inputLoc.style.color = "#856404";
+        inputLoc.style.fontWeight = "bold";
+
+        // 2. Abre o sinal (Avisa o robô no banco de dados)
+        db.collection('captura_gps').doc(emailAgente).set({
+            status: 'aguardando',
+            link_maps: '',
+            data_solicitacao: Date.now()
+        });
+
+        // 3. Fica ouvindo o Firebase até o robô escrever o link de volta
+        if (escutaGpsRobo) escutaGpsRobo(); 
+        escutaGpsRobo = db.collection('captura_gps').doc(emailAgente).onSnapshot(doc => {
+            if (doc.exists && doc.data().status === 'recebido') {
+                inputLoc.value = doc.data().link_maps;
+                inputLoc.style.backgroundColor = "#d4edda";
+                inputLoc.style.color = "#155724";
+                alert("✅ Localização capturada do WhatsApp com sucesso!");
+                
+                // Volta a cor ao normal depois de 3 segundos
+                setTimeout(() => { 
+                    inputLoc.style.backgroundColor = ""; 
+                    inputLoc.style.color = "";
+                    inputLoc.style.fontWeight = "normal";
+                }, 3000);
+                
+                if (escutaGpsRobo) escutaGpsRobo(); // Para de ouvir para economizar internet
+            }
+        });
+    }
+    // PAINEL: GESTÃO DA BASE DE CADASTROS (MORADORES/COMUNIDADES)
+    // ==========================================
+    function renderPainelCadastro() {
+        if (currentUserNivel === 'padrao') return;
+        
+        let mapaMoradores = new Map();
+        records.forEach(r => {
+            let key = (r.nome || "").toLowerCase().trim();
+            if (key) {
+                if (!mapaMoradores.has(key) || new Date(r.dataISO) > new Date(mapaMoradores.get(key).dataISO)) {
+                    mapaMoradores.set(key, r);
+                }
+            }
+        });
+        
+        let unicos = Array.from(mapaMoradores.values()).sort((a,b) => a.nome.localeCompare(b.nome));
+
+        let h = `<div class="report-summary" style="background: #e3f2fd; border-color: #b3e5fc; color: #0275d8;"><strong>👥 Banco de Dados: Cadastros Base</strong></div>
+        <div style="background:#fff; border:1px solid #b3e5fc; padding:15px; border-radius:8px; margin-bottom:15px;">
+            <p style="font-size:0.9rem; color:#555; margin-top:0;">Esta aba mostra a <strong>última ficha</strong> de cada pessoa. Use para atualizar dados ou enviar pinos de GPS definitivos.</p>
+            <input type="text" id="filtroCadastroAba" placeholder="🔍 Buscar nome ou bairro..." onkeyup="filtrarCadastroAba()" style="width:100%; height:40px; padding:10px; font-size:1rem; border:1px solid #ccc; border-radius:4px; margin-bottom:15px;">
+            <div id="tabelaCadastroContainer"></div>
+        </div>`;
+        
+        document.getElementById('tab-cadastro').innerHTML = h;
+        
+        window.filtrarCadastroAba = function() {
+            let termo = document.getElementById('filtroCadastroAba').value.toLowerCase().trim();
+            let filtrados = unicos.filter(u => 
+                (u.nome && u.nome.toLowerCase().includes(termo)) || 
+                (u.telefone && u.telefone.includes(termo)) || 
+                (u.bairro && u.bairro.toLowerCase().includes(termo))
+            );
+
+            let th = `<table class="report-table" style="width:100%; font-size:0.85rem;">
+                <thead><tr style="background:#0275d8; color:white;"><th>Pessoa / Comunidade</th><th>Localização Atual</th><th width="120px">Ações</th></tr></thead><tbody>`;
+            
+            if (filtrados.length === 0) th += `<tr><td colspan="3" style="text-align:center;">Nenhum cadastro encontrado.</td></tr>`;
+            
+            filtrados.slice(0, 100).forEach(u => {
+           let linkMaps = "";
+                if (u.localizacaoAgua) {
+                    if (u.localizacaoAgua.startsWith('http')) {
+                        linkMaps = u.localizacaoAgua;
+                    } else {
+                        let enderecoBusca = `${u.localizacaoAgua} ${u.bairro || ''} Capanema PR`;
+                        linkMaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoBusca)}`;
+                    }
+                }
+                
+                let locDisplay = u.localizacaoAgua ? `<br><a href="${linkMaps}" target="_blank" style="color:#0275d8; font-weight:bold;">📍 Ver no Mapa</a>` : `<br><span style="color:#999;">Sem GPS cadastrado</span>`;
+                
+                th += `<tr>
+                    <td><strong>${u.nome}</strong><br><span style="color:#555;">📞 ${u.telefone || 'N/I'}</span><br><small>RG: ${u.rg || 'N/I'}</small></td>
+                    <td><strong>${u.bairro || 'N/I'}</strong>${locDisplay}</td>
+                    <td style="text-align:center;">
+                        <button class="btn-small" style="background:#f0ad4e; color:#333; font-weight:bold; width:100%; padding:8px 0;" onclick="editRecord(${u.id})">✏️ Editar Ficha</button>
+                    </td>
+                </tr>`;
+            });
+            document.getElementById('tabelaCadastroContainer').innerHTML = th + `</tbody></table>`;
+        };
+        
+        window.filtrarCadastroAba(); 
+    }
+	// ==========================================
+// ABERTURA DIRETA DO GOOGLE MAPS
+// ==========================================
+function abrirMapaDireto(loc, bairro, rua, num) {
+    let urlFinal = "";
+    
+    if (loc && loc.startsWith('http')) {
+        // Se já tivermos o link do GPS (pino do Zap), abre ele direto
+        urlFinal = loc;
+    } else {
+        // Se for apenas texto, monta a busca oficial do Google Maps para Capanema
+        let enderecoCompleto = `${rua ? rua + ',' : ''} ${num ? num : ''} ${bairro ? bairro : ''} ${loc ? loc : ''} Capanema PR`.trim();
+        urlFinal = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoCompleto)}`;
+    }
+    
+    // Abre o aplicativo de mapas do celular ou uma nova aba no navegador
+    window.open(urlFinal, '_blank');
+}
 	// ==========================================
     // ESCUDO ANTI-CURIOSOS (Bloqueia F12, Inspecionar e Botão Direito)
     // ==========================================
