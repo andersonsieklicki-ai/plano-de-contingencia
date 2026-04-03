@@ -1981,7 +1981,7 @@ function toggleTipoAgua() {
     }
 
 
- function buildIndividualHTML(arr, tipo) {
+   function buildIndividualHTML(arr, tipo) {
         let isA = tipo === 'quantAgua'; let isL = tipo === 'quantLona'; let isT = tipo === 'quantTelha'; let isC = tipo === 'quantCesta'; 
         let u = isA ? 'm³' : (isL ? 'm²' : ' un'); 
         let nomeMat = isA ? 'Água 💧' : (isT ? 'Telhas 🏠' : (isC ? 'Cestas Básicas 📦' : 'Lonas ⛺'));
@@ -2017,11 +2017,7 @@ function toggleTipoAgua() {
             }
         });
         
-        // MÁGICA: Adicionamos o botão "Abrir/Fechar Todos"
-        let h = `<div class="report-summary" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-                    <strong>Relatório Individual: ${nomeMat}</strong>
-                    <button class="btn-small no-print" onclick="document.querySelectorAll('.indiv-leque').forEach(d => d.open = !d.open)" style="background:#6c757d; color:white; border:none; padding:5px 10px; border-radius:3px; cursor:pointer;">↕️ Abrir/Fechar Todos</button>
-                 </div><table class="report-table" style="border-collapse: collapse; width:100%;"><tbody>`;
+        let h = `<div class="report-summary"><strong>Relatório Individual: ${nomeMat}</strong></div><table class="report-table"><tbody>`;
         
         Object.values(p).sort((a, b) => b.t - a.t).forEach(i => { 
             let locaisHtml = '';
@@ -2041,14 +2037,17 @@ function toggleTipoAgua() {
             if (i.entregasBrutas.length > 0) { 
                 let g = {};
               i.entregasBrutas.forEach(e => {
+                    // 1. Resgata a data e hora (essencial para o relatório não sumir)
                     let dAp = e.data ? e.data.substring(0, 10) : "S/D"; 
                     let hM = e.data ? e.data.match(/\d{2}:\d{2}/) : null; 
                     let hAp = hM ? hM[0] : ""; 
                     
+                    // 2. BUSCA INTELIGENTE DO NOME (Vanderlei Pettenon em vez de vandpettenon)
                     let emailAg = (e.agente || "").toLowerCase().trim();
-                    let nomeCompleto = window.mapaUsuarios[emailAg]; 
+                    let nomeCompleto = window.mapaUsuarios[emailAg]; // Tenta busca direta
 
                     if (!nomeCompleto) {
+                        // Procura no mapa de usuários quem tem o e-mail que começa com esse prefixo
                         let prefixo = emailAg.split('@')[0];
                         let chaveEncontrada = Object.keys(window.mapaUsuarios).find(key => 
                             key.split('@')[0] === prefixo || key === prefixo
@@ -2056,7 +2055,9 @@ function toggleTipoAgua() {
                         if (chaveEncontrada) nomeCompleto = window.mapaUsuarios[chaveEncontrada];
                     }
 
+                    // Se não encontrar de jeito nenhum, usa o que está salvo com a 1ª letra maiúscula
                     let agL = nomeCompleto || (e.agente ? e.agente.split('@')[0] : "Agente");
+
                     let cG = `${dAp}_${agL}`;
                     
                     if(!g[cG]) g[cG] = { data: dAp, agente: agL, totalQtd: 0, viagens: 0, hI: hAp, hF: hAp };
@@ -2068,6 +2069,7 @@ function toggleTipoAgua() {
                     let infoH = (x.hI && x.hF && x.hI !== x.hF) ? `(das ${x.hI} às ${x.hF})` : (x.hI ? `(às ${x.hI})` : ""); 
                     let infoV = x.viagens > 1 ? `[${x.viagens} viagens]` : `[1 lançamento]`;
                     
+                    // Exibe o nome com a primeira letra maiúscula (text-transform: capitalize)
                     ih += `<div style="margin-bottom: 6px; font-size:0.85rem; color:#333; border-bottom: 1px solid #eee; padding-bottom: 4px;">
                         • ${x.data}: <strong style="color:var(--primary-color); font-size:0.9rem;">${Number(x.totalQtd.toFixed(2))}${u}</strong> 
                         por <strong style="text-transform: capitalize; color:#000;">${x.agente}</strong> 
@@ -2076,30 +2078,7 @@ function toggleTipoAgua() {
                 });
             } else { ih = `<div style="font-size:0.8rem; color:#777;">Nenhuma entrega registrada.</div>`; }
 
-            // MÁGICA: Transformamos a linha num Accordion recolhido (<details>)
-            h += `<tr>
-                    <td style="padding: 0; border: none; border-bottom: 2px solid #aaa;">
-                        <details class="indiv-leque" style="background:#fff; width: 100%;">
-                            <summary style="cursor:pointer; outline:none; background-color: #e2e8f0; padding: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px;">
-                                <span style="font-size: 1.05rem; color: var(--primary-color);">👤 <strong>${i.n}</strong> <small style="color:#555;">(RG: ${i.rg})</small></span>
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 0.95rem; background: #fff; padding: 3px 8px; border-radius: 4px; border: 1px solid #cbd5e1;">${statusTotal}</span>
-                                    <span style="font-size:0.8rem; color:#0275d8; font-weight:bold;" class="no-print">🔽 Exp.</span>
-                                </div>
-                            </summary>
-                            <div style="display: flex; flex-wrap: wrap; width: 100%; border-top: 1px solid #ccc;">
-                                <div style="flex: 1; min-width: 250px; padding: 10px; border-right: 1px solid #eee;">
-                                    <div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">📍 Endereços de Destino</div>
-                                    ${locaisHtml}
-                                </div>
-                                <div style="flex: 1; min-width: 250px; padding: 10px; background: #fafafa;">
-                                    <div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">🚛 Histórico de Entregas</div>
-                                    ${ih}
-                                </div>
-                            </div>
-                        </details>
-                    </td>
-                  </tr>`; 
+            h += `<tr style="background-color: #e2e8f0; border-top: 2px solid #aaa;"><td colspan="2" style="padding: 6px 10px;"><div style="display:flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px;"><span style="font-size: 1.05rem; color: var(--primary-color);">👤 <strong>${i.n}</strong> <small style="color:#555;">(RG: ${i.rg})</small></span><span style="font-size: 0.95rem; background: #fff; padding: 3px 8px; border-radius: 4px; border: 1px solid #cbd5e1;">${statusTotal}</span></div></td></tr><tr><td style="width: 50%; vertical-align: top; padding: 8px;"><div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">📍 Endereços de Destino</div>${locaisHtml}</td><td style="width: 50%; vertical-align: top; padding: 8px; background: #fafafa;"><div style="font-size:0.85rem; font-weight:bold; color:var(--primary-color); margin-bottom:6px; border-bottom:1px solid #ddd;">🚛 Histórico de Entregas</div>${ih}</td></tr>`; 
         }); 
 
         let vdTotal = isA ? `Solicitado: ${Number(grandTotalSol.toFixed(2))}${u}   |   <span style="color:white; background:green; padding:3px 8px; border-radius:4px;">Entregue: ${Number(grandTotalEmp.toFixed(2))}${u}</span>` : `${Number(grandTotalSol.toFixed(2))}${u}`;
@@ -2805,52 +2784,7 @@ async function apagarCadastrosPorEmail() {
             alert("O seu navegador não suporta a captura de GPS.");
         }
     }
-// ==========================================
-    // CAPTURA DE GPS PELO WHATSAPP (ROBÔ)
-    // ==========================================
-    let escutaGpsRobo = null;
 
-    function ativarCapturaGpsRobo() {
-        if (!auth.currentUser) {
-            alert("Você precisa estar logado para usar esta função.");
-            return;
-        }
-        const emailAgente = auth.currentUser.email.toLowerCase();
-        const inputLoc = document.getElementById('localizacaoAgua');
-        
-        // 1. Muda o visual do campo para mostrar que está escutando
-        inputLoc.value = "⏳ Aguardando pino no WhatsApp...";
-        inputLoc.style.backgroundColor = "#fff3cd";
-        inputLoc.style.color = "#856404";
-        inputLoc.style.fontWeight = "bold";
-
-        // 2. Abre o sinal (Avisa o robô no banco de dados)
-        db.collection('captura_gps').doc(emailAgente).set({
-            status: 'aguardando',
-            link_maps: '',
-            data_solicitacao: Date.now()
-        });
-
-        // 3. Fica ouvindo o Firebase até o robô escrever o link de volta
-        if (escutaGpsRobo) escutaGpsRobo(); 
-        escutaGpsRobo = db.collection('captura_gps').doc(emailAgente).onSnapshot(doc => {
-            if (doc.exists && doc.data().status === 'recebido') {
-                inputLoc.value = doc.data().link_maps;
-                inputLoc.style.backgroundColor = "#d4edda";
-                inputLoc.style.color = "#155724";
-                alert("✅ Localização capturada do WhatsApp com sucesso!");
-                
-                // Volta a cor ao normal depois de 3 segundos
-                setTimeout(() => { 
-                    inputLoc.style.backgroundColor = ""; 
-                    inputLoc.style.color = "";
-                    inputLoc.style.fontWeight = "normal";
-                }, 3000);
-                
-                if (escutaGpsRobo) escutaGpsRobo(); // Para de ouvir para economizar internet
-            }
-        });
-    }
     // PAINEL: GESTÃO DA BASE DE CADASTROS (MORADORES/COMUNIDADES)
     // ==========================================
     function renderPainelCadastro() {
@@ -2891,17 +2825,7 @@ async function apagarCadastrosPorEmail() {
             if (filtrados.length === 0) th += `<tr><td colspan="3" style="text-align:center;">Nenhum cadastro encontrado.</td></tr>`;
             
             filtrados.slice(0, 100).forEach(u => {
-              let linkMaps = "";
-                if (u.localizacaoAgua) {
-                    if (u.localizacaoAgua.startsWith('http')) {
-                        linkMaps = u.localizacaoAgua;
-                    } else {
-                        let enderecoBusca = `${u.localizacaoAgua} ${u.bairro || ''} Capanema PR`;
-                        linkMaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoBusca)}`;
-                    }
-                }
-                
-                let locDisplay = u.localizacaoAgua ? `<br><a href="${linkMaps}" target="_blank" style="color:#0275d8; font-weight:bold;">📍 Ver no Mapa</a>` : `<br><span style="color:#999;">Sem GPS cadastrado</span>`;
+                let locDisplay = u.localizacaoAgua ? `<br><a href="${u.localizacaoAgua}" target="_blank" style="color:#0275d8; font-weight:bold;">📍 Ver no Mapa</a>` : `<br><span style="color:#999;">Sem GPS</span>`;
                 
                 th += `<tr>
                     <td><strong>${u.nome}</strong><br><span style="color:#555;">📞 ${u.telefone || 'N/I'}</span><br><small>RG: ${u.rg || 'N/I'}</small></td>
