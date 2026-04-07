@@ -1573,9 +1573,16 @@ function toggleTipoAgua() {
         else { cabecalho = `*Ordem de serviço Assistência Social: Entrega de telhas 🏠*`; textMaterial = `*Material Liberado:* ${vol} Telhas.`; }
     }
 
-    let enderecoBusca = loc ? loc : (rua ? `${rua}, ${num||'S/N'}` : '');
-    let destinoMaps = encodeURIComponent(`${enderecoBusca} ${bairro} Capanema PR`.trim());
-    let linkMaps = `https://www.google.com/maps/dir/?api=1&origin=${origemGPS}&destination=${destinoMaps}`;
+    let linkMaps = "";
+    if (loc && loc.startsWith('http')) {
+        // Se a localização já for um link do Maps (Pino do Zap), usa ele puro!
+        linkMaps = loc;
+    } else {
+        // Se for texto (nome da rua), monta a rota normalmente com origem e destino
+        let enderecoBusca = loc ? loc : (rua ? `${rua}, ${num||'S/N'}` : '');
+        let destinoMaps = encodeURIComponent(`${enderecoBusca} ${bairro} Capanema PR`.trim());
+        linkMaps = `https://www.google.com/maps/dir/?api=1&origin=${origemGPS}&destination=${destinoMaps}`;
+    }
     
     let textEnd = loc ? `*Localização:* ${loc}` : ''; if(rua) textEnd += `\n*Rua:* ${rua}, Nº: ${num || 'S/N'}`;
     let textRef = ref ? `*Ref:* ${ref}\n` : ''; let textObs = obs ? `\n*Observação:* ${obs}` : '';
