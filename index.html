@@ -646,7 +646,7 @@ function loginGoogle() {
         }
     }
 
-  function verificarAcesso() {
+ function verificarAcesso() {
         const btnLogistica = document.getElementById('btnLogisticaAlerta');
         const btnRelatorios = document.querySelector('.btn-report');
 
@@ -665,15 +665,15 @@ function loginGoogle() {
         const cadastroOverlay = document.getElementById('cadastroOverlay'); 
         const aguardandoOverlay = document.getElementById('aguardandoOverlay');
 
-        // 🔥 BLOQUEIO DE COMPONENTES PARA USUÁRIOS NÃO LOGADOS OU NÃO APROVADOS
+        // 🔥 CORREÇÃO: Limpando o display bloqueado quando o usuário logar
         if (!auth.currentUser || currentUserStatus !== 'aprovado') {
             if (btnLogistica) btnLogistica.style.display = 'none';
             if (btnRelatorios) btnRelatorios.style.display = 'none';
             fecharModalLogistica(); // Se o modal estiver aberto, fecha imediatamente
         } else {
-            // Se estiver logado e aprovado, o botão de relatório aparece.
-            // O botão de logística será controlado pela função carregarPainelDespacho()
             if (btnRelatorios) btnRelatorios.style.display = 'block';
+            // Essa linha devolve o controle do botão para a função que conta as cargas:
+            if (btnLogistica) btnLogistica.style.display = ''; 
         }
 
         if (navigator.onLine) {
