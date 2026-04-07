@@ -3047,18 +3047,29 @@ async function apagarCadastrosPorEmail() {
         
         window.filtrarCadastroAba(); 
     }
-	// ==========================================
+// ==========================================
 // ABERTURA DIRETA DO GOOGLE MAPS
 // ==========================================
 function abrirMapaDireto(loc, bairro, rua, num) {
     let urlFinal = "";
+    let locLimpo = (loc || "").trim();
     
-    if (loc && loc.startsWith('http')) {
-        // Se já tivermos o link do GPS (pino do Zap), abre ele direto
-        urlFinal = loc;
-    } else {
-        // Se for apenas texto, monta a busca oficial do Google Maps para Capanema
-        let enderecoCompleto = `${rua ? rua + ',' : ''} ${num ? num : ''} ${bairro ? bairro : ''} ${loc ? loc : ''} Capanema PR`.trim();
+    // 1. Tem algum link no texto? (Pino do Zap ou link colado)
+    if (locLimpo.includes('http')) {
+        let match = locLimpo.match(/(https?:\/\/[^\s]+)/);
+        urlFinal = match ? match[0] : locLimpo;
+    } 
+    // 2. Tem coordenadas de GPS coladas? (Ex: -25.6696939,-53.8070521)
+    else if (locLimpo.match(/-?\d{1,2}\.\d+,\s*-?\d{1,3}\.\d+/)) {
+        // Pega apenas a parte dos números e monta o link de pino exato
+        let matchCoord = locLimpo.match(/-?\d{1,2}\.\d+,\s*-?\d{1,3}\.\d+/)[0];
+        urlFinal = `https://www.google.com/maps?q=${matchCoord.replace(/\s/g, '')}`;
+    } 
+    // 3. Se for apenas um texto normal (Ex: Linha Rio Grandense, Rua Paraná...)
+    else {
+        let enderecoCompleto = `${rua ? rua + ', ' : ''}${num ? num + ' ' : ''}${bairro ? bairro + ' ' : ''}${locLimpo} Capanema PR`.replace(/\s+/g, ' ').trim();
+        // Evita que a busca comece com uma vírgula perdida
+        enderecoCompleto = enderecoCompleto.replace(/^,\s*/, '');
         urlFinal = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoCompleto)}`;
     }
     
