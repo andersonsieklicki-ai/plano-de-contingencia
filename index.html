@@ -217,7 +217,22 @@
     </style>
 </head>
 <body>
-
+<div id="loginOverlay" class="login-overlay" style="z-index: 10005; display: none;">
+    <img src="1001145756.png" alt="Defesa Civil" style="width: 110px; margin-bottom: 20px;">
+    <h2 style="color: var(--primary-color); margin-bottom: 10px; font-size: 1.8rem;">Acesso Restrito</h2>
+    <p style="margin-bottom: 30px; font-size: 1.1rem; max-width: 400px; color: #555; line-height: 1.5;">
+        Este é o Sistema de Logística e Contingência da Defesa Civil. <br><br>
+        <strong>É obrigatório fazer login</strong> para acessar o painel de operações, despachos e lançamentos.
+    </p>
+    
+    <button onclick="loginGoogle()" style="padding: 15px 30px; font-size: 1.2rem; background: #4285F4; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; max-width: 300px; transition: background 0.3s;">
+        <!-- Ícone oficial do Google em vetor -->
+        <svg style="width: 24px; height: 24px; fill: white;" viewBox="0 0 24 24">
+            <path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/>
+        </svg>
+        Entrar com Google
+    </button>
+</div>
 <div id="blockedOverlay" class="login-overlay" style="z-index: 10001; display: none;">
     <img src="1001145756.png" alt="Defesa Civil" style="width: 80px; margin-bottom: 15px;">
     <h2 style="color: var(--danger-color); margin-bottom: 10px;">Acesso Suspenso</h2>
@@ -631,7 +646,10 @@ function loginGoogle() {
         }
     }
 
-   function verificarAcesso() {
+  function verificarAcesso() {
+        const btnLogistica = document.getElementById('btnLogisticaAlerta');
+        const btnRelatorios = document.querySelector('.btn-report');
+
         if (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') { 
             if(btnEquipe && currentUserNivel === 'admin') btnEquipe.style.display = 'inline-block';
             if(document.getElementById('tab-btn-log')) document.getElementById('tab-btn-log').style.display = 'block'; 
@@ -646,6 +664,17 @@ function loginGoogle() {
 
         const cadastroOverlay = document.getElementById('cadastroOverlay'); 
         const aguardandoOverlay = document.getElementById('aguardandoOverlay');
+
+        // 🔥 BLOQUEIO DE COMPONENTES PARA USUÁRIOS NÃO LOGADOS OU NÃO APROVADOS
+        if (!auth.currentUser || currentUserStatus !== 'aprovado') {
+            if (btnLogistica) btnLogistica.style.display = 'none';
+            if (btnRelatorios) btnRelatorios.style.display = 'none';
+            fecharModalLogistica(); // Se o modal estiver aberto, fecha imediatamente
+        } else {
+            // Se estiver logado e aprovado, o botão de relatório aparece.
+            // O botão de logística será controlado pela função carregarPainelDespacho()
+            if (btnRelatorios) btnRelatorios.style.display = 'block';
+        }
 
         if (navigator.onLine) {
             if (!auth.currentUser) { 
@@ -696,7 +725,6 @@ function loginGoogle() {
             }
         }
     }
-
     function updateOnlineStatus() {
         if (navigator.onLine) {
             if(dot) dot.className = "dot online"; 
