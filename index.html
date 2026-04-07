@@ -3052,23 +3052,27 @@ async function apagarCadastrosPorEmail() {
 // ==========================================
 function abrirMapaDireto(loc, bairro, rua, num) {
     let urlFinal = "";
-    let locLimpo = (loc || "").trim();
+    let textoBusca = `${loc || ''} ${rua || ''}`.trim();
     
-    // 1. Tem algum link no texto? (Pino do Zap ou link colado)
-    if (locLimpo.includes('http')) {
-        let match = locLimpo.match(/(https?:\/\/[^\s]+)/);
-        urlFinal = match ? match[0] : locLimpo;
+    // 1. MÁGICA: Caçador de Coordenadas (Latitude e Longitude)
+    // Pega os números exatos mesmo se estiverem perdidos no meio de um link "sujo" cheio de /dir/
+    let coordMatch = textoBusca.match(/(-?\d{1,2}\.\d{3,}),\s*(-?\d{1,3}\.\d{3,})/);
+    
+    if (coordMatch) {
+        // Ignora a sujeira e força o formato de pino limpo perfeito!
+        let lat = coordMatch[1];
+        let lng = coordMatch[2];
+        urlFinal = `https://www.google.com/maps?q=${lat},${lng}`;
     } 
-    // 2. Tem coordenadas de GPS coladas? (Ex: -25.6696939,-53.8070521)
-    else if (locLimpo.match(/-?\d{1,2}\.\d+,\s*-?\d{1,3}\.\d+/)) {
-        // Pega apenas a parte dos números e monta o link de pino exato
-        let matchCoord = locLimpo.match(/-?\d{1,2}\.\d+,\s*-?\d{1,3}\.\d+/)[0];
-        urlFinal = `https://www.google.com/maps?q=${matchCoord.replace(/\s/g, '')}`;
+    // 2. Se não tem coordenada, mas tem um link normal de internet
+    else if (textoBusca.includes('http')) {
+        let linkMatch = textoBusca.match(/(https?:\/\/[^\s]+)/);
+        urlFinal = linkMatch ? linkMatch[0] : textoBusca;
     } 
-    // 3. Se for apenas um texto normal (Ex: Linha Rio Grandense, Rua Paraná...)
+    // 3. Se for apenas texto (Ex: Linha Rio Grandense, Capanema)
     else {
-        let enderecoCompleto = `${rua ? rua + ', ' : ''}${num ? num + ' ' : ''}${bairro ? bairro + ' ' : ''}${locLimpo} Capanema PR`.replace(/\s+/g, ' ').trim();
-        // Evita que a busca comece com uma vírgula perdida
+        let enderecoCompleto = `${rua ? rua + ',' : ''} ${num ? num : ''} ${bairro ? bairro : ''} ${loc ? loc : ''} Capanema PR`.replace(/\s+/g, ' ').trim();
+        // Remove vírgula sobrando presa no começo do texto
         enderecoCompleto = enderecoCompleto.replace(/^,\s*/, '');
         urlFinal = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoCompleto)}`;
     }
