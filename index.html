@@ -1466,7 +1466,7 @@ function toggleTipoAgua() {
     }
 
     async function sincronizarFirebaseAutomatica() {
-        if(!db || !auth.currentUser || !navigator.onLine || currentUserStatus !== 'aprovado') return;
+        if(!db || !auth.currentUser || currentUserStatus !== 'aprovado') return;
         
         let unsyncedRecords = records.filter(r => r.synced !== true);
         if (unsyncedRecords.length === 0) { 
@@ -2809,10 +2809,11 @@ async function apagarCadastrosPorEmail() {
     }
 
     // ==========================================
-    // AUTO-LOGOUT DE SEGURANÇA (30 MINUTOS DE INATIVIDADE)
+    // AUTO-LOGOUT DE SEGURANÇA (24 HORAS DE INATIVIDADE)
     // ==========================================
     let tempoInativo = 0;
-    const TEMPO_MAXIMO_INATIVO = 30 * 60 * 1000; // 30 minutos em milissegundos
+    // 24 horas * 60 minutos * 60 segundos * 1000 milissegundos
+    const TEMPO_MAXIMO_INATIVO = 24 * 60 * 60 * 1000; 
 
     function resetarTempoInativo() {
         tempoInativo = 0; // Zera o cronômetro se o usuário mexer na tela
@@ -2830,7 +2831,7 @@ async function apagarCadastrosPorEmail() {
             tempoInativo += 60000; 
             
             if (tempoInativo >= TEMPO_MAXIMO_INATIVO) {
-                alert("⏳ Por segurança, sua sessão expirou após 30 minutos de inatividade. Você foi desconectado.");
+                alert("⏳ Por segurança, sua sessão expirou após 24 horas de inatividade. Você foi desconectado.");
                 logoutGoogle(); // Expulsa o usuário para a tela de login
             }
         }
