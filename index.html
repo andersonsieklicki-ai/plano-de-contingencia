@@ -1678,15 +1678,16 @@ function toggleTipoAgua() {
         if (!document.getElementById('reportSection').classList.contains('hidden')) generateReport();
     }
 async function pausarEntrega(id) {
-        const index = records.findIndex(r => r.id === id); if (index === -1) return;
+        const index = records.findIndex(r => r.id === id); 
+        if (index === -1) return;
         
         let motivo = "";
         
-        // Pergunta diferente dependendo do nível do usuário
+        // Pergunta diferente dependendo do nível do usuário (Usando crases para evitar erros de sintaxe)
         if (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
-            motivo = prompt("⚠️ PAUSA DE OPERAÇÃO (Acesso Restrito)\n\nInforme o motivo estrutural ou o cancelamento para análise:\n(Ex: Sem energia na bomba, Tubulação rompida, Caminhão quebrou):");
+            motivo = prompt(`⚠️ PAUSA DE OPERAÇÃO (Acesso Restrito)\n\nInforme o motivo estrutural ou o cancelamento para análise:\n(Ex: Sem energia na bomba, Tubulação rompida, Caminhão quebrou):`);
         } else {
-            motivo = prompt("⚠️ RELATAR PROBLEMA NA ENTREGA\n\nQual o motivo de não conseguir realizar a entrega agora?\n(Ex: Endereço não encontrado, Morador ausente, Veículo atolado):");
+            motivo = prompt(`⚠️ RELATAR PROBLEMA NA ENTREGA\n\nQual o motivo de não conseguir realizar a entrega agora?\n(Ex: Endereço não encontrado, Morador ausente, Veículo atolado):`);
         }
         
         if (!motivo || motivo.trim() === "") return; 
