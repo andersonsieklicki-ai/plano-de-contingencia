@@ -1695,21 +1695,29 @@ function toggleTipoAgua() {
         sincronizarFirebaseAutomatica(); carregarPainelDespacho(); 
     }
 function carregarPainelDespacho() {
-        const btnAlerta = document.getElementById('btnLogisticaAlerta'); const container = document.getElementById('listaDespachoContainer'); 
+        // [NOVIDADE] Injeta a animação de piscar laranja direto no navegador
+        if (!document.getElementById('style-blink-orange')) {
+            let style = document.createElement('style');
+            style.id = 'style-blink-orange';
+            style.innerHTML = `@keyframes blink-orange { 0% { background-color: #f0ad4e; } 50% { background-color: #fff3cd; color: #856404; } 100% { background-color: #f0ad4e; } } .blink-orange { animation: blink-orange 1.5s infinite !important; }`;
+            document.head.appendChild(style);
+        }
+
+        const btnAlerta = document.getElementById('btnLogisticaAlerta'); 
+        const container = document.getElementById('listaDespachoContainer'); 
         if(!container) return; 
         
         let hoje = new Date().toISOString().split('T')[0];
         
-        // --- 1. INTELIGÊNCIA DO FILTRO: Agentes não veem cargas pausadas! ---
+        // --- 1. FILTRO: Cargas pausadas somem da tela dos agentes ---
         let pendentes = records.filter(r => {
-            // Se a carga estiver pausada, SÓ mostra para Supervisor e Admin
             if (r.logisticaPausada) {
                 if (currentUserNivel !== 'admin' && currentUserNivel !== 'supervisor') return false; 
             }
 
             let isPendenteAgua = false;
             if (r.tipoAgua === 'periodo') {
-                isPendenteAgua = (r.dataFimAgua >= hoje);
+                isPendenteAgua = (r.dataFimAgua >= hoje); 
             } else {
                 isPendenteAgua = (r.qtdAgua > (r.qtdAguaEntregue || 0));
             }
@@ -1721,16 +1729,20 @@ function carregarPainelDespacho() {
         } else {
             if(btnAlerta) { 
                 btnAlerta.classList.remove('hidden'); 
-                let zeroPad = pendentes.length < 10 ? '0' + pendentes.length : pendentes.length;
-                let txtPlural = pendentes.length === 1 ? 'ENTREGA PENDENTE' : 'ENTREGAS PENDENTES';
                 
-                // --- 2. BOTÃO PISCANTE INTELIGENTE: Fica Laranja se tiver alguma carga pausada ---
-                let temPausada = pendentes.some(r => r.logisticaPausada);
-                if (temPausada && (currentUserNivel === 'admin' || currentUserNivel === 'supervisor')) {
-                    btnAlerta.style.backgroundColor = '#f0ad4e'; // Laranja
-                    btnAlerta.innerHTML = `⚠️ ATENÇÃO: 🚚 <span style="font-size: 1.3rem; font-weight: 900; background: rgba(0,0,0,0.2); padding: 0 6px; border-radius: 4px;">${zeroPad}</span> ${txtPlural} (COM PAUSAS)`;
+                // --- 2. BOTÃO PISCANTE INTELIGENTE ---
+                let qtdPausadas = pendentes.filter(r => r.logisticaPausada).length;
+                let qtdTotal = pendentes.length;
+                let zeroPad = qtdTotal < 10 ? '0' + qtdTotal : qtdTotal;
+                let txtPlural = qtdTotal === 1 ? 'ENTREGA PENDENTE' : 'ENTREGAS PENDENTES';
+                
+                if (qtdPausadas > 0 && (currentUserNivel === 'admin' || currentUserNivel === 'supervisor')) {
+                    btnAlerta.classList.remove('blink');
+                    btnAlerta.classList.add('blink-orange'); // Fica laranja!
+                    btnAlerta.innerHTML = `⚠️ ATENÇÃO: 🚚 <span style="font-size: 1.3rem; font-weight: 900; background: rgba(0,0,0,0.2); padding: 0 6px; border-radius: 4px;">${zeroPad}</span> ${txtPlural} (${qtdPausadas} PAUSADAS)`;
                 } else {
-                    btnAlerta.style.backgroundColor = ''; // Volta pro CSS padrão (Vermelho)
+                    btnAlerta.classList.remove('blink-orange');
+                    btnAlerta.classList.add('blink'); // Volta pro vermelho
                     btnAlerta.innerHTML = `🚨 ATENÇÃO: 🚚 <span style="font-size: 1.3rem; font-weight: 900; background: rgba(255,255,255,0.3); padding: 0 6px; border-radius: 4px;">${zeroPad}</span> ${txtPlural}`;
                 }
             }
@@ -1744,10 +1756,7 @@ function carregarPainelDespacho() {
                 let classeCard = isAgua ? '' : 'telha'; let icone = isAgua ? '💧' : '🏠';
                 
                 let isPausado = r.logisticaPausada === true; 
-                
-                // --- 3. EFEITO VISUAL: Carga pausada fica laranja e tem borda grossa ---
                 let estiloCard = isPausado ? `style="border-left-color: #f0ad4e; border-width: 2px; border-style: dashed; background-color: #fff3cd;"` : ``;
-                
                 let statusPausa = isPausado ? `<div style="color:#856404; font-weight:bold; background:#ffeeba; padding:5px; border-radius:4px; margin:6px 0; border: 1px solid #f0ad4e;">⏸️ PAUSADO PARA ANÁLISE:<br><span style="font-weight:normal;">Motivo: ${r.logisticaMotivo}</span></div>` : '';
                 
                 let mat = '';
@@ -1761,7 +1770,6 @@ function carregarPainelDespacho() {
                 let btnHtml = '';
                 let btnStyle = "width: 100%; font-size: 0.95rem; font-weight: bold; border: none; border-radius: 6px; padding: 10px 5px; margin-bottom: 6px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: opacity 0.2s;";
                 
-                // --- 4. BOTÕES: Se pausou, só os chefes veem o botão de "Retomar" ---
                 if (isPausado) { 
                     if (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
                         btnHtml = `<button style="background:#5cb85c; color:white; ${btnStyle}" onclick="retomarEntrega(${r.id})">▶️ Retomar Operação</button>`; 
@@ -1771,11 +1779,12 @@ function carregarPainelDespacho() {
                         ? `<button style="background:var(--agua-color); color:white; ${btnStyle}" onclick="adicionarAgua(${r.id})">🚛 Descarregar</button>` 
                         : `<button style="background:var(--telha-color); color:white; ${btnStyle}" onclick="marcarEntregaTelha(${r.id})">✅ Concluir</button>`;
                     
-                    btnHtml += `<button style="background:#e67e22; color:white; ${btnStyle}" onclick="pausarEntrega(${r.id})">⚠️ Relatar Problema</button>`;
+                    // --- 3. BOTÃO DE PAUSAR RESTRITO AOS CHEFES ---
+                    if (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
+                        btnHtml += `<button style="background:#e67e22; color:white; ${btnStyle}" onclick="pausarEntrega(${r.id})">⏸️ Pausar Entrega</button>`;
+                    }
                 }
                     
-                let temCesta = r.qtdCesta > 0; 
-                
                 let mapsBtn = `<button style="background:var(--danger-color); color:white; ${btnStyle}" onclick="abrirMapaDireto('${pData.temPermissao?r.localizacaoAgua||'':''}', '${pData.temPermissao?r.bairro:pData.bairro}', '${pData.temPermissao?r.rua||'':''}', '${pData.temPermissao?r.numero||'':''}')">📍 Localização</button>`;
                 
                 let endCompleto = `📍 ${pData.bairro}`; 
