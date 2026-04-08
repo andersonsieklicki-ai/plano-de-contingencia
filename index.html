@@ -1677,14 +1677,29 @@ function toggleTipoAgua() {
         sincronizarFirebaseAutomatica(); carregarPainelDespacho(); 
         if (!document.getElementById('reportSection').classList.contains('hidden')) generateReport();
     }
-
-    async function pausarEntrega(id) {
+async function pausarEntrega(id) {
         const index = records.findIndex(r => r.id === id); if (index === -1) return;
-        let motivo = prompt("⚠️ Informe o motivo do problema ou cancelamento\n(Ex: Caminhão quebrou, Sem água na rede, Endereço não achado):");
-        if (!motivo) return; records[index].logisticaPausada = true; records[index].logisticaMotivo = motivo; records[index].synced = false;
+        
+        let motivo = "";
+        
+        // Pergunta diferente dependendo do nível do usuário
+        if (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
+            motivo = prompt("⚠️ PAUSA DE OPERAÇÃO (Acesso Restrito)\n\nInforme o motivo estrutural ou o cancelamento para análise:\n(Ex: Sem energia na bomba, Tubulação rompida, Caminhão quebrou):");
+        } else {
+            motivo = prompt("⚠️ RELATAR PROBLEMA NA ENTREGA\n\nQual o motivo de não conseguir realizar a entrega agora?\n(Ex: Endereço não encontrado, Morador ausente, Veículo atolado):");
+        }
+        
+        if (!motivo || motivo.trim() === "") return; 
+        
+        records[index].logisticaPausada = true; 
+        records[index].logisticaMotivo = motivo; 
+        records[index].synced = false;
+        
         localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
+        
         await registrarLog("ALERTA LOGÍSTICA", `PAUSADO - Cód: [${records[index].codigo}]. Motivo: ${motivo}`, records[index].codigo);
-        sincronizarFirebaseAutomatica(); carregarPainelDespacho(); 
+        sincronizarFirebaseAutomatica(); 
+        carregarPainelDespacho(); 
     }
 
     async function retomarEntrega(id) {
@@ -1770,10 +1785,23 @@ function carregarPainelDespacho() {
                 let btnHtml = '';
                 let btnStyle = "width: 100%; font-size: 0.95rem; font-weight: bold; border: none; border-radius: 6px; padding: 10px 5px; margin-bottom: 6px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: opacity 0.2s;";
                 
-                if (isPausado) { 
+               if (isPausado) { 
                     if (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
                         btnHtml = `<button style="background:#5cb85c; color:white; ${btnStyle}" onclick="retomarEntrega(${r.id})">▶️ Retomar Operação</button>`; 
                     }
+                } else {
+                    btnHtml = isAgua 
+                        ? `<button style="background:var(--agua-color); color:white; ${btnStyle}" onclick="adicionarAgua(${r.id})">🚛 Descarregar</button>` 
+                        : `<button style="background:var(--telha-color); color:white; ${btnStyle}" onclick="marcarEntregaTelha(${r.id})">✅ Concluir</button>`;
+                    
+                    // --- SEPARAÇÃO DE BOTÕES POR HIERARQUIA ---
+                    if (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
+                        btnHtml += `<button style="background:#e67e22; color:white; ${btnStyle}" onclick="pausarEntrega(${r.id})">⏸️ Pausar Entrega</button>`;
+                    } else {
+                        // Motorista tem a opção de relatar o problema da rua
+                        btnHtml += `<button style="background:#e67e22; color:white; ${btnStyle}" onclick="pausarEntrega(${r.id})">⚠️ Relatar Problema</button>`;
+                    }
+                }
                 } else {
                     btnHtml = isAgua 
                         ? `<button style="background:var(--agua-color); color:white; ${btnStyle}" onclick="adicionarAgua(${r.id})">🚛 Descarregar</button>` 
