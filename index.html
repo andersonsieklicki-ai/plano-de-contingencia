@@ -1681,14 +1681,11 @@ async function pausarEntrega(id) {
         const index = records.findIndex(r => r.id === id); 
         if (index === -1) return;
         
-        let motivo = "";
+        let msgAdmin = "⚠️ PAUSA DE OPERAÇÃO (Acesso Restrito)\n\nInforme o motivo estrutural ou o cancelamento para análise:\n(Ex: Sem energia na bomba, Tubulação rompida, Caminhão quebrou):";
+        let msgMotorista = "⚠️ RELATAR PROBLEMA NA ENTREGA\n\nQual o motivo de não conseguir realizar a entrega agora?\n(Ex: Endereço não encontrado, Morador ausente, Veículo atolado):";
         
-        // Pergunta diferente dependendo do nível do usuário (Usando crases para evitar erros de sintaxe)
-        if (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
-            motivo = prompt(`⚠️ PAUSA DE OPERAÇÃO (Acesso Restrito)\n\nInforme o motivo estrutural ou o cancelamento para análise:\n(Ex: Sem energia na bomba, Tubulação rompida, Caminhão quebrou):`);
-        } else {
-            motivo = prompt(`⚠️ RELATAR PROBLEMA NA ENTREGA\n\nQual o motivo de não conseguir realizar a entrega agora?\n(Ex: Endereço não encontrado, Morador ausente, Veículo atolado):`);
-        }
+        let textoPergunta = (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') ? msgAdmin : msgMotorista;
+        let motivo = prompt(textoPergunta);
         
         if (!motivo || motivo.trim() === "") return; 
         
@@ -1698,11 +1695,12 @@ async function pausarEntrega(id) {
         
         localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
         
-        await registrarLog("ALERTA LOGÍSTICA", `PAUSADO - Cód: [${records[index].codigo}]. Motivo: ${motivo}`, records[index].codigo);
+        let detalhesLog = "PAUSADO - Cód: [" + records[index].codigo + "]. Motivo: " + motivo;
+        await registrarLog("ALERTA LOGÍSTICA", detalhesLog, records[index].codigo);
+        
         sincronizarFirebaseAutomatica(); 
         carregarPainelDespacho(); 
     }
-
     async function retomarEntrega(id) {
         const index = records.findIndex(r => r.id === id); if (index === -1) return;
         records[index].logisticaPausada = false; records[index].logisticaMotivo = ""; records[index].synced = false;
