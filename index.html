@@ -1694,18 +1694,22 @@ function toggleTipoAgua() {
         await registrarLog("RETOMADA LOGÍSTICA", `RETOMADO - Cód: [${records[index].codigo}]`, records[index].codigo);
         sincronizarFirebaseAutomatica(); carregarPainelDespacho(); 
     }
-
-    function carregarPainelDespacho() {
+function carregarPainelDespacho() {
         const btnAlerta = document.getElementById('btnLogisticaAlerta'); const container = document.getElementById('listaDespachoContainer'); 
         if(!container) return; 
         
         let hoje = new Date().toISOString().split('T')[0];
         
-        // Nova Inteligência para puxar entregas de Água pendentes (Por volume OU se a data final do período não expirou)
+        // --- 1. INTELIGÊNCIA DO FILTRO: Agentes não veem cargas pausadas! ---
         let pendentes = records.filter(r => {
+            // Se a carga estiver pausada, SÓ mostra para Supervisor e Admin
+            if (r.logisticaPausada) {
+                if (currentUserNivel !== 'admin' && currentUserNivel !== 'supervisor') return false; 
+            }
+
             let isPendenteAgua = false;
             if (r.tipoAgua === 'periodo') {
-                isPendenteAgua = (r.dataFimAgua >= hoje && !r.logisticaPausada);
+                isPendenteAgua = (r.dataFimAgua >= hoje);
             } else {
                 isPendenteAgua = (r.qtdAgua > (r.qtdAguaEntregue || 0));
             }
@@ -1719,7 +1723,16 @@ function toggleTipoAgua() {
                 btnAlerta.classList.remove('hidden'); 
                 let zeroPad = pendentes.length < 10 ? '0' + pendentes.length : pendentes.length;
                 let txtPlural = pendentes.length === 1 ? 'ENTREGA PENDENTE' : 'ENTREGAS PENDENTES';
-                btnAlerta.innerHTML = `🚨 ATENÇÃO: 🚚 <span style="font-size: 1.3rem; font-weight: 900; background: rgba(255,255,255,0.3); padding: 0 6px; border-radius: 4px;">${zeroPad}</span> ${txtPlural}`;
+                
+                // --- 2. BOTÃO PISCANTE INTELIGENTE: Fica Laranja se tiver alguma carga pausada ---
+                let temPausada = pendentes.some(r => r.logisticaPausada);
+                if (temPausada && (currentUserNivel === 'admin' || currentUserNivel === 'supervisor')) {
+                    btnAlerta.style.backgroundColor = '#f0ad4e'; // Laranja
+                    btnAlerta.innerHTML = `⚠️ ATENÇÃO: 🚚 <span style="font-size: 1.3rem; font-weight: 900; background: rgba(0,0,0,0.2); padding: 0 6px; border-radius: 4px;">${zeroPad}</span> ${txtPlural} (COM PAUSAS)`;
+                } else {
+                    btnAlerta.style.backgroundColor = ''; // Volta pro CSS padrão (Vermelho)
+                    btnAlerta.innerHTML = `🚨 ATENÇÃO: 🚚 <span style="font-size: 1.3rem; font-weight: 900; background: rgba(255,255,255,0.3); padding: 0 6px; border-radius: 4px;">${zeroPad}</span> ${txtPlural}`;
+                }
             }
             
             let h = '';
@@ -1730,8 +1743,12 @@ function toggleTipoAgua() {
                 let faltaAgua = r.tipoAgua === 'periodo' ? 0 : (r.qtdAgua - (r.qtdAguaEntregue || 0));
                 let classeCard = isAgua ? '' : 'telha'; let icone = isAgua ? '💧' : '🏠';
                 
-                let isPausado = r.logisticaPausada === true; let estiloCard = isPausado ? `style="border-left-color: #f0ad4e; background-color: #fff3cd;"` : ``;
-                let statusPausa = isPausado ? `<div style="color:#856404; font-weight:bold; background:#ffeeba; padding:5px; border-radius:4px; margin:6px 0; border: 1px dashed #f0ad4e;">⚠️ ATENÇÃO - PAUSADO:<br><span style="font-weight:normal;">${r.logisticaMotivo}</span></div>` : '';
+                let isPausado = r.logisticaPausada === true; 
+                
+                // --- 3. EFEITO VISUAL: Carga pausada fica laranja e tem borda grossa ---
+                let estiloCard = isPausado ? `style="border-left-color: #f0ad4e; border-width: 2px; border-style: dashed; background-color: #fff3cd;"` : ``;
+                
+                let statusPausa = isPausado ? `<div style="color:#856404; font-weight:bold; background:#ffeeba; padding:5px; border-radius:4px; margin:6px 0; border: 1px solid #f0ad4e;">⏸️ PAUSADO PARA ANÁLISE:<br><span style="font-weight:normal;">Motivo: ${r.logisticaMotivo}</span></div>` : '';
                 
                 let mat = '';
                 if (isAgua) {
@@ -1741,12 +1758,14 @@ function toggleTipoAgua() {
                     mat = `Entregar: <strong>${r.qtdTelha} Telhas</strong>`;
                 }
                 
-             let btnHtml = '';
-                // Novo estilo profissional para os botões (arredondados, sombra, fonte melhor)
+                let btnHtml = '';
                 let btnStyle = "width: 100%; font-size: 0.95rem; font-weight: bold; border: none; border-radius: 6px; padding: 10px 5px; margin-bottom: 6px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: opacity 0.2s;";
                 
+                // --- 4. BOTÕES: Se pausou, só os chefes veem o botão de "Retomar" ---
                 if (isPausado) { 
-                    btnHtml = `<button style="background:#f0ad4e; color:#333; ${btnStyle}" onclick="retomarEntrega(${r.id})">▶️ Retomar Entrega</button>`; 
+                    if (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
+                        btnHtml = `<button style="background:#5cb85c; color:white; ${btnStyle}" onclick="retomarEntrega(${r.id})">▶️ Retomar Operação</button>`; 
+                    }
                 } else {
                     btnHtml = isAgua 
                         ? `<button style="background:var(--agua-color); color:white; ${btnStyle}" onclick="adicionarAgua(${r.id})">🚛 Descarregar</button>` 
@@ -1757,7 +1776,6 @@ function toggleTipoAgua() {
                     
                 let temCesta = r.qtdCesta > 0; 
                 
-                // Botão de Localização Vermelho Profissional
                 let mapsBtn = `<button style="background:var(--danger-color); color:white; ${btnStyle}" onclick="abrirMapaDireto('${pData.temPermissao?r.localizacaoAgua||'':''}', '${pData.temPermissao?r.bairro:pData.bairro}', '${pData.temPermissao?r.rua||'':''}', '${pData.temPermissao?r.numero||'':''}')">📍 Localização</button>`;
                 
                 let endCompleto = `📍 ${pData.bairro}`; 
@@ -1774,16 +1792,11 @@ function toggleTipoAgua() {
                 
                 let codOneLine = `<span style="white-space: nowrap; font-size: 0.7rem;">${r.codigo.replace(/DC[-:]?/, '<strong style="color:var(--danger-color);">DC:</strong>')}</span>`;
                 
-        // Observação em destaque avermelhado (MANTEMOS FORA DO LEQUE POR SEGURANÇA)
                 let obsHtml = r.observacao ? `<div style="background: #fee2e2; border: 1px solid #fca5a5; color: #b91c1c; padding: 6px; border-radius: 6px; font-size: 0.85rem; margin: 8px 0; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);"><strong>⚠️ Obs:</strong> ${r.observacao}</div>` : '';
 
-// --- LAYOUT COM LARGURA 100% FORÇADA (ALINHAMENTO DEFINITIVO) ---
                 h += `<div class="dispatch-card ${classeCard}" ${estiloCard} style="width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 8px; margin-bottom: 12px; background: #fff; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                         
-                        <!-- GRID COM LARGURA TOTAL -->
                         <div style="display: grid; grid-template-columns: 1fr 135px; gap: 15px; align-items: start; width: 100%;">
-                            
-                            <!-- COLUNA DA ESQUERDA -->
                             <div style="min-width: 0;">
                                 <strong style="font-size: 1.1rem; color: var(--primary-color); display: block; margin-bottom: 4px; line-height: 1.3; word-wrap: break-word; overflow-wrap: break-word;">${icone} ${pData.nome}</strong>
                                 <div style="font-size: 0.95rem; margin-bottom: 4px; font-weight: bold;">${linkZap}</div>
@@ -1793,20 +1806,17 @@ function toggleTipoAgua() {
                                 </div>
                             </div>
 
-                            <!-- COLUNA DA DIREITA -->
                             <div style="display: flex; flex-direction: column; gap: 12px; background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
                                 ${btnHtml.replace(/width: 100%;/g, 'width: 100%; padding: 12px 4px; font-size: 0.8rem; margin: 0; border-radius: 6px;')}
                                 ${mapsBtn.replace(/width: 100%;/g, 'width: 100%; padding: 12px 4px; font-size: 0.8rem; margin: 0; border-radius: 6px;')}
                             </div>
                         </div>
                         
-                        <!-- ALERTAS E OBSERVAÇÕES -->
                         <div style="width: 100%; margin-top: 4px;">
                             ${statusPausa}
                             ${obsHtml ? obsHtml.replace('margin: 8px 0;', 'margin: 4px 0; font-size: 0.85rem; padding: 6px; border-radius: 4px;') : ''}
                         </div>
 
-                        <!-- LEQUE DE DETALHES -->
                         <details style="background: #f1f5f9; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 6px;">
                             <summary style="cursor: pointer; color: #475569; font-weight: bold; font-size: 0.75rem; padding: 8px 10px; outline: none;">
                                 ➕ Ver Endereço Completo e Cód.
