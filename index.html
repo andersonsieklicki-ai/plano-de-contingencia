@@ -1784,7 +1784,7 @@ function carregarPainelDespacho() {
                 let btnHtml = '';
                 let btnStyle = "width: 100%; font-size: 0.95rem; font-weight: bold; border: none; border-radius: 6px; padding: 10px 5px; margin-bottom: 6px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: opacity 0.2s;";
                 
-               if (isPausado) { 
+                if (isPausado) { 
                     if (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
                         btnHtml = `<button style="background:#5cb85c; color:white; ${btnStyle}" onclick="retomarEntrega(${r.id})">▶️ Retomar Operação</button>`; 
                     }
@@ -1799,16 +1799,6 @@ function carregarPainelDespacho() {
                     } else {
                         // Motorista tem a opção de relatar o problema da rua
                         btnHtml += `<button style="background:#e67e22; color:white; ${btnStyle}" onclick="pausarEntrega(${r.id})">⚠️ Relatar Problema</button>`;
-                    }
-                }
-                } else {
-                    btnHtml = isAgua 
-                        ? `<button style="background:var(--agua-color); color:white; ${btnStyle}" onclick="adicionarAgua(${r.id})">🚛 Descarregar</button>` 
-                        : `<button style="background:var(--telha-color); color:white; ${btnStyle}" onclick="marcarEntregaTelha(${r.id})">✅ Concluir</button>`;
-                    
-                    // --- 3. BOTÃO DE PAUSAR RESTRITO AOS CHEFES ---
-                    if (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
-                        btnHtml += `<button style="background:#e67e22; color:white; ${btnStyle}" onclick="pausarEntrega(${r.id})">⏸️ Pausar Entrega</button>`;
                     }
                 }
                     
