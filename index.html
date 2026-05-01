@@ -4,6 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Defesa Civil - Capanema | Plano de Contingência</title>
+	
+	<!-- Configurações para virar Aplicativo (PWA) -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#003366">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Defesa Civil">
+    <link rel="apple-touch-icon" href="1001145756.png">
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js').then(reg => {
+            console.log('App da Defesa Civil pronto!', reg.scope);
+          }).catch(err => {
+            console.log('Falha ao preparar App:', err);
+          });
+        });
+      }
+    </script>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
@@ -211,10 +231,7 @@
             user-select: auto !important;
         }
 
-    </style>
-</head>
-<body>
-    </style>
+</style>
 </head>
 <body>
 <div id="loginOverlay" class="login-overlay" style="z-index: 10005; display: none;">
@@ -646,12 +663,14 @@ function loginGoogle() {
         }
     }
 
- function verificarAcesso() {
+function verificarAcesso() {
         const btnLogistica = document.getElementById('btnLogisticaAlerta');
         const btnRelatorios = document.querySelector('.btn-report');
 
+        // 🔥 MELHORIA: O botão Equipe agora aparece para Admin E Supervisor
         if (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') { 
-            if(btnEquipe && currentUserNivel === 'admin') btnEquipe.style.display = 'inline-block';
+            if(btnEquipe) btnEquipe.style.display = 'inline-block';
+            
             if(document.getElementById('tab-btn-log')) document.getElementById('tab-btn-log').style.display = 'block'; 
             if(document.getElementById('tab-btn-estoque')) document.getElementById('tab-btn-estoque').style.display = 'block'; 
             if(document.getElementById('tab-btn-robo')) document.getElementById('tab-btn-robo').style.display = 'block';
@@ -665,14 +684,13 @@ function loginGoogle() {
         const cadastroOverlay = document.getElementById('cadastroOverlay'); 
         const aguardandoOverlay = document.getElementById('aguardandoOverlay');
 
-        // 🔥 CORREÇÃO: Limpando o display bloqueado quando o usuário logar
+        // 🔥 MANUTENÇÃO: Limpando o display bloqueado quando o usuário logar
         if (!auth.currentUser || currentUserStatus !== 'aprovado') {
             if (btnLogistica) btnLogistica.style.display = 'none';
             if (btnRelatorios) btnRelatorios.style.display = 'none';
-            fecharModalLogistica(); // Se o modal estiver aberto, fecha imediatamente
+            if (typeof fecharModalLogistica === 'function') fecharModalLogistica(); 
         } else {
             if (btnRelatorios) btnRelatorios.style.display = 'block';
-            // Essa linha devolve o controle do botão para a função que conta as cargas:
             if (btnLogistica) btnLogistica.style.display = ''; 
         }
 
@@ -690,8 +708,9 @@ function loginGoogle() {
                     if(aguardandoOverlay) aguardandoOverlay.style.display = 'none';
                     if(cadastroOverlay) {
                         cadastroOverlay.style.display = 'flex';
-                        if (!document.getElementById('cadNome').value && auth.currentUser.displayName) {
-                            document.getElementById('cadNome').value = auth.currentUser.displayName;
+                        const elNome = document.getElementById('cadNome');
+                        if (elNome && !elNome.value && auth.currentUser.displayName) {
+                            elNome.value = auth.currentUser.displayName;
                         }
                     }
                 } 
@@ -701,7 +720,8 @@ function loginGoogle() {
                     if(aguardandoOverlay) aguardandoOverlay.style.display = 'flex';
                 }
                 else if (currentUserStatus === 'bloqueado') { 
-                    if(document.getElementById('blockedEmailDisplay')) document.getElementById('blockedEmailDisplay').innerText = auth.currentUser.email || 'Usuário'; 
+                    const elEmail = document.getElementById('blockedEmailDisplay');
+                    if(elEmail) elEmail.innerText = auth.currentUser.email || 'Usuário'; 
                     if(blockedOverlay) blockedOverlay.style.display = 'flex'; 
                     if(cadastroOverlay) cadastroOverlay.style.display = 'none';
                     if(aguardandoOverlay) aguardandoOverlay.style.display = 'none';
@@ -718,7 +738,8 @@ function loginGoogle() {
             if(aguardandoOverlay) aguardandoOverlay.style.display = 'none';
             
             if (auth.currentUser && currentUserStatus === 'bloqueado') { 
-                if(document.getElementById('blockedEmailDisplay')) document.getElementById('blockedEmailDisplay').innerText = auth.currentUser.email || 'Usuário'; 
+                const elEmail = document.getElementById('blockedEmailDisplay');
+                if(elEmail) elEmail.innerText = auth.currentUser.email || 'Usuário'; 
                 if(blockedOverlay) blockedOverlay.style.display = 'flex'; 
             } else { 
                 if(blockedOverlay) blockedOverlay.style.display = 'none'; 
@@ -1687,17 +1708,27 @@ async function pausarEntrega(id) {
         let textoPergunta = (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') ? msgAdmin : msgMotorista;
         let motivo = prompt(textoPergunta);
         
-        if (!motivo || motivo.trim() === "") return; 
+        // 🛡️ TRAVA DE AUDITORIA: Exige uma justificativa real (mínimo 4 caracteres)
+        if (!motivo || motivo.trim().length < 4) { 
+            alert("❌ Ação cancelada: Você precisa digitar uma justificativa clara para pausar a entrega.");
+            return; 
+        } 
         
+        // 1. Atualiza a memória RAM instantaneamente
         records[index].logisticaPausada = true; 
         records[index].logisticaMotivo = motivo; 
-        records[index].synced = false;
         
+        // A MÁGICA: A flag 'synced: false' avisa a função sincronizarFirebaseAutomatica() 
+        // para subir essa alteração pro Firebase no fundo, sem precisar ler a base inteira de novo.
+        records[index].synced = false; 
+        
+        // 2. Salva no cache do navegador
         localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
         
         let detalhesLog = "PAUSADO - Cód: [" + records[index].codigo + "]. Motivo: " + motivo;
         await registrarLog("ALERTA LOGÍSTICA", detalhesLog, records[index].codigo);
         
+        // 3. Atualiza o banco e a tela do usuário de forma assíncrona (Sem congelar)
         sincronizarFirebaseAutomatica(); 
         carregarPainelDespacho(); 
     }
@@ -2006,8 +2037,9 @@ function clearFormFields() {
             if(typeof carregarPainelDespacho === 'function') carregarPainelDespacho();
         } catch (e) { alert("⚠️ Erro:\n" + e.message); bs.disabled = false; bs.innerText = "Salvar Lançamento"; }
     }
-   async function deleteRecord(id) {
-        const r = records.find(x => x.id === id); if(!r) return;
+ async function deleteRecord(id) {
+        const r = records.find(x => x.id === id); 
+        if(!r) return;
         if(currentUserNivel !== 'admin') { alert("Apenas Administradores."); return; }
         
         let motivo = prompt("⚠️ Informe o motivo da EXCLUSÃO (Mínimo de 5 letras):");
@@ -2024,9 +2056,19 @@ function clearFormFields() {
             }, { merge: true }).catch(e=>{});
         }
 
-        records = records.filter(x => x.id !== id); localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
-        if (navigator.onLine && db) { try { await db.collection("doacoes_capanema").doc(id.toString()).delete(); } catch(e){} }
-        await registrarLog("EXCLUSÃO", `Apagou Cód: [${r.codigo}]. Motivo: ${motivo}`); generateReport(); carregarPainelDespacho();
+        // 🛡️ LIMPEZA LOCAL OTIMIZADA: Apaga da RAM e salva no cache sem forçar releitura global do Firebase!
+        records = records.filter(x => x.id !== id); 
+        localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
+        
+        if (navigator.onLine && db) { 
+            try { await db.collection("doacoes_capanema").doc(id.toString()).delete(); } catch(e){} 
+        }
+        
+        await registrarLog("EXCLUSÃO", `Apagou Cód: [${r.codigo}]. Motivo: ${motivo}`); 
+        
+        // ⚡ Atualiza o visual IMEDIATAMENTE sem gastar leituras do banco
+        generateReport(); 
+        carregarPainelDespacho();
     }
     
     function checkBulkDelete() { const cx = document.querySelectorAll('.bulk-checkbox:checked'); const b = document.getElementById('btnBulkDelete'); if(cx.length>0) { b.style.display='block'; b.innerText=`🗑️ Excluir ${cx.length}`; } else { b.style.display='none'; } }
