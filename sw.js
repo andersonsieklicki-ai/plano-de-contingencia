@@ -2,7 +2,7 @@ const CACHE_NAME = 'defesa-civil-v1';
 const urlsToCache = [
   'index.html',
   'manifest.json',
-  '1001145756.png'
+  'defesa.png'
 ];
 
 self.addEventListener('install', event => {
