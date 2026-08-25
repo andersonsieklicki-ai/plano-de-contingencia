@@ -1814,31 +1814,57 @@ function carregarPainelDespacho() {
                 }
                 
                 let btnHtml = '';
-                let btnStyle = "width: 100%; font-size: 0.95rem; font-weight: bold; border: none; border-radius: 6px; padding: 10px 5px; margin-bottom: 6px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: opacity 0.2s;";
-                
+                let btnStyle = "width: 100%; padding: 12px 4px; font-size: 0.8rem; margin: 0; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: opacity 0.2s;";
+                let spanStyle = "display:block; font-size:0.65rem; color:#666; margin-bottom:2px; line-height:1.1; font-weight:bold;";
+
                 if (isPausado) { 
                     if (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
-                        btnHtml = `<button style="background:#5cb85c; color:white; ${btnStyle}" onclick="retomarEntrega(${r.id})">▶️ Retomar Operação</button>`; 
+                        btnHtml += `<div>
+                                        <span style="${spanStyle}">Voltar para fila de entregas:</span>
+                                        <button style="background:#5cb85c; color:white; ${btnStyle}" onclick="retomarEntrega(${r.id})">▶️ Retomar Operação</button>
+                                    </div>`; 
                     }
                 } else {
-                    btnHtml = isAgua 
-                        ? `<button style="background:var(--agua-color); color:white; ${btnStyle}" onclick="adicionarAgua(${r.id})">🚛 Descarregar</button>` 
-                        : `<button style="background:var(--telha-color); color:white; ${btnStyle}" onclick="marcarEntregaTelha(${r.id})">✅ Concluir</button>`;
+                    // Botão Principal (Descarregar/Concluir)
+                    if(isAgua) {
+                        btnHtml += `<div>
+                                        <span style="${spanStyle}">Registrar entrega de hoje:</span>
+                                        <button style="background:var(--agua-color); color:white; ${btnStyle}" onclick="adicionarAgua(${r.id})">🚛 Descarregar</button>
+                                    </div>`;
+                    } else {
+                        btnHtml += `<div>
+                                        <span style="${spanStyle}">Marcar como finalizado:</span>
+                                        <button style="background:var(--telha-color); color:white; ${btnStyle}" onclick="marcarEntregaTelha(${r.id})">✅ Concluir</button>
+                                    </div>`;
+                    }
                     
                     // --- SEPARAÇÃO DE BOTÕES POR HIERARQUIA ---
                     if (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
-                        btnHtml += `<button style="background:#e67e22; color:white; ${btnStyle}" onclick="pausarEntrega(${r.id})">⏸️ Pausar Entrega</button>`;
+                        btnHtml += `<div>
+                                        <span style="${spanStyle} margin-top:8px;">Adiar ou relatar problema:</span>
+                                        <button style="background:#e67e22; color:white; ${btnStyle}" onclick="pausarEntrega(${r.id})">⏸️ Pausar Entrega</button>
+                                    </div>`;
                         
-                        // [MELHORIA] BOTÃO DE CANCELAR SALDO
-                        if (isAgua && r.tipoAgua !== 'periodo') {
-                            btnHtml += `<button style="background:#d9534f; color:white; ${btnStyle}" onclick="cancelarRestanteAgua(${r.id}, ${faltaAgua})">❌ Cancelar Saldo</button>`;
+                        // [MELHORIA] BOTÃO HÍBRIDO E EXPLICATIVO
+                        if (isAgua) {
+                            let txtCancel = r.tipoAgua === 'periodo' ? '❌ Finalizar Rota Hoje' : `❌ Zerar Saldo Restante`;
+                            btnHtml += `<div>
+                                            <span style="${spanStyle} color:#d9534f; margin-top:8px;">Tirar da tela (Mantém histórico):</span>
+                                            <button style="background:#d9534f; color:white; ${btnStyle}" onclick="cancelarRestanteAgua(${r.id}, ${faltaAgua})">${txtCancel}</button>
+                                        </div>`;
                         }
                     } else {
-                        btnHtml += `<button style="background:#e67e22; color:white; ${btnStyle}" onclick="pausarEntrega(${r.id})">⚠️ Relatar Problema</button>`;
+                        btnHtml += `<div>
+                                        <span style="${spanStyle} margin-top:8px;">Informar imprevisto na rua:</span>
+                                        <button style="background:#e67e22; color:white; ${btnStyle}" onclick="pausarEntrega(${r.id})">⚠️ Relatar Problema</button>
+                                    </div>`;
                     }
                 }
                     
-                let mapsBtn = `<button style="background:var(--danger-color); color:white; ${btnStyle}" onclick="abrirMapaDireto('${isTemPermissao?r.localizacaoAgua||'':''}', '${isTemPermissao?r.bairro:pData.bairro}', '${isTemPermissao?r.rua||'':''}', '${isTemPermissao?r.numero||'':''}')">📍 Localização</button>`;
+                let mapsBtn = `<div>
+                                    <span style="${spanStyle} margin-top:8px;">Traçar rota GPS:</span>
+                                    <button style="background:var(--danger-color); color:white; ${btnStyle}" onclick="abrirMapaDireto('${isTemPermissao?r.localizacaoAgua||'':''}', '${isTemPermissao?r.bairro:pData.bairro}', '${isTemPermissao?r.rua||'':''}', '${isTemPermissao?r.numero||'':''}')">📍 Localização</button>
+                               </div>`;
                 
                 let endCompleto = `📍 ${pData.bairro}`; 
                 if(isTemPermissao) { if(r.localizacaoAgua) endCompleto += ` - ${r.localizacaoAgua}`; if(r.rua) endCompleto += ` - ${r.rua}, ${r.numero||'S/N'}`; } else { if(r.localizacaoAgua || r.rua) endCompleto += ` - ***`; }
@@ -1868,9 +1894,9 @@ function carregarPainelDespacho() {
                                 </div>
                             </div>
 
-                            <div style="display: flex; flex-direction: column; gap: 12px; background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
-                                ${btnHtml.replace(/width: 100%;/g, 'width: 100%; padding: 12px 4px; font-size: 0.8rem; margin: 0; border-radius: 6px;')}
-                                ${mapsBtn.replace(/width: 100%;/g, 'width: 100%; padding: 12px 4px; font-size: 0.8rem; margin: 0; border-radius: 6px;')}
+                            <div style="display: flex; flex-direction: column; gap: 4px; background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
+                                ${btnHtml}
+                                ${mapsBtn}
                             </div>
                         </div>
                         
