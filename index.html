@@ -1794,7 +1794,8 @@ function carregarPainelDespacho() {
             
             let h = '';
             pendentes.sort((a,b) => new Date(a.dataISO) - new Date(b.dataISO)).forEach(r => {
-                let pData = aplicarPrivacidade(r);
+                let pData = (typeof aplicarPrivacidade === 'function') ? aplicarPrivacidade(r) : r;
+                let isTemPermissao = (pData.temPermissao !== undefined) ? pData.temPermissao : true;
                 
                 let isAgua = (r.tipoAgua === 'periodo' && r.dataFimAgua >= hoje) || (r.tipoAgua !== 'periodo' && r.qtdAgua > (r.qtdAguaEntregue || 0));
                 let faltaAgua = r.tipoAgua === 'periodo' ? 0 : (r.qtdAgua - (r.qtdAguaEntregue || 0));
@@ -1827,31 +1828,31 @@ function carregarPainelDespacho() {
                     // --- SEPARAÇÃO DE BOTÕES POR HIERARQUIA ---
                     if (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
                         btnHtml += `<button style="background:#e67e22; color:white; ${btnStyle}" onclick="pausarEntrega(${r.id})">⏸️ Pausar Entrega</button>`;
-                        // [MELHORIA] INSERÇÃO DO BOTÃO CANCELAR RESTANTE EXCLUSIVO PARA ADMIN/SUPERVISOR
+                        
+                        // [MELHORIA] BOTÃO DE CANCELAR SALDO
                         if (isAgua && r.tipoAgua !== 'periodo') {
-                             btnHtml += `<button style="background:var(--danger-color); color:white; ${btnStyle}" onclick="cancelarRestanteAgua(${r.id}, ${faltaAgua})">❌ Cancelar Saldo</button>`;
+                            btnHtml += `<button style="background:#d9534f; color:white; ${btnStyle}" onclick="cancelarRestanteAgua(${r.id}, ${faltaAgua})">❌ Cancelar Saldo</button>`;
                         }
                     } else {
-                        // Motorista tem a opção de relatar o problema da rua
                         btnHtml += `<button style="background:#e67e22; color:white; ${btnStyle}" onclick="pausarEntrega(${r.id})">⚠️ Relatar Problema</button>`;
                     }
                 }
                     
-                let mapsBtn = `<button style="background:var(--danger-color); color:white; ${btnStyle}" onclick="abrirMapaDireto('${pData.temPermissao?r.localizacaoAgua||'':''}', '${pData.temPermissao?r.bairro:pData.bairro}', '${pData.temPermissao?r.rua||'':''}', '${pData.temPermissao?r.numero||'':''}')">📍 Localização</button>`;
+                let mapsBtn = `<button style="background:var(--danger-color); color:white; ${btnStyle}" onclick="abrirMapaDireto('${isTemPermissao?r.localizacaoAgua||'':''}', '${isTemPermissao?r.bairro:pData.bairro}', '${isTemPermissao?r.rua||'':''}', '${isTemPermissao?r.numero||'':''}')">📍 Localização</button>`;
                 
                 let endCompleto = `📍 ${pData.bairro}`; 
-                if(pData.temPermissao) { if(r.localizacaoAgua) endCompleto += ` - ${r.localizacaoAgua}`; if(r.rua) endCompleto += ` - ${r.rua}, ${r.numero||'S/N'}`; } else { if(r.localizacaoAgua || r.rua) endCompleto += ` - ***`; }
+                if(isTemPermissao) { if(r.localizacaoAgua) endCompleto += ` - ${r.localizacaoAgua}`; if(r.rua) endCompleto += ` - ${r.rua}, ${r.numero||'S/N'}`; } else { if(r.localizacaoAgua || r.rua) endCompleto += ` - ***`; }
                 
                 let emailKey = (r.emailCriador || "").toLowerCase();
-                let emailCriadorFormatado = window.mapaUsuarios[emailKey] || (r.emailCriador ? r.emailCriador.split('@')[0] : "Desconhecido");
+                let emailCriadorFormatado = window.mapaUsuarios ? (window.mapaUsuarios[emailKey] || (r.emailCriador ? r.emailCriador.split('@')[0] : "Desconhecido")) : (r.emailCriador ? r.emailCriador.split('@')[0] : "Desconhecido");
 
-                let telDisplay = pData.temPermissao ? (r.telefone || 'Não informado') : '***';
+                let telDisplay = isTemPermissao ? (r.telefone || 'Não informado') : '***';
                 
-                let linkZap = (pData.temPermissao && r.telefone) 
+                let linkZap = (isTemPermissao && r.telefone) 
                     ? `<a href="https://wa.me/55${r.telefone.replace(/\D/g, '')}" target="_blank" style="color:#25D366; text-decoration:none;">📞 ${r.telefone}</a>` 
                     : `📞 ${telDisplay}`;
                 
-                let codOneLine = `<span style="white-space: nowrap; font-size: 0.7rem;">${r.codigo.replace(/DC[-:]?/, '<strong style="color:var(--danger-color);">DC:</strong>')}</span>`;
+                let codOneLine = `<span style="white-space: nowrap; font-size: 0.7rem;">${(r.codigo || "").replace(/DC[-:]?/, '<strong style="color:var(--danger-color);">DC:</strong>')}</span>`;
                 
                 let obsHtml = r.observacao ? `<div style="background: #fee2e2; border: 1px solid #fca5a5; color: #b91c1c; padding: 6px; border-radius: 6px; font-size: 0.85rem; margin: 8px 0; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);"><strong>⚠️ Obs:</strong> ${r.observacao}</div>` : '';
 
@@ -3193,7 +3194,6 @@ function abrirMapaDireto(loc, bairro, rua, num) {
     };
 	
 	async function cancelarRestanteAgua(id, falta) {
-        // Trava de segurança extra
         if (currentUserNivel !== 'admin' && currentUserNivel !== 'supervisor') {
             alert("Acesso negado. Apenas Supervisores ou Administradores podem cancelar saldos.");
             return;
@@ -3209,26 +3209,23 @@ function abrirMapaDireto(loc, bairro, rua, num) {
         let r = records[idx];
         let entregue = r.qtdAguaEntregue || 0;
         
-        // Ajusta o quantitativo solicitado para bater com o que já foi entregue (Zero o que faltava)
+        // Zera a falta igualando o solicitado com o entregue
         r.qtdAgua = entregue; 
         
-        // Adiciona uma observação automática para manter o histórico claro
+        // Adiciona registro na observação
         let obsCancelamento = `[Cancelado saldo de ${falta}m³ por ${currentUserEmail}]`;
         r.observacao = r.observacao ? `${r.observacao} | ${obsCancelamento}` : obsCancelamento;
         
         r.synced = false;
         localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
         
-        // Registra na Auditoria
         if(typeof registrarLog === 'function') {
             await registrarLog("CANCELAMENTO LOGÍSTICA", `Cancelou ${falta}m³ restantes da entrega Cód [${r.codigo}]`);
         }
         
-        // Sincroniza e recarrega a tela
-        sincronizarFirebaseAutomatica();
+        if(typeof sincronizarFirebaseAutomatica === 'function') sincronizarFirebaseAutomatica();
         carregarPainelDespacho();
         
-        // Atualiza a aba de relatórios por trás dos panos
         if(document.getElementById('reportSection') && !document.getElementById('reportSection').classList.contains('hidden')) {
             if(typeof generateReport === 'function') generateReport();
         }
