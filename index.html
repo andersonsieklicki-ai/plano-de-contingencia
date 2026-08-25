@@ -1827,6 +1827,10 @@ function carregarPainelDespacho() {
                     // --- SEPARAÇÃO DE BOTÕES POR HIERARQUIA ---
                     if (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
                         btnHtml += `<button style="background:#e67e22; color:white; ${btnStyle}" onclick="pausarEntrega(${r.id})">⏸️ Pausar Entrega</button>`;
+                        // [MELHORIA] INSERÇÃO DO BOTÃO CANCELAR RESTANTE EXCLUSIVO PARA ADMIN/SUPERVISOR
+                        if (isAgua && r.tipoAgua !== 'periodo') {
+                             btnHtml += `<button style="background:var(--danger-color); color:white; ${btnStyle}" onclick="cancelarRestanteAgua(${r.id}, ${faltaAgua})">❌ Cancelar Saldo</button>`;
+                        }
                     } else {
                         // Motorista tem a opção de relatar o problema da rua
                         btnHtml += `<button style="background:#e67e22; color:white; ${btnStyle}" onclick="pausarEntrega(${r.id})">⚠️ Relatar Problema</button>`;
@@ -3187,6 +3191,49 @@ function abrirMapaDireto(loc, bairro, rua, num) {
             return false;
         }
     };
+	
+	async function cancelarRestanteAgua(id, falta) {
+        // Trava de segurança extra
+        if (currentUserNivel !== 'admin' && currentUserNivel !== 'supervisor') {
+            alert("Acesso negado. Apenas Supervisores ou Administradores podem cancelar saldos.");
+            return;
+        }
+
+        if(!confirm(`⚠️ ATENÇÃO!\nDeseja realmente CANCELAR os ${falta}m³ restantes desta entrega?\n\nO pedido original será ajustado para bater com a quantidade já descarregada, e esta entrega sairá da lista de pendentes.`)) {
+            return;
+        }
+
+        let idx = records.findIndex(x => x.id === id);
+        if(idx === -1) return;
+
+        let r = records[idx];
+        let entregue = r.qtdAguaEntregue || 0;
+        
+        // Ajusta o quantitativo solicitado para bater com o que já foi entregue (Zero o que faltava)
+        r.qtdAgua = entregue; 
+        
+        // Adiciona uma observação automática para manter o histórico claro
+        let obsCancelamento = `[Cancelado saldo de ${falta}m³ por ${currentUserEmail}]`;
+        r.observacao = r.observacao ? `${r.observacao} | ${obsCancelamento}` : obsCancelamento;
+        
+        r.synced = false;
+        localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
+        
+        // Registra na Auditoria
+        if(typeof registrarLog === 'function') {
+            await registrarLog("CANCELAMENTO LOGÍSTICA", `Cancelou ${falta}m³ restantes da entrega Cód [${r.codigo}]`);
+        }
+        
+        // Sincroniza e recarrega a tela
+        sincronizarFirebaseAutomatica();
+        carregarPainelDespacho();
+        
+        // Atualiza a aba de relatórios por trás dos panos
+        if(document.getElementById('reportSection') && !document.getElementById('reportSection').classList.contains('hidden')) {
+            if(typeof generateReport === 'function') generateReport();
+        }
+    }
+	
 </script>
 </body>
 </html>
