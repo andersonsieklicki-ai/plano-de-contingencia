@@ -1753,11 +1753,12 @@ function carregarPainelDespacho() {
         if(!container) return; 
         
         let hoje = new Date().toISOString().split('T')[0];
+        let isGestor = (currentUserNivel === 'admin' || currentUserNivel === 'supervisor');
         
         // --- 1. FILTRO: Cargas pausadas somem da tela dos agentes ---
         let pendentes = records.filter(r => {
             if (r.logisticaPausada) {
-                if (currentUserNivel !== 'admin' && currentUserNivel !== 'supervisor') return false; 
+                if (!isGestor) return false; 
             }
 
             let isPendenteAgua = false;
@@ -1781,7 +1782,7 @@ function carregarPainelDespacho() {
                 let zeroPad = qtdTotal < 10 ? '0' + qtdTotal : qtdTotal;
                 let txtPlural = qtdTotal === 1 ? 'ENTREGA PENDENTE' : 'ENTREGAS PENDENTES';
                 
-                if (qtdPausadas > 0 && (currentUserNivel === 'admin' || currentUserNivel === 'supervisor')) {
+                if (qtdPausadas > 0 && isGestor) {
                     btnAlerta.classList.remove('blink');
                     btnAlerta.classList.add('blink-orange'); // Fica laranja!
                     btnAlerta.innerHTML = `⚠️ ATENÇÃO: 🚚 <span style="font-size: 1.3rem; font-weight: 900; background: rgba(0,0,0,0.2); padding: 0 6px; border-radius: 4px;">${zeroPad}</span> ${txtPlural} (${qtdPausadas} PAUSADAS)`;
@@ -1813,62 +1814,62 @@ function carregarPainelDespacho() {
                     mat = `Entregar: <strong>${r.qtdTelha} Telhas</strong>`;
                 }
                 
-                // --- BOTÕES E ESTILOS COMPACTOS ---
+                // --- BOTÕES COM LÓGICA DE CARGOS SEPARADA ---
                 let btnHtml = '';
-                let btnStyle = "width: 100%; padding: 8px 4px; font-size: 0.75rem; margin: 0; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: opacity 0.2s; white-space: nowrap;";
-                let spanStyle = "display:block; font-size:0.6rem; color:#666; margin-bottom:2px; line-height:1.1; font-weight:bold;";
+                let btnStyleDriver = "width: 100%; padding: 12px 5px; font-size: 0.95rem; font-weight: bold; border: none; border-radius: 6px; margin-bottom: 8px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: opacity 0.2s;";
+                let btnStyleGestor = "width: 100%; padding: 8px 4px; font-size: 0.8rem; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: opacity 0.2s;";
+                let spanStyle = "display:block; font-size:0.65rem; color:#666; margin-bottom:3px; line-height:1.1; font-weight:bold;";
 
-                if (isPausado) { 
-                    if (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
+                if (isGestor) {
+                    // LAYOUT ADMIN/SUPERVISOR (Compacto + Explicativo + Ajuste Contábil)
+                    if (isPausado) { 
                         btnHtml += `<div style="margin-bottom:8px;">
                                         <span style="${spanStyle}">Voltar para fila:</span>
-                                        <button style="background:#5cb85c; color:white; ${btnStyle}" onclick="retomarEntrega(${r.id})">▶️ Retomar Operação</button>
+                                        <button style="background:#5cb85c; color:white; ${btnStyleGestor}" onclick="retomarEntrega(${r.id})">▶️ Retomar Operação</button>
                                     </div>`; 
-                    }
-                } else {
-                    // 1. Botão Principal (Descarregar/Concluir)
-                    if(isAgua) {
-                        btnHtml += `<div style="margin-bottom:8px;">
-                                        <span style="${spanStyle}">Registrar hoje:</span>
-                                        <button style="background:var(--agua-color); color:white; ${btnStyle}" onclick="adicionarAgua(${r.id})">🚛 Descarregar</button>
-                                    </div>`;
                     } else {
-                        btnHtml += `<div style="margin-bottom:8px;">
-                                        <span style="${spanStyle}">Marcar finalizado:</span>
-                                        <button style="background:var(--telha-color); color:white; ${btnStyle}" onclick="marcarEntregaTelha(${r.id})">✅ Concluir</button>
-                                    </div>`;
-                    }
-                    
-                    // 2. Botão Pausar
-                    if (currentUserNivel === 'admin' || currentUserNivel === 'supervisor') {
+                        if(isAgua) {
+                            btnHtml += `<div style="margin-bottom:8px;">
+                                            <span style="${spanStyle}">Registrar hoje:</span>
+                                            <button style="background:var(--agua-color); color:white; ${btnStyleGestor}" onclick="adicionarAgua(${r.id})">🚛 Descarregar</button>
+                                        </div>`;
+                        } else {
+                            btnHtml += `<div style="margin-bottom:8px;">
+                                            <span style="${spanStyle}">Marcar finalizado:</span>
+                                            <button style="background:var(--telha-color); color:white; ${btnStyleGestor}" onclick="marcarEntregaTelha(${r.id})">✅ Concluir</button>
+                                        </div>`;
+                        }
                         btnHtml += `<div style="margin-bottom:8px;">
                                         <span style="${spanStyle}">Adiar entrega:</span>
-                                        <button style="background:#e67e22; color:white; ${btnStyle}" onclick="pausarEntrega(${r.id})">⏸️ Pausar</button>
-                                    </div>`;
-                    } else {
-                        btnHtml += `<div style="margin-bottom:8px;">
-                                        <span style="${spanStyle}">Informar imprevisto:</span>
-                                        <button style="background:#e67e22; color:white; ${btnStyle}" onclick="pausarEntrega(${r.id})">⚠️ Relatar Problema</button>
+                                        <button style="background:#e67e22; color:white; ${btnStyleGestor}" onclick="pausarEntrega(${r.id})">⏸️ Pausar</button>
                                     </div>`;
                     }
-                }
-                    
-                // 3. Botão Localização (Nova Cor Cinza/Azulado Escuro)
-                let mapsBtn = `<div style="margin-bottom:8px;">
-                                    <span style="${spanStyle}">Traçar rota GPS:</span>
-                                    <button style="background:#475569; color:white; ${btnStyle}" onclick="abrirMapaDireto('${isTemPermissao?r.localizacaoAgua||'':''}', '${isTemPermissao?r.bairro:pData.bairro}', '${isTemPermissao?r.rua||'':''}', '${isTemPermissao?r.numero||'':''}')">📍 Localização</button>
-                               </div>`;
-                btnHtml += mapsBtn;
+                        
+                    let mapsBtn = `<div style="margin-bottom:8px;">
+                                        <span style="${spanStyle}">Traçar rota GPS:</span>
+                                        <button style="background:#475569; color:white; ${btnStyleGestor}" onclick="abrirMapaDireto('${isTemPermissao?r.localizacaoAgua||'':''}', '${isTemPermissao?r.bairro:pData.bairro}', '${isTemPermissao?r.rua||'':''}', '${isTemPermissao?r.numero||'':''}')">📍 Localização</button>
+                                   </div>`;
+                    btnHtml += mapsBtn;
 
-                // 4. Botão Cancelar (No Final, Menor e Separado)
-                if (!isPausado && (currentUserNivel === 'admin' || currentUserNivel === 'supervisor')) {
-                    if (isAgua) {
+                    if (!isPausado && isAgua) {
                         let txtCancel = r.tipoAgua === 'periodo' ? '❌ Encerrar Rota' : `❌ Zerar Saldo`;
                         btnHtml += `<div style="text-align:center; padding-top: 6px; border-top: 1px dashed #cbd5e1; margin-top: 4px;">
                                         <span style="${spanStyle} color:#d9534f; margin-bottom:4px;">Ajuste contábil:</span>
-                                        <button style="background:#d9534f; color:white; padding: 6px 4px; font-size: 0.7rem; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.15); width: 85%; margin: 0 auto; white-space: nowrap;" onclick="cancelarRestanteAgua(${r.id}, ${faltaAgua})">${txtCancel}</button>
+                                        <button style="background:#d9534f; color:white; padding: 6px 4px; font-size: 0.75rem; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.15); width: 90%; margin: 0 auto;" onclick="cancelarRestanteAgua(${r.id}, ${faltaAgua})">${txtCancel}</button>
                                     </div>`;
                     }
+                } else {
+                    // LAYOUT MOTORISTA (Botões robustos e simples)
+                    if (!isPausado) {
+                        if(isAgua) {
+                            btnHtml += `<button style="background:var(--agua-color); color:white; ${btnStyleDriver}" onclick="adicionarAgua(${r.id})">🚛 Descarregar</button>`;
+                        } else {
+                            btnHtml += `<button style="background:var(--telha-color); color:white; ${btnStyleDriver}" onclick="marcarEntregaTelha(${r.id})">✅ Concluir</button>`;
+                        }
+                        btnHtml += `<button style="background:#e67e22; color:white; ${btnStyleDriver}" onclick="pausarEntrega(${r.id})">⚠️ Relatar Problema</button>`;
+                    }
+                    let mapsBtn = `<button style="background:#475569; color:white; ${btnStyleDriver} margin-bottom: 0;" onclick="abrirMapaDireto('${isTemPermissao?r.localizacaoAgua||'':''}', '${isTemPermissao?r.bairro:pData.bairro}', '${isTemPermissao?r.rua||'':''}', '${isTemPermissao?r.numero||'':''}')">📍 Localização</button>`;
+                    btnHtml += mapsBtn;
                 }
                 
                 let endCompleto = `📍 ${pData.bairro}`; 
@@ -1889,7 +1890,7 @@ function carregarPainelDespacho() {
 
                 h += `<div class="dispatch-card ${classeCard}" ${estiloCard} style="width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 8px; margin-bottom: 12px; background: #fff; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                         
-                        <div style="display: grid; grid-template-columns: 1fr 120px; gap: 15px; align-items: start; width: 100%;">
+                        <div style="display: grid; grid-template-columns: 1fr 135px; gap: 15px; align-items: start; width: 100%;">
                             <div style="min-width: 0;">
                                 <strong style="font-size: 1.1rem; color: var(--primary-color); display: block; margin-bottom: 4px; line-height: 1.3; word-wrap: break-word; overflow-wrap: break-word;">${icone} ${pData.nome}</strong>
                                 <div style="font-size: 0.95rem; margin-bottom: 4px; font-weight: bold;">${linkZap}</div>
@@ -1899,7 +1900,7 @@ function carregarPainelDespacho() {
                                 </div>
                             </div>
 
-                            <div style="display: flex; flex-direction: column; background: #f8f9fa; padding: 8px 10px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
+                            <div style="display: flex; flex-direction: column; background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
                                 ${btnHtml}
                             </div>
                         </div>
