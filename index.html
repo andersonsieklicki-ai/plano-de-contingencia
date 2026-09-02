@@ -1813,9 +1813,9 @@ function carregarPainelDespacho() {
                 } else {
                     mat = `Entregar: <strong>${r.qtdTelha} Telhas</strong>`;
                 }
-                
-                // --- BOTÕES COM LÓGICA DE CARGOS SEPARADA ---
-                let btnHtml = '';
+
+                // NOVO: Captura e formata a data/hora do lançamento
+                let dataCriacao = r.dataHoraFormatada || (r.dataISO ? new Date(r.dataISO).toLocaleString('pt-BR') : 'Não registrada');
                 let btnStyleDriver = "width: 100%; padding: 12px 5px; font-size: 0.95rem; font-weight: bold; border: none; border-radius: 6px; margin-bottom: 8px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: opacity 0.2s;";
                 let btnStyleGestor = "width: 100%; padding: 8px 4px; font-size: 0.8rem; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: opacity 0.2s;";
                 let spanStyle = "display:block; font-size:0.65rem; color:#666; margin-bottom:3px; line-height:1.1; font-weight:bold;";
@@ -1897,6 +1897,10 @@ function carregarPainelDespacho() {
                                 <div style="font-size: 0.85rem; color: #333; margin-bottom: 4px;">📍 <strong>Bairro:</strong> ${pData.bairro}</div>
                                 <div style="font-size: 0.9rem; margin-top: 6px; color: var(--primary-color); font-weight: bold; background: #f0f7ff; padding: 6px; border-radius: 4px; display: inline-block; border-left: 4px solid var(--agua-color);">
                                     ${mat}
+                                </div>
+
+                                <div style="font-size: 0.82rem; margin-top: 6px; color: #334155; font-weight: bold; background: #f8fafc; padding: 5px 8px; border-radius: 4px; border-left: 4px solid #64748b; display: block;">
+                                    🕒 <strong>Ordem Criada em:</strong> ${dataCriacao}
                                 </div>
                             </div>
 
