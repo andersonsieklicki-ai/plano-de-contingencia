@@ -1740,7 +1740,7 @@ async function pausarEntrega(id) {
         sincronizarFirebaseAutomatica(); carregarPainelDespacho(); 
     }
 function carregarPainelDespacho() {
-        // [NOVIDADE] Injeta a animação de piscar laranja direto no navegador
+        // Injeta a animação de piscar laranja direto no navegador
         if (!document.getElementById('style-blink-orange')) {
             let style = document.createElement('style');
             style.id = 'style-blink-orange';
@@ -1771,7 +1771,8 @@ function carregarPainelDespacho() {
         });
         
         if(pendentes.length === 0) { 
-            if(btnAlerta) btnAlerta.classList.add('hidden'); container.innerHTML = "<p style='text-align:center; padding: 20px; font-size: 1.1rem; color:#555;'>Nenhuma entrega pendente! A equipe está em dia. ✅</p>";
+            if(btnAlerta) btnAlerta.classList.add('hidden'); 
+            container.innerHTML = "<p style='text-align:center; padding: 20px; font-size: 1.1rem; color:#555;'>Nenhuma entrega pendente! A equipe está em dia. ✅</p>";
         } else {
             if(btnAlerta) { 
                 btnAlerta.classList.remove('hidden'); 
@@ -1800,7 +1801,8 @@ function carregarPainelDespacho() {
                 
                 let isAgua = (r.tipoAgua === 'periodo' && r.dataFimAgua >= hoje) || (r.tipoAgua !== 'periodo' && r.qtdAgua > (r.qtdAguaEntregue || 0));
                 let faltaAgua = r.tipoAgua === 'periodo' ? 0 : (r.qtdAgua - (r.qtdAguaEntregue || 0));
-                let classeCard = isAgua ? '' : 'telha'; let icone = isAgua ? '💧' : '🏠';
+                let classeCard = isAgua ? '' : 'telha'; 
+                let icone = isAgua ? '💧' : '🏠';
                 
                 let isPausado = r.logisticaPausada === true; 
                 let estiloCard = isPausado ? `style="border-left-color: #f0ad4e; border-width: 2px; border-style: dashed; background-color: #fff3cd;"` : ``;
@@ -1814,8 +1816,11 @@ function carregarPainelDespacho() {
                     mat = `Entregar: <strong>${r.qtdTelha} Telhas</strong>`;
                 }
 
-                // NOVO: Captura e formata a data/hora do lançamento
+                // --- DATA DE CRIAÇÃO DO PEDIDO ---
                 let dataCriacao = r.dataHoraFormatada || (r.dataISO ? new Date(r.dataISO).toLocaleString('pt-BR') : 'Não registrada');
+                
+                // --- BOTÕES COM LÓGICA DE CARGOS SEPARADA ---
+                let btnHtml = '';
                 let btnStyleDriver = "width: 100%; padding: 12px 5px; font-size: 0.95rem; font-weight: bold; border: none; border-radius: 6px; margin-bottom: 8px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: opacity 0.2s;";
                 let btnStyleGestor = "width: 100%; padding: 8px 4px; font-size: 0.8rem; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: opacity 0.2s;";
                 let spanStyle = "display:block; font-size:0.65rem; color:#666; margin-bottom:3px; line-height:1.1; font-weight:bold;";
@@ -1873,7 +1878,12 @@ function carregarPainelDespacho() {
                 }
                 
                 let endCompleto = `📍 ${pData.bairro}`; 
-                if(isTemPermissao) { if(r.localizacaoAgua) endCompleto += ` - ${r.localizacaoAgua}`; if(r.rua) endCompleto += ` - ${r.rua}, ${r.numero||'S/N'}`; } else { if(r.localizacaoAgua || r.rua) endCompleto += ` - ***`; }
+                if(isTemPermissao) { 
+                    if(r.localizacaoAgua) endCompleto += ` - ${r.localizacaoAgua}`; 
+                    if(r.rua) endCompleto += ` - ${r.rua}, ${r.numero||'S/N'}`; 
+                } else { 
+                    if(r.localizacaoAgua || r.rua) endCompleto += ` - ***`; 
+                }
                 
                 let emailKey = (r.emailCriador || "").toLowerCase();
                 let emailCriadorFormatado = window.mapaUsuarios ? (window.mapaUsuarios[emailKey] || (r.emailCriador ? r.emailCriador.split('@')[0] : "Desconhecido")) : (r.emailCriador ? r.emailCriador.split('@')[0] : "Desconhecido");
@@ -1895,6 +1905,7 @@ function carregarPainelDespacho() {
                                 <strong style="font-size: 1.1rem; color: var(--primary-color); display: block; margin-bottom: 4px; line-height: 1.3; word-wrap: break-word; overflow-wrap: break-word;">${icone} ${pData.nome}</strong>
                                 <div style="font-size: 0.95rem; margin-bottom: 4px; font-weight: bold;">${linkZap}</div>
                                 <div style="font-size: 0.85rem; color: #333; margin-bottom: 4px;">📍 <strong>Bairro:</strong> ${pData.bairro}</div>
+                                
                                 <div style="font-size: 0.9rem; margin-top: 6px; color: var(--primary-color); font-weight: bold; background: #f0f7ff; padding: 6px; border-radius: 4px; display: inline-block; border-left: 4px solid var(--agua-color);">
                                     ${mat}
                                 </div>
