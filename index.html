@@ -1740,7 +1740,6 @@ async function pausarEntrega(id) {
         sincronizarFirebaseAutomatica(); carregarPainelDespacho(); 
     }
 function carregarPainelDespacho() {
-        // Injeta a animação de piscar laranja direto no navegador
         if (!document.getElementById('style-blink-orange')) {
             let style = document.createElement('style');
             style.id = 'style-blink-orange';
@@ -1790,7 +1789,7 @@ function carregarPainelDespacho() {
                 } else {
                     btnAlerta.classList.remove('blink-orange');
                     btnAlerta.classList.add('blink'); // Volta pro vermelho
-                    btnAlerta.innerHTML = `🚨 ATENÇÃO: 🚚 <span style="font-size: 1.3rem; font-weight: 900; background: rgba(255,255,255,0.3); padding: 0 6px; border-radius: 4px;">${zeroPad}</span> ${txtPlural}`;
+                    btnAlerta.innerHTML = `🚨 ATENÇÃO: 🚚 <span style="font-size: 1.3rem; font-weight: 900; background: rgba(255,255,255,0.3); padding: 0 6px; border-radius: 4px;">${zeroPad}</span>${txtPlural}`;
                 }
             }
             
@@ -1825,8 +1824,11 @@ function carregarPainelDespacho() {
                 let btnStyleGestor = "width: 100%; padding: 8px 4px; font-size: 0.8rem; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: opacity 0.2s;";
                 let spanStyle = "display:block; font-size:0.65rem; color:#666; margin-bottom:3px; line-height:1.1; font-weight:bold;";
 
+                // LÓGICA DE BOTÃO DO MAPA/GPS (Aplicada igualitariamente com estilos de cargo)
+                let mapsBtnHtml = '';
+
                 if (isGestor) {
-                    // LAYOUT ADMIN/SUPERVISOR (Compacto + Explicativo + Ajuste Contábil)
+                    // ------------------ LAYOUT ADMIN/SUPERVISOR ------------------
                     if (isPausado) { 
                         btnHtml += `<div style="margin-bottom:8px;">
                                         <span style="${spanStyle}">Voltar para fila:</span>
@@ -1850,21 +1852,33 @@ function carregarPainelDespacho() {
                                     </div>`;
                     }
                         
-                    let mapsBtn = `<div style="margin-bottom:8px;">
-                                        <span style="${spanStyle}">Traçar rota GPS:</span>
-                                        <button style="background:#475569; color:white; ${btnStyleGestor}" onclick="abrirMapaDireto('${isTemPermissao?r.localizacaoAgua||'':''}', '${isTemPermissao?r.bairro:pData.bairro}', '${isTemPermissao?r.rua||'':''}', '${isTemPermissao?r.numero||'':''}')">📍 Localização</button>
+                    // Tratamento do GPS no layout Supervisor
+                    if (r.coordenadas) {
+                        mapsBtnHtml = `<div style="margin-bottom:8px;">
+                                        <span style="${spanStyle} color:#28a745;">GPS Exato Salvo:</span>
+                                        <div style="display:flex; gap: 4px;">
+                                            <button style="background:#28a745; color:white; ${btnStyleGestor.replace('margin-bottom: 8px;', '')} margin-bottom:0; flex: 2;" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${r.coordenadas}', '_blank')">📍 Navegar GPS</button>
+                                            <button style="background:#6c757d; color:white; ${btnStyleGestor.replace('margin-bottom: 8px;', '')} margin-bottom:0; flex: 1; font-size: 0.7rem;" onclick="capturarLocalizacao(${r.id})">✏️ Alt.</button>
+                                        </div>
                                    </div>`;
-                    btnHtml += mapsBtn;
+                    } else {
+                        mapsBtnHtml = `<div style="margin-bottom:8px;">
+                                        <span style="${spanStyle}">Buscar ou Salvar GPS:</span>
+                                        <button style="background:#475569; color:white; ${btnStyleGestor} margin-bottom: 4px;" onclick="abrirMapaDireto('${isTemPermissao?r.localizacaoAgua||'':''}', '${isTemPermissao?r.bairro:pData.bairro}', '${isTemPermissao?r.rua||'':''}', '${isTemPermissao?r.numero||'':''}')">🔍 Endereço</button>
+                                        <button style="background:#007bff; color:white; ${btnStyleGestor.replace('margin-bottom: 8px;', '')} margin-bottom:0;" onclick="capturarLocalizacao(${r.id})">📡 Capturar Local</button>
+                                   </div>`;
+                    }
+                    btnHtml += mapsBtnHtml;
 
                     if (!isPausado && isAgua) {
                         let txtCancel = r.tipoAgua === 'periodo' ? '❌ Encerrar Rota' : `❌ Zerar Saldo`;
                         btnHtml += `<div style="text-align:center; padding-top: 6px; border-top: 1px dashed #cbd5e1; margin-top: 4px;">
                                         <span style="${spanStyle} color:#d9534f; margin-bottom:4px;">Ajuste contábil:</span>
-                                        <button style="background:#d9534f; color:white; padding: 6px 4px; font-size: 0.75rem; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.15); width: 90%; margin: 0 auto;" onclick="cancelarRestanteAgua(${r.id}, ${faltaAgua})">${txtCancel}</button>
+                                        <button style="background:#d9534f; color:white; padding: 6px 4px; font-size: 0.75rem; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.15); width: 90%; margin: 0 auto; white-space: nowrap;" onclick="cancelarRestanteAgua(${r.id}, ${faltaAgua})">${txtCancel}</button>
                                     </div>`;
                     }
                 } else {
-                    // LAYOUT MOTORISTA (Botões robustos e simples)
+                    // ------------------ LAYOUT MOTORISTA (AGENTES) ------------------
                     if (!isPausado) {
                         if(isAgua) {
                             btnHtml += `<button style="background:var(--agua-color); color:white; ${btnStyleDriver}" onclick="adicionarAgua(${r.id})">🚛 Descarregar</button>`;
@@ -1873,8 +1887,18 @@ function carregarPainelDespacho() {
                         }
                         btnHtml += `<button style="background:#e67e22; color:white; ${btnStyleDriver}" onclick="pausarEntrega(${r.id})">⚠️ Relatar Problema</button>`;
                     }
-                    let mapsBtn = `<button style="background:#475569; color:white; ${btnStyleDriver} margin-bottom: 0;" onclick="abrirMapaDireto('${isTemPermissao?r.localizacaoAgua||'':''}', '${isTemPermissao?r.bairro:pData.bairro}', '${isTemPermissao?r.rua||'':''}', '${isTemPermissao?r.numero||'':''}')">📍 Localização</button>`;
-                    btnHtml += mapsBtn;
+
+                    // Tratamento do GPS no layout Motorista
+                    if (r.coordenadas) {
+                        mapsBtnHtml = `<div style="display:flex; gap: 4px; margin-bottom: 0;">
+                                            <button style="background:#28a745; color:white; ${btnStyleDriver.replace('margin-bottom: 8px;', '')} margin-bottom: 0; flex: 2;" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${r.coordenadas}', '_blank')">📍 Navegar (GPS)</button>
+                                            <button style="background:#6c757d; color:white; ${btnStyleDriver.replace('margin-bottom: 8px;', '')} margin-bottom: 0; flex: 1; font-size: 0.8rem;" onclick="capturarLocalizacao(${r.id})">✏️ Alt.</button>
+                                       </div>`;
+                    } else {
+                        mapsBtnHtml = `<button style="background:#475569; color:white; ${btnStyleDriver}" onclick="abrirMapaDireto('${isTemPermissao?r.localizacaoAgua||'':''}', '${isTemPermissao?r.bairro:pData.bairro}', '${isTemPermissao?r.rua||'':''}', '${isTemPermissao?r.numero||'':''}')">🔍 Buscar Endereço</button>
+                                       <button style="background:#007bff; color:white; ${btnStyleDriver.replace('margin-bottom: 8px;', '')} margin-bottom: 0;" onclick="capturarLocalizacao(${r.id})">📡 Salvar GPS Aqui</button>`;
+                    }
+                    btnHtml += mapsBtnHtml;
                 }
                 
                 let endCompleto = `📍 ${pData.bairro}`; 
@@ -1911,7 +1935,7 @@ function carregarPainelDespacho() {
                                 </div>
 
                                 <div style="font-size: 0.82rem; margin-top: 6px; color: #334155; font-weight: bold; background: #f8fafc; padding: 5px 8px; border-radius: 4px; border-left: 4px solid #64748b; display: block;">
-                                    🕒 <strong>Ordem Criada em:</strong> ${dataCriacao}
+                                    🕒 <strong>Ordem Criada em:</strong> <span style="font-weight: normal;">${dataCriacao}</span>
                                 </div>
                             </div>
 
@@ -3276,6 +3300,48 @@ function abrirMapaDireto(loc, bairro, rua, num) {
             if(typeof generateReport === 'function') generateReport();
         }
     }
+	
+	async function capturarLocalizacao(id) {
+        if (!navigator.geolocation) {
+            alert("❌ Seu navegador ou celular não suporta a captura de GPS.");
+            return;
+        }
+
+        if(!confirm("📡 Deseja capturar a localização atual do seu celular e salvar neste cadastro?")) return;
+
+        navigator.geolocation.getCurrentPosition(async (position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            const coords = `${lat},${lon}`;
+
+            let idx = records.findIndex(x => x.id === id);
+            if(idx === -1) return;
+
+            // Salva as coordenadas exatas no cadastro
+            records[idx].coordenadas = coords;
+            records[idx].synced = false;
+            
+            localStorage.setItem('defesaCivilRecords', JSON.stringify(records));
+
+            // Registra a auditoria
+            if(typeof registrarLog === 'function') {
+                await registrarLog("ATUALIZAÇÃO GPS", `Coordenadas salvas no Cód [${records[idx].codigo}]`);
+            }
+
+            if(typeof sincronizarFirebaseAutomatica === 'function') sincronizarFirebaseAutomatica();
+            carregarPainelDespacho();
+            alert("✅ Localização GPS salva com sucesso!");
+
+        }, (error) => {
+            let msg = "Erro desconhecido.";
+            if(error.code === 1) msg = "Permissão negada. Ative o GPS no celular e dê permissão ao navegador.";
+            if(error.code === 2) msg = "Sinal de GPS indisponível no momento.";
+            if(error.code === 3) msg = "Tempo esgotado ao buscar o GPS.";
+            alert("❌ Falha ao capturar GPS: " + msg);
+        }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+    }
+	
+	
 	
 </script>
 </body>
