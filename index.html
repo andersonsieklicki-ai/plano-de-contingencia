@@ -1837,21 +1837,45 @@ function carregarPainelDespacho() {
                 let btnStyleDriver = "width: 100%; box-sizing: border-box; padding: 12px 6px; font-size: 0.95rem; font-weight: bold; border: none; border-radius: 8px; margin-bottom: 10px; cursor: pointer; box-shadow: 0 3px 5px rgba(0,0,0,0.15); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; line-height: 1.15; transition: opacity 0.2s;";
                 let btnStyleGestor = "width: 100%; box-sizing: border-box; padding: 8px 4px; font-size: 0.8rem; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.15); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; line-height: 1.15; transition: opacity 0.2s;";
                 
-                // ------------------ LÓGICA DO BOTÃO GPS (Alfinete Centralizado) ------------------
+                // ------------------ LÓGICA INTELIGENTE DO BOTÃO GPS ------------------
                 let mapsBtnHtml = '';
-                let temGPS = !!r.coordenadas;
+                
+                // 1. Tenta pegar a coordenada nova (se o motorista já salvou no botão)
+                let coordenadaFinal = r.coordenadas || null;
+                
+                // 2. Se não tiver, varre o texto antigo para ver se tem coordenada vinda do WhatsApp
+                if (!coordenadaFinal && r.localizacaoAgua) {
+                    let match = r.localizacaoAgua.match(/(-?\d{1,2}\.\d{3,}),\s*(-?\d{1,3}\.\d{3,})/);
+                    if (match) {
+                        coordenadaFinal = `${match[1]},${match[2]}`;
+                    } else if (r.localizacaoAgua.includes('http')) {
+                        coordenadaFinal = r.localizacaoAgua;
+                    }
+                }
+
+                let temGPS = !!coordenadaFinal;
+                
+                // Monta o link nativo para o Google Maps
+                let linkMapa = '';
+                if (temGPS) {
+                    if (coordenadaFinal.startsWith('http')) {
+                        linkMapa = coordenadaFinal;
+                    } else {
+                        linkMapa = `https://maps.google.com/?q=${coordenadaFinal}`;
+                    }
+                }
 
                 if (temGPS) {
                     // Já tem GPS -> Botão Azul Fixo (Abrir Mapa)
                     if (isGestor) {
                         mapsBtnHtml = `<div style="margin-bottom:8px; width: 100%;">
-                                           <button style="background:#007bff; color:white; ${btnStyleGestor} margin-bottom: 0;" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${r.coordenadas}', '_blank')">
+                                           <button style="background:#007bff; color:white; ${btnStyleGestor} margin-bottom: 0;" onclick="window.open('${linkMapa}', '_blank')">
                                                <span style="font-size: 1.1rem; line-height: 1; margin-bottom: 2px;">📍</span>
                                                <span style="font-size: 0.78rem;">Localização (Mapa)</span>
                                            </button>
                                        </div>`;
                     } else {
-                        mapsBtnHtml = `<button style="background:#007bff; color:white; ${btnStyleDriver} margin-bottom: 0;" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${r.coordenadas}', '_blank')">
+                        mapsBtnHtml = `<button style="background:#007bff; color:white; ${btnStyleDriver} margin-bottom: 0;" onclick="window.open('${linkMapa}', '_blank')">
                                            <span style="font-size: 1.3rem; line-height: 1; margin-bottom: 2px;">📍</span>
                                            <span style="font-size: 0.9rem;">Localização (Mapa)</span>
                                        </button>`;
